@@ -1,9 +1,9 @@
 #include "CXX_to_python_class.h"
 
-//// function for Output_FA
+//// function for Basic_Seq_Statistics
 //
 //
-Output_FA::Output_FA(){
+Basic_Seq_Statistics::Basic_Seq_Statistics(){
    read_length_count = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = ZeroDefault;
@@ -11,15 +11,15 @@ Output_FA::Output_FA(){
    nx_read_length[9] = ZeroDefault;
 }
 
-Output_FA::~Output_FA(){
+Basic_Seq_Statistics::~Basic_Seq_Statistics(){
    delete [] read_length_count;
 }
 
 
-//// function for Output_BAM
+//// function for Basic_Seq_Quality_Statistics
 //
 //
-Output_FQ::Output_FQ(){
+Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
    pos_quality_distribution = new int[MAX_READ_LENGTH];
    pos_quality_distribution_dev = new float[MAX_READ_LENGTH];
    pos_quality_distribution_count = new int64_t[MAX_READ_LENGTH];
@@ -33,7 +33,7 @@ Output_FQ::Output_FQ(){
    }
 }
 
-Output_FQ::~Output_FQ(){
+Basic_Seq_Quality_Statistics::~Basic_Seq_Quality_Statistics(){
    delete [] pos_quality_distribution;
    delete [] pos_quality_distribution_dev;
    delete [] pos_quality_distribution_count;
@@ -47,15 +47,23 @@ Output_BAM::Output_BAM(){
       map_quality_distribution[ _i_ ] = ZeroDefault;
    }
    
-   mapped_read_length_count = new int64_t[MAX_READ_LENGTH];
+   /*mapped_read_length_count = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       mapped_read_length_count[ _i_ ] = ZeroDefault;
    }
    mapped_nx_read_length[9] = ZeroDefault;
+
+
+   unmapped_read_length_count = new int64_t[MAX_READ_LENGTH];
+   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
+      unmapped_read_length_count[ _i_ ] = ZeroDefault;
+   }
+   unmapped_nx_read_length[9] = ZeroDefault; */
 }
 
 Output_BAM::~Output_BAM(){
-   delete [] mapped_read_length_count;
+   // delete [] mapped_read_length_count;
+   // delete [] unmapped_read_length_count;
 }
 
 
@@ -64,21 +72,26 @@ Output_BAM::~Output_BAM(){
 //
 //
 //
-Output_F5::Output_F5(){
-   passed_read_length_list = new int64_t[MAX_READ_LENGTH];
+Basic_F5_Statistics::Basic_F5_Statistics(){
+   /*passed_read_length_list = new int64_t[MAX_READ_LENGTH];
    failed_read_length_list = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       passed_read_length_list[ _i_ ] = ZeroDefault;
       failed_read_length_list[ _i_ ] = ZeroDefault;
+   }*/
+   read_length_list = new int64_t[MAX_READ_LENGTH];
+   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
+      read_length_list[ _i_ ] = ZeroDefault;
    }
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] = ZeroDefault;
    }
 }
 
-Output_F5::~Output_F5(){
-   delete [] passed_read_length_list;
-   delete [] failed_read_length_list;
+Basic_F5_Statistics::~Basic_F5_Statistics(){
+   //delete [] passed_read_length_list;
+   //delete [] failed_read_length_list;
+   delete [] read_length_list;
 }
 
 
