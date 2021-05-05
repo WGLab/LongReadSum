@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import os,sys,string,math
-
+from glob import glob
 import argparse, logging
 from argparse import RawTextHelpFormatter
 
@@ -30,7 +30,7 @@ def get_log_level(log_l):
 def get_common_param(margs, para_dict):
    this_error_str = "";
 
-   if (margs.input==None or margs.input=="") and (margs.inputs==None or margs.inputs==""):
+   if (margs.input==None or margs.input=="") and (margs.inputs==None or margs.inputs=="") and (margs.inputPattern==None or margs.inputPattern==""):
       this_error_str += "No input file(s) are provided. \n"
    else:
       para_dict["input_files"] = []
@@ -38,6 +38,9 @@ def get_common_param(margs, para_dict):
          para_dict["input_files"].append(margs.input)
       if not (margs.inputs==None or margs.inputs==""):
          para_dict["input_files"].extend(margs.inputs.split(','))
+      if not (margs.inputPattern==None or margs.inputPattern==""):
+         pat_split = margs.inputPattern.split("*")
+         para_dict["input_files"].extend( glob(os.path.join("*".join(pat_split[:-1]), "*"+pat_split[-1])) );
 
    if (margs.outputfolder==None or margs.outputfolder==""):
       this_error_str += "No output file is provided. \n"
@@ -142,6 +145,8 @@ common_grp_param = parent_parser.add_argument_group("Common parameters for %(pro
 input_files_group = common_grp_param.add_mutually_exclusive_group();
 input_files_group.add_argument("-i", "--input", type=str, default=None, help="The input file for the analysis");
 input_files_group.add_argument("-I", "--inputs", type=str, default=None, help="The input files for the analysis");
+input_files_group.add_argument("-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *.");
+
 
 common_grp_param.add_argument("-g", "--log", type=str, default="", help="Log file")
 common_grp_param.add_argument("-G", "--Log_level", type=int, default=LOG_ERROR, help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")

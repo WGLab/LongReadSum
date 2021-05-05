@@ -1,5 +1,11 @@
 #include "CXX_to_python_class.h"
 
+Output_Info::Output_Info(){
+   error_flag = 0;
+   error_str = "";
+}
+
+
 //// function for Basic_Seq_Statistics
 //
 //
@@ -47,23 +53,9 @@ Output_BAM::Output_BAM(){
       map_quality_distribution[ _i_ ] = ZeroDefault;
    }
    
-   /*mapped_read_length_count = new int64_t[MAX_READ_LENGTH];
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      mapped_read_length_count[ _i_ ] = ZeroDefault;
-   }
-   mapped_nx_read_length[9] = ZeroDefault;
-
-
-   unmapped_read_length_count = new int64_t[MAX_READ_LENGTH];
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      unmapped_read_length_count[ _i_ ] = ZeroDefault;
-   }
-   unmapped_nx_read_length[9] = ZeroDefault; */
 }
 
 Output_BAM::~Output_BAM(){
-   // delete [] mapped_read_length_count;
-   // delete [] unmapped_read_length_count;
 }
 
 
@@ -73,12 +65,6 @@ Output_BAM::~Output_BAM(){
 //
 //
 Basic_F5_Statistics::Basic_F5_Statistics(){
-   /*passed_read_length_list = new int64_t[MAX_READ_LENGTH];
-   failed_read_length_list = new int64_t[MAX_READ_LENGTH];
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      passed_read_length_list[ _i_ ] = ZeroDefault;
-      failed_read_length_list[ _i_ ] = ZeroDefault;
-   }*/
    read_length_list = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_list[ _i_ ] = ZeroDefault;
@@ -89,8 +75,6 @@ Basic_F5_Statistics::Basic_F5_Statistics(){
 }
 
 Basic_F5_Statistics::~Basic_F5_Statistics(){
-   //delete [] passed_read_length_list;
-   //delete [] failed_read_length_list;
    delete [] read_length_list;
 }
 

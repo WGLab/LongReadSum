@@ -13,6 +13,13 @@
 #define ZeroDefault 0
 #define MoneDefault -1
 
+class Output_Info{
+public:
+    int error_flag;
+    std::string error_str;
+    Output_Info();
+};
+
 class Basic_Seq_Statistics{
 public:
    int64_t total_num_reads = ZeroDefault; // total number of long reads
@@ -39,31 +46,9 @@ public:
    ~Basic_Seq_Statistics();
 };
 
-class Output_FA {
+class Output_FA : public Output_Info {
 public:
    Basic_Seq_Statistics long_read_info;
-   /*int64_t total_num_reads = ZeroDefault; // total number of long reads
-   int64_t total_num_bases = ZeroDefault; // total number of bases
-
-   int64_t longest_read_length = MoneDefault; // the length of longest reads
-   int64_t n50_read_length = MoneDefault; // N50
-   int64_t n95_read_length = MoneDefault; // N95
-   int64_t n05_read_length = MoneDefault; // N05;
-   int64_t mean_read_length = MoneDefault; // mean of read length
-   int64_t nx_read_length[10]; // can provide n10, n20, n30, ... n90; The last indicates whether this info is generated.
-   int64_t median_read_length = MoneDefault; // median of read length
-
-   int64_t total_a_cnt = ZeroDefault; // A content
-   int64_t total_c_cnt = ZeroDefault; // C content
-   int64_t total_g_cnt = ZeroDefault; // G content
-   int64_t total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
-   int64_t total_n_cnt = ZeroDefault; // N content
-   double gc_cnt = ZeroDefault; // GC ratio
-
-   int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
-
-   Output_FA();
-   ~Output_FA();*/
 };
 
 class Basic_Seq_Quality_Statistics{
@@ -84,17 +69,6 @@ public:
 class Output_FQ: public Output_FA {
 public:
    Basic_Seq_Quality_Statistics seq_quality_info;
-   /*int64_t base_quality_distribution[MAX_BASE_QUALITY];  // base quality distribution: each position is the number of bases with the quality of the index.
-   int min_base_quality = MoneDefault; // minimum base quality;
-   int max_base_quality = MoneDefault; // maximum base quality;
-
-   int *pos_quality_distribution; // the base quality according to positions of long reads: each position is the mean quality at the position of long reads
-   float *pos_quality_distribution_dev; // similar to above but for the standard deviation
-   int64_t *pos_quality_distribution_count; // similar to above but for the number of bases
-
-   Output_FQ();
-   ~Output_FQ();
-   */
 };
 
 class Output_BAM: public Output_FQ {
@@ -126,43 +100,6 @@ public:
    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
  
-   /* 
-   // similar to reads; below for mapped reads
-   int64_t mapped_longest_read_length = MoneDefault; // the length of longest reads
-   int64_t mapped_n50_read_length = MoneDefault; // N50
-   int64_t mapped_n95_read_length = MoneDefault; // N95;
-   int64_t mapped_n05_read_length = MoneDefault; // N05;
-   int64_t mapped_x_read_length[10]; // can provide n10, n20, n30, ... n90; The last indicates whether this info is generated.
-   int64_t mapped_mean_read_length = MoneDefault; // mean of read length
-   int64_t mapped_median_read_length = MoneDefault; // median of read length
-
-   int64_t mapped__a_cnt = ZeroDefault; // Mapped A content;
-   int64_t mapped__c_cnt = ZeroDefault; // Napped C content;
-   int64_t mapped__g_cnt = ZeroDefault; // Mapped G content;
-   int64_t mapped__tu_cnt = ZeroDefault; // Mapped T content or U content;
-   int64_t mapped__n_cnt = ZeroDefault; // Mapped N content;
-   double mapped_gc_cnt = ZeroDefault;  // GC content for mapped bases
-
-   int64_t *mapped_read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
-
-   // For unmapped info
-   int64_t unmapped_longest_read_length = MoneDefault; // the length of longest reads
-   int64_t unmapped_n50_read_length = MoneDefault; // N50
-   int64_t unmapped_n95_read_length = MoneDefault; // N95;
-   int64_t unmapped_n05_read_length = MoneDefault; // N05;
-   int64_t unmapped_x_read_length[10]; // can provide n10, n20, n30, ... n90; The last indicates whether this info is generated.
-   int64_t unmapped_mean_read_length = MoneDefault; // mean of read length
-   int64_t unmapped_median_read_length = MoneDefault; // median of read length
-
-   int64_t unmapped__a_cnt = ZeroDefault; // Mapped A content;
-   int64_t unmapped__c_cnt = ZeroDefault; // Napped C content;
-   int64_t unmapped__g_cnt = ZeroDefault; // Mapped G content;
-   int64_t unmapped__tu_cnt = ZeroDefault; // Mapped T content or U content;
-   int64_t unmapped__n_cnt = ZeroDefault; // Mapped N content;
-   double unmapped_gc_cnt = ZeroDefault;  // GC content for mapped bases
-
-   int64_t *unmapped_read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
-   */
    Output_BAM();
    ~Output_BAM();
 };
@@ -183,41 +120,12 @@ public:
    ~Basic_F5_Statistics();
 };
 
-class Output_F5 {
+class Output_F5 : public Output_Info {
 public:
    Basic_F5_Statistics f5_long_read_info;
    Basic_F5_Statistics f5_passed_long_read_info;
    Basic_F5_Statistics f5_failed_long_read_info;
 
-   /*Basic_Seq_Statistics long_read_info;
-   Basic_Seq_Quality_Statistics seq_quality_info;
-
-   Basic_Seq_Statistics passed_long_read_info;
-   Basic_Seq_Quality_Statistics passed_seq_quality_info;
-
-   Basic_Seq_Statistics failed_long_read_info;
-   Basic_Seq_Quality_Statistics failed_seq_quality_info;
-
-   int64_t num_passed_reads = ZeroDefault; // The number of passed long reads
-   int64_t num_failed_reads = ZeroDefault; // The number of failed long reads
-   
-   int64_t *passed_read_length_list; // statistics of read length for passed long reads: each position is the number of reads with the length of the index;
-   int64_t *failed_read_length_list; // statistics of read length for failed long reads: each position is the number of reads with the length of the index;
-
-   int signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
-   int min_signal = MoneDefault;  // minimum signals;
-   int max_signal = MoneDefault;  // maximum signals;
-
-   int passed_signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
-   int min_signal = MoneDefault;  // minimum signals;
-   int max_signal = MoneDefault;  // maximum signals;
-
-   int signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
-   int min_signal = MoneDefault;  // minimum signals;
-   int max_signal = MoneDefault;  // maximum signals;
-
-   Output_F5();
-   ~Output_F5(); */
 };
 
 

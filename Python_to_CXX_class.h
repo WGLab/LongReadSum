@@ -23,6 +23,9 @@ public:
    /// functions list;
    std::string add_input_file(std::string _ip_file);
 
+   int rdm_seed;
+   float downsample_percentage;
+
    Input_Para();
    ~Input_Para();
 };

@@ -4,6 +4,8 @@
 Input_Para::Input_Para(){
    input_files = new std::string[MAX_INPUT_FILES];
    num_input_files = 0;
+   rdm_seed = 1;
+   downsample_percentage = 1;
 }
 
 Input_Para::Input_Para(){
