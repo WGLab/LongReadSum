@@ -60,6 +60,7 @@ def get_common_param(margs, para_dict):
                           filemode='w', format="%(levelname)s: %(message)s")
       logging.info('Input file(s) are ' + para_dict["input_files"])
 
+   para_dict["downsample_percentage"] = margs.downsample_percentage;
    return this_error_str;
 
 
@@ -146,7 +147,7 @@ input_files_group = common_grp_param.add_mutually_exclusive_group();
 input_files_group.add_argument("-i", "--input", type=str, default=None, help="The input file for the analysis");
 input_files_group.add_argument("-I", "--inputs", type=str, default=None, help="The input files for the analysis");
 input_files_group.add_argument("-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *.");
-
+input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0, help="The percentage of downsampling for quick run. Default: 1.0 without downsampling");
 
 common_grp_param.add_argument("-g", "--log", type=str, default="", help="Log file")
 common_grp_param.add_argument("-G", "--Log_level", type=int, default=LOG_ERROR, help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
