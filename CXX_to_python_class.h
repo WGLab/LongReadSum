@@ -42,6 +42,10 @@ public:
 
    int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
 
+   void reset();
+   void add(Output_BAM& t_seq_st);
+   void gloabl_sum();
+
    Basic_Seq_Statistics();
    ~Basic_Seq_Statistics();
 };
@@ -60,7 +64,11 @@ public:
    int *pos_quality_distribution; // the base quality according to positions of long reads: each position is the mean quality at the position of long reads
    float *pos_quality_distribution_dev; // similar to above but for the standard deviation
    int64_t *pos_quality_distribution_count; // similar to above but for the number of bases
-   int64_t max_length;
+   int64_t max_length = ZeroDefault;
+
+   void reset();
+   void add(Basic_Seq_Quality_Statistics& t_qual_st);
+   void gloabl_sum();
 
    Basic_Seq_Quality_Statistics();
    ~Basic_Seq_Quality_Statistics();
@@ -85,8 +93,8 @@ public:
    int max_map_quality = MoneDefault; // the maximum mapping quality
 
    // Similar to Output_FA: below are for mapped.
-   int64_t num_mapped_reads = ZeroDefault; // the number of mapped long reads
-   int64_t num_mapped_bases = ZeroDefault; // the number of mapped bases with X/=/M
+   //int64_t num_mapped_reads = ZeroDefault; // the number of mapped long reads
+   //int64_t num_mapped_bases = ZeroDefault; // the number of mapped bases with X/=/M
    int64_t num_matched_bases = ZeroDefault; // the number of matched bases with =
    int64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
    int64_t num_ins_bases = ZeroDefault; // the number of inserted bases;
@@ -99,7 +107,11 @@ public:
    
    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
- 
+
+   void reset();
+   void add(Output_BAM& t_output_bam); 
+   void gloabl_sum();
+
    Output_BAM();
    ~Output_BAM();
 };

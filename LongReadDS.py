@@ -5,26 +5,16 @@ from glob import glob
 import argparse, logging
 from argparse import RawTextHelpFormatter
 
-
-prg_name = "LongReadDS"
-originalError = '!!!Error: !!!!!! \n'
-
-LOG_ALL = 0;
-LOG_DEBUG = 1;
-LOG_INFO = 2;
-LOG_WARN = 3;
-LOG_ERROR = 4;
-LOG_FATAL = 5;
-LOG_OFF = 6;
+import lrst_global
 
 def get_log_level(log_l):
-   if log_l==LOG_ALL: return logging.ALL;
-   elif log_l==LOG_DEBUG: return logging.DEBUG;
-   elif log_l==LOG_INFO: return logging.INFO;
-   elif log_l==LOG_WARN: return logging.WARN;
-   elif log_l==LOG_ERROR: return logging.ERROR;
-   elif log_l==LOG_FATAL: return logging.FATAL;
-   elif log_l==LOG_OFF: return logging.OFF;
+   if log_l==lrst_global.LOG_ALL: return logging.ALL;
+   elif log_l==lrst_global.LOG_DEBUG: return logging.DEBUG;
+   elif log_l==lrst_global.LOG_INFO: return logging.INFO;
+   elif log_l==lrst_global.LOG_WARN: return logging.WARN;
+   elif log_l==lrst_global.LOG_ERROR: return logging.ERROR;
+   elif log_l==lrst_global.LOG_FATAL: return logging.FATAL;
+   elif log_l==lrst_global.LOG_OFF: return logging.OFF;
    else: return logging.ERROR;
 
 def get_common_param(margs, para_dict):
@@ -66,10 +56,10 @@ def get_common_param(margs, para_dict):
 
 def fq_module(margs):
    para_dict = {};
-   errorStr = originalError; 
+   errorStr = lrst_global.originalError; 
    errorStr += get_common_param(margs, para_dict);
    
-   if not errorStr == originalError:
+   if not errorStr == lrst_global.originalError:
       print(errorStr)  
       print("#############################################\n")
       #parser.print_help()
@@ -80,10 +70,10 @@ def fq_module(margs):
 
 def fa_module(margs):
    para_dict = {};
-   errorStr = originalError;
+   errorStr = lrst_global.originalError;
    errorStr += get_common_param(margs, para_dict);
 
-   if not errorStr == originalError:
+   if not errorStr == lrst_global.originalError:
       print(errorStr)
       print("#############################################\n")
       #parser.print_help()
@@ -94,10 +84,10 @@ def fa_module(margs):
 
 def bam_module(margs):
    para_dict = {};
-   errorStr = originalError;
+   errorStr = lrst_global.originalError;
    errorStr += get_common_param(margs, para_dict);
 
-   if not errorStr == originalError:
+   if not errorStr == lrst_global.originalError:
       print(errorStr)
       print("#############################################\n")
       #parser.print_help()
@@ -108,10 +98,10 @@ def bam_module(margs):
 
 def f5_module(margs):
    para_dict = {};
-   errorStr = originalError;
+   errorStr = lrst_global.originalError;
    errorStr += get_common_param(margs, para_dict);
 
-   if not errorStr == originalError:
+   if not errorStr == lrst_global.originalError:
       print(errorStr)
       print("#############################################\n")
       #parser.print_help()
@@ -150,9 +140,9 @@ input_files_group.add_argument("-P", "--inputPattern", type=str, default=None, h
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0, help="The percentage of downsampling for quick run. Default: 1.0 without downsampling");
 
 common_grp_param.add_argument("-g", "--log", type=str, default="", help="Log file")
-common_grp_param.add_argument("-G", "--Log_level", type=int, default=LOG_ERROR, help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
+common_grp_param.add_argument("-G", "--Log_level", type=int, default=lrst_global.LOG_ERROR, help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
 
-common_grp_param.add_argument("-o", "--outputfolder", type=str, default="output_"+prg_name, help="The output folder.")
+common_grp_param.add_argument("-o", "--outputfolder", type=str, default="output_"+lrst_global.prg_name, help="The output folder.")
 common_grp_param.add_argument("-t", "--thread", type=int, default=1, help="The number of threads used. Default: 1.")
 
 fq_parsers = subparsers.add_parser('fq', 
@@ -193,10 +183,10 @@ f5_parsers = subparsers.add_parser('f5',
 f5_parsers.set_defaults(func=f5_module);
 
 if sys.version_info[0] < 2:
-    print(prg_name+" could not be run with lower version than python 2.7.")
+    print(lrst_global.prg_name+" could not be run with lower version than python 2.7.")
 else:
     if sys.version_info[1] < 6:
-        print(prg_name+" could be run with python 2.7.")
+        print(lrst_global.prg_name+" could be run with python 2.7.")
     else:
         if len(sys.argv) < 2:
             parser.print_help()

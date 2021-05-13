@@ -4,7 +4,52 @@
 #include "CXX_to_python_class.h"
 #include "Python_to_CXX_class.h"
 
-Output_BAM bam_st(Input_Para _m_input);
+#include <thread>
+#include <mutex>
+#include "BamReader.h"
+#include <map>
+
+class BAM_Thread_data {
+   public:
+      int _thread_id;
+      std::vector<Bam1Record> br_list;
+      Input_Para m_input_op;
+      std::map<std::string, bool> t_secondary_alignment;
+      std::map<std::string, bool> t_supplementary_alignment;
+
+      Output_BAM _output_bam_;
+
+      BAM_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size);
+      ~BAM_Thread_data();
+};
+
+class BAM_Module{
+private:
+   size_t read_i_bam;
+
+public:
+      static std::mutex myMutex_readBam;
+      static std::mutex myMutex_output;
+      static int batch_size_of_record;
+
+      std::map<std::string, bool> secondary_alignment;
+      std::map<std::string, bool> supplementary_alignment;
+
+      Input_Para m_input_op;
+
+      BamReader* _bam_reader_ptr;
+      std::vector<std::thread> m_threads;
+
+
+   int has_error;
+
+   static void BAM_do_thread(BamReader& ref_bam_reader, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_bam_data, Output_BAM& ref_output);   
+
+   Output_BAM bam_st();
+
+   BAM_Module(Input_Para _m_input);
+   ~BAM_Module();
+};
 
 
 #endif;
