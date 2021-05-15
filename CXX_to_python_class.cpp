@@ -104,6 +104,9 @@ void Basic_Seq_Statistics::global_sum(){
             if ( nx_read_length[ _t_sp ]==ZeroDefault && base_perc>=_t_sp/float(10) ){
                nx_read_length[ _t_sp ] = _i_;
             }
+            if ( base_perc<0.05){ n05_read_length = _i_; }
+            if ( base_perc<0.5){ n50_read_length = _i_; }
+            if ( base_perc<0.95){ n95_read_length = _i_; }
          }
       }
    }
@@ -198,6 +201,9 @@ void Output_BAM::reset(){
    num_reads_with_supplementary_alignment = ZeroDefault; 
    num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; 
 
+   forward_alignment = ZeroDefault;
+   reverse_alignment = ZeroDefault;
+
    min_map_quality = MoneDefault; 
    max_map_quality = MoneDefault; 
 
@@ -224,6 +230,9 @@ void Output_BAM::add(Output_BAM& t_output_bam){
    num_supplementary_alignment += t_output_bam.num_supplementary_alignment;
    num_reads_with_supplementary_alignment += t_output_bam.num_reads_with_supplementary_alignment;
    num_reads_with_both_secondary_supplementary_alignment += t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
+
+   forward_alignment += t_output_bam.forward_alignment;
+   reverse_alignment += t_output_bam.reverse_alignment;
 
    if ( min_map_quality < 0 || min_map_quality > t_output_bam.min_map_quality){
       min_map_quality = t_output_bam.min_map_quality;

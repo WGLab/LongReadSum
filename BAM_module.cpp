@@ -101,7 +101,7 @@ Output_BAM BAM_Module::bam_st(){
    for ( std::map<std::string, bool>::iterator sec_it=secondary_alignment.begin(),sup_it=supplementary_alignment.begin(); (sec_it!=secondary_alignment.end()) && ( sup_it!=supplementary_alignment.end()); ){
       if ( *sec_it < *sup_it ){ ++sec_it; }
       else if ( *sec_it > *sup_it ){ ++sup_it; }
-      else{ t_output_bam_info.num_reads_with_both_secondary_supplementary_alignment += 1; }
+      else{ t_output_bam_info.num_reads_with_both_secondary_supplementary_alignment += 1; ++sec_it; ++sup_it; }
    }
    // std::cout<<" summ. G"<<std::endl<<std::flush;
    t_output_bam_info.global_sum();
@@ -114,7 +114,7 @@ Output_BAM BAM_Module::bam_st(){
    return t_output_bam_info; 
 }
 
-void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool> ref_secondary_alignment, std::map<std::string, bool> ref_supplementary_alignment){
+void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment){
     std::vector<Bam1Record>::iterator br_it;
     while (true){
         //auto start_time = std::chrono::high_resolution_clock::now();
@@ -157,6 +157,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                ref_thread_data.t_output_bam_.num_secondary_alignment += 1;
                ref_thread_data.t_secondary_alignment[ br_it->qry_name ] = true; 
            } else {
+               ref_thread_data.t_output_bam_.num_primary_alignment += 1;
                // ref_thread_data.t_output_bam_.mapped_long_read_info.total_num_reads += 1;
                // ref_thread_data.t_output_bam_.mapped_long_read_info.total_num_bases += br_it->qry_seq_len;
                _seq_st = &( ref_thread_data.t_output_bam_.mapped_long_read_info);
@@ -244,6 +245,8 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
        
         ref_secondary_alignment.insert(ref_thread_data.t_secondary_alignment.begin(), ref_thread_data.t_secondary_alignment.end());
         ref_supplementary_alignment.insert(ref_thread_data.t_supplementary_alignment.begin(), ref_thread_data.t_supplementary_alignment.end());
+        // std::cout<< ref_secondary_alignment.size()<<std::endl;
+        // std::cout<< ref_supplementary_alignment.size()<<std::endl;
         ref_output.add( ref_thread_data.t_output_bam_ );
 
         myMutex_output.unlock();
