@@ -5,7 +5,7 @@
 #include <string>
 //#include <vector>
 
-#define MAX_INPUT_FILES 2048;
+#define MAX_INPUT_FILES 2048
 
 class Input_Para{
 public:
@@ -14,7 +14,7 @@ public:
    std::string output_folder;
    //std::vector<std::string> input_files;
    std::string *input_files;
-   int num_input_files;
+   size_t num_input_files;
 
    std::string out_prefix;
 
@@ -27,6 +27,7 @@ public:
    float downsample_percentage;
 
    Input_Para();
+   Input_Para(const Input_Para& ip1);
    ~Input_Para();
 };
 

@@ -462,12 +462,13 @@ void BamReader::_set_map_pos_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, in
 */
 int BamReader::_read1RecordFromBam_(){
    reset_Bam1Record(br);
-
+   
+   br.qry_name = bam_get_qname(bam_one_alignment);
    br.map_flag = bam_1alignment_core->flag;
    if (!bamReadOp.check_unmap(br.map_flag)){
       return 1;
    }
-   if (br.map_flag & BAM_FUNMAP) {return 0;}
+   //if (br.map_flag & BAM_FUNMAP) {return 0;}
 
    if (!bamReadOp.check_supplementary(br.map_flag)){
       return 2;
@@ -483,22 +484,26 @@ int BamReader::_read1RecordFromBam_(){
    br.pri_sec_sup = 0;
    if (br.map_flag & BAM_FSUPPLEMENTARY) { br.pri_sec_sup = 1000; }
    if (br.map_flag & BAM_FSECONDARY) { br.pri_sec_sup = 100; }
-
    br.ref_start_pos = bam_1alignment_core->pos;
    br.ref_end_pos = bam_endpos(bam_one_alignment);
 
    br.map_strand = 0; // forward;
    if (bam_is_rev(bam_one_alignment) ) { br.map_strand = 1; }
-   br.map_chr = hdr->target_name[bam_1alignment_core->tid];
+   if ( !( br.map_flag & BAM_FUNMAP ) ){
+      br.map_chr = hdr->target_name[bam_1alignment_core->tid];
+   }else{ br.map_chr = ""; }
    
    br.qry_seq_len = bam_1alignment_core->l_qseq;
+   if ( br.map_flag & BAM_FSECONDARY ){
+      size_t cal_len = bam_cigar2qlen(bam_1alignment_core->n_cigar, bam_get_cigar(bam_one_alignment));
+      if ( cal_len > br.qry_seq_len){ br.qry_seq_len = cal_len; }
+   }
    if (!bamReadOp.check_min_qry_len(br.qry_seq_len)){
       return 4;
    }
-   br.qry_name = bam_get_qname(bam_one_alignment);
-
+   // br.qry_name = bam_get_qname(bam_one_alignment);
    //br.qry_seq.clear();
-   if (bamReadOp.get_w_qry_seq() || bamReadOp.get_w_pos_map_detail()){
+   if ( (bamReadOp.get_w_qry_seq() || bamReadOp.get_w_pos_map_detail()) && (!( br.map_flag & BAM_FSECONDARY )) ){
      uint8_t * seq_int = bam_get_seq(bam_one_alignment);
      for (uint64_t  sqii=0; sqii < br.qry_seq_len; sqii++){
          br.qry_seq.push_back(seq_nt16_str[bam_seqi(seq_int, sqii)]);
@@ -512,7 +517,7 @@ int BamReader::_read1RecordFromBam_(){
 
    //br.qry_qual.clear(); 
    if (bamReadOp.get_w_qry_qual()){
-      br.qry_qual.append(bam_get_qual(bam_one_alignment));
+      if (!( br.map_flag & BAM_FSECONDARY )) { br.qry_qual.append(bam_get_qual(bam_one_alignment)); }
    }
  
    //br.map_qual = bam_1alignment_core->qual;
@@ -523,17 +528,25 @@ int BamReader::_read1RecordFromBam_(){
    if(bamReadOp.get_w_specifiedRegion() && bamReadOp.check_specifiedRegion(br.map_chr.c_str(), br.ref_start_pos, br.ref_end_pos) < 0) {
       return 5;
    }
-
    // get qry information;
    uint32_t* m_cigar = bam_get_cigar(bam_one_alignment);
    //if (bamReadOp.get_w_unmap() && (BAM_FUNMAP & br.map_flag)){
    //   return 0;
    //}
-   if (bamReadOp.get_w_pos_map_detail()){; // || bamReadOp.get_w_map_detail()){;
-   }else{ return 0; }
-
+   
    int m_op, m_next_op, m_pre_op;
    int m_len;
+   if (bamReadOp.get_w_pos_map_detail()){; // || bamReadOp.get_w_map_detail()){;
+   }else{ 
+      for (uint32_t  m_i_cigar=0; m_i_cigar<bam_1alignment_core->n_cigar; ++m_i_cigar){
+         m_op = bam_cigar_op(m_cigar[m_i_cigar]); br.cigar_type.push_back(m_op);
+         m_len = bam_cigar_oplen(m_cigar[m_i_cigar]); br.cigar_len.push_back(m_len);
+      }
+      return 0; 
+   }
+
+   // int m_op, m_next_op, m_pre_op;
+   // int m_len;
 
    br.left_clip = 0;
    br.right_clip = 0;
@@ -681,13 +694,13 @@ int BamReader::readBam(std::vector<Bam1Record> &br_list, int num_records, bool b
    if ( br_clear){
       br_list.clear();
    }
-   //int sam_ret;
+   int sam_ret;
    t_num_records = 0;
    //while (sam_ret = sam_read1(in_bam, hdr, bam_one_alignment)>=0){
    while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
        //Bam1Record br1;
        //if (_read1RecordFromBam_(br1)==0){
-       if (_read1RecordFromBam_()==0){
+       if ((sam_ret=_read1RecordFromBam_())==0){
           //Bam1Record brc = br;
           // br_list.push_back(brc);
           br_list.push_back(br);
@@ -696,7 +709,7 @@ int BamReader::readBam(std::vector<Bam1Record> &br_list, int num_records, bool b
              break;
           }
        }/*else{
-          std::cout<<" Cannot read "<<Bam1Record_toString(br)<<std::endl;
+          std::cout<<" Cannot read "<< sam_ret << " " <<Bam1Record_toString(br)<<std::endl;
        }*/
    }
 

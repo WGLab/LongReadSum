@@ -25,7 +25,7 @@ public:
    int64_t total_num_reads = ZeroDefault; // total number of long reads
    int64_t total_num_bases = ZeroDefault; // total number of bases
 
-   int64_t longest_read_length = MoneDefault; // the length of longest reads
+   uint64_t longest_read_length = ZeroDefault; // the length of longest reads
    int64_t n50_read_length = MoneDefault; // N50
    int64_t n95_read_length = MoneDefault; // N95
    int64_t n05_read_length = MoneDefault; // N05;
@@ -41,10 +41,11 @@ public:
    double gc_cnt = ZeroDefault; // GC ratio
 
    int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
+   //int64_t read_length_count[MAX_READ_LENGTH];
 
    void reset();
-   void add(Output_BAM& t_seq_st);
-   void gloabl_sum();
+   void add(Basic_Seq_Statistics& t_seq_st);
+   void global_sum();
 
    Basic_Seq_Statistics();
    ~Basic_Seq_Statistics();
@@ -64,11 +65,14 @@ public:
    int *pos_quality_distribution; // the base quality according to positions of long reads: each position is the mean quality at the position of long reads
    float *pos_quality_distribution_dev; // similar to above but for the standard deviation
    int64_t *pos_quality_distribution_count; // similar to above but for the number of bases
+   //int pos_quality_distribution[MAX_READ_LENGTH]; 
+   //float pos_quality_distribution_dev[MAX_READ_LENGTH]; 
+   //int64_t pos_quality_distribution_count[MAX_READ_LENGTH];
    int64_t max_length = ZeroDefault;
 
    void reset();
    void add(Basic_Seq_Quality_Statistics& t_qual_st);
-   void gloabl_sum();
+   void global_sum();
 
    Basic_Seq_Quality_Statistics();
    ~Basic_Seq_Quality_Statistics();
@@ -87,6 +91,9 @@ public:
    int64_t num_supplementary_alignment = ZeroDefault; // the number of supplementary alignment
    int64_t num_reads_with_supplementary_alignment = ZeroDefault; // the number of long reads with secondary alignment;
    int64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+
+   int64_t forward_alignment = ZeroDefault;
+   int64_t reverse_alignment = ZeroDefault;
 
    int64_t map_quality_distribution[MAX_MAP_QUALITY]; // The mapping quality distribution;
    int min_map_quality = MoneDefault; // the minimum mapping quality
@@ -110,7 +117,7 @@ public:
 
    void reset();
    void add(Output_BAM& t_output_bam); 
-   void gloabl_sum();
+   void global_sum();
 
    Output_BAM();
    ~Output_BAM();
@@ -125,8 +132,8 @@ public:
    int min_signal = MoneDefault;  // minimum signals;
    int max_signal = MoneDefault;  // maximum signals;
 
-   int64_t num_reads = ZeroDefault; // The number of long reads
-   int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
+   // int64_t num_reads = ZeroDefault; // The number of long reads
+   // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
 
    Basic_F5_Statistics();
    ~Basic_F5_Statistics();

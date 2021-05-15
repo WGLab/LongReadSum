@@ -33,7 +33,7 @@ void Basic_Seq_Statistics::reset(){
    total_num_reads = ZeroDefault; 
    total_num_bases = ZeroDefault; 
 
-   longest_read_length = MoneDefault;
+   longest_read_length = ZeroDefault;
    n50_read_length = MoneDefault; 
    n95_read_length = MoneDefault; 
    n05_read_length = MoneDefault; 
@@ -48,9 +48,9 @@ void Basic_Seq_Statistics::reset(){
    gc_cnt = ZeroDefault; 
 }
 
-void Basic_Seq_Statistics::add(Output_BAM& t_seq_st){
+void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_count[ _i_ ] = t_seq_st. read_length_count[ _i_ ];
+      read_length_count[ _i_ ] += t_seq_st. read_length_count[ _i_ ];
    }
    /*for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = t_seq_st. ;
@@ -61,22 +61,22 @@ void Basic_Seq_Statistics::add(Output_BAM& t_seq_st){
    mean_read_length = t_seq_st. ;
    median_read_length = t_seq_st. ;*/
 
-   total_num_reads = t_seq_st.total_num_reads ;
-   total_num_bases = t_seq_st.total_num_bases ;
+   total_num_reads += t_seq_st.total_num_reads ;
+   total_num_bases += t_seq_st.total_num_bases ;
 
-   if ( longest_read_length < 0 || longest_read_length < t_seq_st.longest_read_length){
+   if ( longest_read_length < t_seq_st.longest_read_length){
       longest_read_length = t_seq_st.longest_read_length;
    }
 
-   total_a_cnt = t_seq_st.total_a_cnt ;
-   total_c_cnt = t_seq_st.total_c_cnt ;
-   total_g_cnt = t_seq_st.total_g_cnt ;
-   total_tu_cnt = t_seq_st.total_tu_cnt ;
-   total_n_cnt = t_seq_st.total_n_cnt ;
+   total_a_cnt += t_seq_st.total_a_cnt ;
+   total_c_cnt += t_seq_st.total_c_cnt ;
+   total_g_cnt += t_seq_st.total_g_cnt ;
+   total_tu_cnt += t_seq_st.total_tu_cnt ;
+   total_n_cnt += t_seq_st.total_n_cnt ;
    //gc_cnt = t_seq_st. ;
 }
 
-void Basic_Seq_Statistics::gloabl_sum(){
+void Basic_Seq_Statistics::global_sum(){
    gc_cnt = float( total_c_cnt + total_g_cnt)/(total_num_bases>0?total_num_bases:1);
 
    mean_read_length = total_num_bases / float(total_num_reads>0?total_num_reads:1);
@@ -84,15 +84,15 @@ void Basic_Seq_Statistics::gloabl_sum(){
    bool has_cal_median = false;
    double base_perc = 0;
    int start_perct = 0;
-   int64_t t_max_length = (MAX_READ_LENGTH<longest_read_length?MAX_READ_LENGTH:longest_read_length);
-   for(int _i_=0; _i_<t_max_length; _i_++){
+   uint64_t t_max_length = (MAX_READ_LENGTH<longest_read_length?MAX_READ_LENGTH:longest_read_length);
+   for(size_t _i_=0; _i_<t_max_length; _i_++){
       if ( read_length_count[ _i_ ] == 0) { continue; }
 
       t_base += _i_ * read_length_count[ _i_ ];
       t_read += read_length_count[ _i_ ];
       if ( t_read > 0){
          if ( t_read/float( total_num_reads )< 0.5 ) { median_read_length = _i_; }
-         else if ( t_read/float( total_num_reads ) == 0.5 && !has_cal_median ) median_read_length = _i_; has_cal_median = true; }
+         else if ( t_read/float( total_num_reads ) == 0.5 && !has_cal_median ){ median_read_length = _i_; has_cal_median = true; }
          else if ( t_read/float( total_num_reads ) > 0.5 && !has_cal_median ){
             median_read_length = ( median_read_length + _i_ )/2;
             has_cal_median = true;
@@ -151,10 +151,10 @@ void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       pos_quality_distribution[ _i_ ] = t_qual_st.pos_quality_distribution[ _i_ ];
       pos_quality_distribution_dev[ _i_ ] = t_qual_st.pos_quality_distribution_dev[ _i_ ] ;
-      pos_quality_distribution_count[ _i_ ] = t_qual_st.pos_quality_distribution_count[ _i_ ] ;
+      pos_quality_distribution_count[ _i_ ] += t_qual_st.pos_quality_distribution_count[ _i_ ] ;
    }
    for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
-      base_quality_distribution[ _i_ ] = t_qual_st.base_quality_distribution[ _i_ ];
+      base_quality_distribution[ _i_ ] += t_qual_st.base_quality_distribution[ _i_ ];
    }
    
    if ( min_base_quality < 0 || min_base_quality > t_qual_st.min_base_quality){
@@ -169,7 +169,7 @@ void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
    }
 }
 
-void Basic_Seq_Quality_Statistics::gloabl_sum(){
+void Basic_Seq_Quality_Statistics::global_sum(){
    ;
 }
 
@@ -218,12 +218,12 @@ void Output_BAM::add(Output_BAM& t_output_bam){
       map_quality_distribution[ _i_ ] += t_output_bam.map_quality_distribution[ _i_ ];
    }
 
-   num_primary_alignment = t_output_bam.num_primary_alignment ;
-   num_secondary_alignment = t_output_bam.num_secondary_alignment ;
-   num_reads_with_secondary_alignment = t_output_bam.num_reads_with_secondary_alignment ;
-   num_supplementary_alignment = t_output_bam.num_supplementary_alignment;
-   num_reads_with_supplementary_alignment = t_output_bam.num_reads_with_supplementary_alignment;
-   num_reads_with_both_secondary_supplementary_alignment = t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
+   num_primary_alignment += t_output_bam.num_primary_alignment ;
+   num_secondary_alignment += t_output_bam.num_secondary_alignment ;
+   num_reads_with_secondary_alignment += t_output_bam.num_reads_with_secondary_alignment ;
+   num_supplementary_alignment += t_output_bam.num_supplementary_alignment;
+   num_reads_with_supplementary_alignment += t_output_bam.num_reads_with_supplementary_alignment;
+   num_reads_with_both_secondary_supplementary_alignment += t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
 
    if ( min_map_quality < 0 || min_map_quality > t_output_bam.min_map_quality){
       min_map_quality = t_output_bam.min_map_quality;
@@ -232,11 +232,11 @@ void Output_BAM::add(Output_BAM& t_output_bam){
       max_map_quality =  t_output_bam.max_map_quality;
    }
 
-   num_matched_bases = t_output_bam.num_matched_bases;
-   num_mismatched_bases = t_output_bam.num_mismatched_bases;
-   num_ins_bases = t_output_bam.num_ins_bases;
-   num_del_bases = t_output_bam.num_del_bases;
-   num_clip_bases = t_output_bam.num_clip_bases;
+   num_matched_bases += t_output_bam.num_matched_bases;
+   num_mismatched_bases += t_output_bam.num_mismatched_bases;
+   num_ins_bases += t_output_bam.num_ins_bases;
+   num_del_bases += t_output_bam.num_del_bases;
+   num_clip_bases += t_output_bam.num_clip_bases;
    
    mapped_long_read_info.add(t_output_bam.mapped_long_read_info);
    unmapped_long_read_info.add(t_output_bam.unmapped_long_read_info);
@@ -244,11 +244,11 @@ void Output_BAM::add(Output_BAM& t_output_bam){
    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 }
 
-void Output_BAM::gloabl_sum(){
-   mapped_long_read_info.gloabl_sum();
-   unmapped_long_read_info.gloabl_sum();
-   mapped_seq_quality_info.gloabl_sum();
-   unmapped_seq_quality_info.gloabl_sum();
+void Output_BAM::global_sum(){
+   mapped_long_read_info.global_sum();
+   unmapped_long_read_info.global_sum();
+   mapped_seq_quality_info.global_sum();
+   unmapped_seq_quality_info.global_sum();
 }
 
 //// function for Output_F5
@@ -256,18 +256,17 @@ void Output_BAM::gloabl_sum(){
 //
 //
 Basic_F5_Statistics::Basic_F5_Statistics(){
-   read_length_list = new int64_t[MAX_READ_LENGTH];
+   /*read_length_list = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_list[ _i_ ] = ZeroDefault;
-   }
+   }*/
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] = ZeroDefault;
    }
 }
 
 Basic_F5_Statistics::~Basic_F5_Statistics(){
-   delete [] read_length_list;
+   // delete [] read_length_list;
 }
-
 
 
