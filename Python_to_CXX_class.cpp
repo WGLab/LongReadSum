@@ -2,14 +2,14 @@
 
 
 Input_Para::Input_Para(){
-   input_files = new std::string[MAX_INPUT_FILES];
+   //input_files = new std::string[MAX_INPUT_FILES];
    num_input_files = 0;
    rdm_seed = 1;
    downsample_percentage = 100;
 }
 
 Input_Para::~Input_Para(){
-   delete [] input_files;
+   ; //delete [] input_files;
 }
 
 std::string Input_Para::add_input_file(std::string _ip_file){
@@ -33,7 +33,7 @@ Input_Para::Input_Para(const Input_Para& ip1){
    downsample_percentage = ip1.downsample_percentage;
 
    num_input_files = ip1.num_input_files;
-   input_files = new std::string[MAX_INPUT_FILES];
+   //input_files = new std::string[MAX_INPUT_FILES];
    for (size_t nip=0; nip<num_input_files; nip++){
       input_files[ nip ] = ip1.input_files[ nip ];
    }

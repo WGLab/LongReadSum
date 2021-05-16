@@ -13,7 +13,8 @@ public:
    
    std::string output_folder;
    //std::vector<std::string> input_files;
-   std::string *input_files;
+   //std::string *input_files;
+   std::string input_files[MAX_INPUT_FILES];
    size_t num_input_files;
 
    std::string out_prefix;

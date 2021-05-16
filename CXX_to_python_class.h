@@ -48,6 +48,7 @@ public:
    void global_sum();
 
    Basic_Seq_Statistics();
+   Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss);
    ~Basic_Seq_Statistics();
 };
 
@@ -75,6 +76,7 @@ public:
    void global_sum();
 
    Basic_Seq_Quality_Statistics();
+   Basic_Seq_Quality_Statistics( const Basic_Seq_Quality_Statistics& _bsqs);
    ~Basic_Seq_Quality_Statistics();
 };
 

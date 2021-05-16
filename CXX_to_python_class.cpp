@@ -21,6 +21,31 @@ Basic_Seq_Statistics::~Basic_Seq_Statistics(){
    delete [] read_length_count;
 }
 
+Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
+   read_length_count = new int64_t[MAX_READ_LENGTH];
+   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
+      read_length_count[ _i_ ] = _bss.read_length_count[ _i_ ];
+   }
+   for(int _i_=0; _i_< 10 ; _i_++){
+      nx_read_length[ _i_ ] = _bss.nx_read_length[ _i_ ];
+   }
+   total_num_reads = _bss.total_num_reads ;
+   total_num_bases = _bss.total_num_bases ;
+
+   longest_read_length = _bss.longest_read_length ;
+   n50_read_length = _bss.n50_read_length ;
+   n95_read_length = _bss.n95_read_length  ;
+   n05_read_length = _bss.n05_read_length ;
+   mean_read_length = _bss.mean_read_length ;
+   median_read_length = _bss.median_read_length ;
+
+   total_a_cnt = _bss.total_a_cnt ;
+   total_c_cnt = _bss.total_c_cnt ;
+   total_g_cnt = _bss.total_g_cnt ;
+   total_tu_cnt = _bss.total_tu_cnt ;
+   total_n_cnt = _bss.total_n_cnt ;
+   gc_cnt = _bss.gc_cnt ;
+}
 
 void Basic_Seq_Statistics::reset(){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -133,6 +158,25 @@ Basic_Seq_Quality_Statistics::~Basic_Seq_Quality_Statistics(){
    delete [] pos_quality_distribution;
    delete [] pos_quality_distribution_dev;
    delete [] pos_quality_distribution_count;
+}
+
+Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Quality_Statistics& _bsqs){
+   pos_quality_distribution = new int[MAX_READ_LENGTH];
+   pos_quality_distribution_dev = new float[MAX_READ_LENGTH];
+   pos_quality_distribution_count = new int64_t[MAX_READ_LENGTH];
+   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
+      pos_quality_distribution[ _i_ ] = _bsqs.pos_quality_distribution[ _i_ ];
+      pos_quality_distribution_dev[ _i_ ] = _bsqs.pos_quality_distribution_dev[ _i_ ];
+      pos_quality_distribution_count[ _i_ ] = _bsqs.pos_quality_distribution_count[ _i_ ];
+   }
+   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
+      base_quality_distribution[ _i_ ] = _bsqs.base_quality_distribution[ _i_ ];
+   }
+
+   min_base_quality = _bsqs.min_base_quality;
+   max_base_quality = _bsqs.max_base_quality;
+
+   max_length = _bsqs.max_length;
 }
 
 void Basic_Seq_Quality_Statistics::reset(){
