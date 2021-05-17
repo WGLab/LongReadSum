@@ -22,13 +22,13 @@ public:
    int64_t other_flags;  
 
    /// functions list;
-   std::string add_input_file(std::string _ip_file);
+   std::string add_input_file(const std::string& _ip_file);
 
    int rdm_seed;
    float downsample_percentage;
 
    Input_Para();
-   Input_Para(const Input_Para& ip1);
+   // Input_Para(const Input_Para& ip1);
    ~Input_Para();
 };
 

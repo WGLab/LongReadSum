@@ -1,3 +1,5 @@
+#include <string>
+
 #include "Python_to_CXX_class.h"
 
 
@@ -12,7 +14,7 @@ Input_Para::~Input_Para(){
    ; //delete [] input_files;
 }
 
-std::string Input_Para::add_input_file(std::string _ip_file){
+std::string Input_Para::add_input_file(const std::string& _ip_file){
    if ( num_input_files < MAX_INPUT_FILES){
       input_files[ num_input_files ] = _ip_file;
       num_input_files++;
@@ -22,7 +24,7 @@ std::string Input_Para::add_input_file(std::string _ip_file){
    }
 }
 
-Input_Para::Input_Para(const Input_Para& ip1){
+/*Input_Para::Input_Para(const Input_Para& ip1){
    threads = ip1.threads;
    output_folder = ip1.output_folder;
    
@@ -37,4 +39,4 @@ Input_Para::Input_Para(const Input_Para& ip1){
    for (size_t nip=0; nip<num_input_files; nip++){
       input_files[ nip ] = ip1.input_files[ nip ];
    }
-}
+}*/

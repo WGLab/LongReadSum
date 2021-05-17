@@ -31,15 +31,19 @@ def get_common_param(margs, para_dict):
       if not (margs.inputPattern==None or margs.inputPattern==""):
          pat_split = margs.inputPattern.split("*")
          para_dict["input_files"].extend( glob(os.path.join("*".join(pat_split[:-1]), "*"+pat_split[-1])) );
+      if len( para_dict["input_files"] )==0: 
+         this_error_str += "No input file(s) can be found. \n"
 
    if (margs.outputfolder==None or margs.outputfolder==""):
       this_error_str += "No output file is provided. \n"
    else: 
       para_dict["output_folder"] = margs.outputfolder;
       try:
-         os.makedirs(para_dict["output_folder"]);
+         if not os.path.isdir( para_dict["output_folder"] ):
+            os.makedirs(para_dict["output_folder"]);
       except OSError as e:
          this_error_str += "Cannot create folder for "+para_dict["output_folder"]+" \n"
+   para_dict["out_prefix"] = margs.outprefix;
 
    if (margs.log==None or margs.log==""):
       this_error_str += "No log file is provided. \n"
@@ -48,9 +52,13 @@ def get_common_param(margs, para_dict):
       para_dict["log_level"] = margs.Log_level
       logging.basicConfig(filename=margs.log, level=get_log_level(margs.Log_level),
                           filemode='w', format="%(levelname)s: %(message)s")
-      logging.info('Input file(s) are ' + para_dict["input_files"])
 
    para_dict["downsample_percentage"] = margs.downsample_percentage;
+
+   para_dict["threads"] = margs.thread;
+
+   para_dict["random_seed"] = margs.seed;
+
    return this_error_str;
 
 
@@ -94,7 +102,23 @@ def bam_module(margs):
       parser.parse_args(['bam', '--help'])
       sys.exit(1003)
    else:
-      pass
+      logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]) )
+      import lrst;
+      input_para = lrst.Input_Para();
+      input_para.threads = para_dict["threads"];
+      input_para.rdm_seed = para_dict["random_seed"];
+      input_para.downsample_percentage = para_dict["downsample_percentage"];
+
+      input_para.other_flags = 0 ;
+
+      input_para.output_folder = (para_dict["output_folder"]) ;
+      input_para.out_prefix = (para_dict["out_prefix"]);
+
+      for _ipf in para_dict["input_files"]:
+         input_para.add_input_file( (_ipf) ); 
+
+      bam_output = lrst.generate_statistic_from_bam( input_para );
+
 
 def f5_module(margs):
    para_dict = {};
@@ -139,11 +163,14 @@ input_files_group.add_argument("-I", "--inputs", type=str, default=None, help="T
 input_files_group.add_argument("-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *.");
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0, help="The percentage of downsampling for quick run. Default: 1.0 without downsampling");
 
-common_grp_param.add_argument("-g", "--log", type=str, default="", help="Log file")
+common_grp_param.add_argument("-g", "--log", type=str, default="log_output.log", help="Log file")
 common_grp_param.add_argument("-G", "--Log_level", type=int, default=lrst_global.LOG_ERROR, help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
 
 common_grp_param.add_argument("-o", "--outputfolder", type=str, default="output_"+lrst_global.prg_name, help="The output folder.")
 common_grp_param.add_argument("-t", "--thread", type=int, default=1, help="The number of threads used. Default: 1.")
+common_grp_param.add_argument("-Q", "--outprefix", type=str, default="st_", help="The prefix of output. Default: `st_`.")
+common_grp_param.add_argument("-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
+
 
 fq_parsers = subparsers.add_parser('fq', 
                                     parents=[parent_parser], 

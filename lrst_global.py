@@ -11,7 +11,7 @@ LOG_FATAL = 5;
 LOG_OFF = 6;
 
 
-plot_file_name= [\
+plot_file_name= {\
 # for fq/fa
 "read_length_distr": ["read_length_distr", "The distribution of read length"],\
 # for bam
@@ -19,5 +19,6 @@ plot_file_name= [\
 
 # for fast5
 "nanopore_st":["nanopore_st", "The statistics of passed and failed reads"]\
-]
+}
+
 
