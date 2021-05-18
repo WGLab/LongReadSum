@@ -2,7 +2,10 @@
 #define CXX_TO_PYTHON_CLASS_H
 // CXX_to_python_class
 
-#include <string>
+//#include <string>
+
+#include <stdint.h>
+#include <cstddef>
 
 //                        ,  ,
 #define MAX_READ_LENGTH 10485760 
@@ -16,7 +19,7 @@
 class Output_Info{
 public:
     int error_flag;
-    std::string error_str;
+    //std::string error_str;
     Output_Info();
 };
 

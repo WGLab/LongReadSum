@@ -5,6 +5,8 @@ from glob import glob
 import argparse, logging
 from argparse import RawTextHelpFormatter
 
+import faulthandler; faulthandler.enable()
+
 import lrst_global
 
 def get_log_level(log_l):
@@ -111,14 +113,18 @@ def bam_module(margs):
 
       input_para.other_flags = 0 ;
 
-      input_para.output_folder = (para_dict["output_folder"]) ;
-      input_para.out_prefix = (para_dict["out_prefix"]);
+      #input_para.output_folder = str(para_dict["output_folder"]) ;
+      #input_para.out_prefix = str(para_dict["out_prefix"]);
+      input_para.set_output_folder( para_dict["output_folder"]) ;
+      input_para.set_out_prefix( para_dict["out_prefix"]);
 
       for _ipf in para_dict["input_files"]:
-         input_para.add_input_file( (_ipf) ); 
+         input_para.add_input_file( str(_ipf) ); 
 
       bam_output = lrst.generate_statistic_from_bam( input_para );
-
+      import plot_for_BAM;
+      plot_for_BAM.bam_plot(bam_output)
+      print("Call BAM-module done!")
 
 def f5_module(margs):
    para_dict = {};

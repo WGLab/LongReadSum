@@ -2,7 +2,7 @@
 
 Output_Info::Output_Info(){
    error_flag = 0;
-   error_str = "";
+   //error_str = "";
 }
 
 
