@@ -113,10 +113,10 @@ def bam_module(margs):
 
       input_para.other_flags = 0 ;
 
-      #input_para.output_folder = str(para_dict["output_folder"]) ;
-      #input_para.out_prefix = str(para_dict["out_prefix"]);
-      input_para.set_output_folder( para_dict["output_folder"]) ;
-      input_para.set_out_prefix( para_dict["out_prefix"]);
+      input_para.output_folder = str(para_dict["output_folder"]) ;
+      input_para.out_prefix = str(para_dict["out_prefix"]);
+      #input_para.set_output_folder( para_dict["output_folder"]) ;
+      #input_para.set_out_prefix( para_dict["out_prefix"]);
 
       for _ipf in para_dict["input_files"]:
          input_para.add_input_file( str(_ipf) ); 

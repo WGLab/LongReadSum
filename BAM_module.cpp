@@ -29,8 +29,8 @@ BAM_Module::BAM_Module(Input_Para& _m_input){
       return;
    }
    
-   // _bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam].c_str() );
-   _bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam] );
+    _bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam].c_str() );
+   //_bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam] );
    if (!_bam_reader_ptr->check_bam_status()){
        std::cout<< "Error!!! Cannot open bam file="<< _m_input.input_files[read_i_bam] <<std::endl;
        has_error |= 2;
@@ -130,8 +130,8 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         if ( ref_thread_data.br_list.size() < batch_size_of_record ){
             if ( read_i_bam < ref_input_op.num_input_files ){ 
                std::cout<< "INFO: Open bam file="<< ref_input_op.input_files[read_i_bam] <<std::endl;
-               //ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam].c_str() );
-               ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam] );
+               ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam].c_str() );
+               //ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam] );
                if ( ref_thread_data.br_list.size() == 0 ){
                   ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
                }
