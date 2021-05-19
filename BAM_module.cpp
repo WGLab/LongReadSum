@@ -8,7 +8,8 @@ BAM_Thread_data::BAM_Thread_data(Input_Para& ref_input_op, int p_thread_id, int 
 }
 
 BAM_Thread_data::~BAM_Thread_data(){ 
-   ; // std::cout<<" ~BAM_Thread_data "<<std::endl<<std::flush;; 
+   ; 
+   //std::cout<<" ~BAM_Thread_data " << _thread_id <<std::endl<<std::flush;
 }
 
 size_t BAM_Module::batch_size_of_record=3000;
@@ -48,15 +49,18 @@ BAM_Module::BAM_Module(Input_Para& _m_input){
 }
 
 BAM_Module::~BAM_Module(){
+   //std::cout<<" ~BAM_Module begin" <<std::endl<<std::flush;
    if (_bam_reader_ptr!=NULL){ 
        delete _bam_reader_ptr; 
    }
    _bam_reader_ptr = NULL;
+   //std::cout<<" ~BAM_Module end" <<std::endl<<std::flush;
 }
 
+/*
 Output_BAM BAM_Module::bam_st(){
-   Output_BAM t_output_bam_info;
-  
+   Output_BAM t_output_bam_info;*/
+int BAM_Module::bam_st( Output_BAM& t_output_bam_info){  
    auto relapse_start_time = std::chrono::high_resolution_clock::now();
 
    if (has_error==0){
@@ -112,7 +116,8 @@ Output_BAM BAM_Module::bam_st(){
 
    std::cout<<"<Stastitics on BAM>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
  
-   return t_output_bam_info; 
+   //return t_output_bam_info; 
+   return has_error;
 }
 
 void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment){

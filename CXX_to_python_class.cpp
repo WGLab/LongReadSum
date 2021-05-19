@@ -1,8 +1,10 @@
+#include <iostream>
+
 #include "CXX_to_python_class.h"
 
 Output_Info::Output_Info(){
    error_flag = 0;
-   //error_str = "";
+   error_str = "";
 }
 
 
@@ -18,7 +20,9 @@ Basic_Seq_Statistics::Basic_Seq_Statistics(){
 }
 
 Basic_Seq_Statistics::~Basic_Seq_Statistics(){
+   //std::cout<<" ~Basic_Seq_Statistics begin" <<std::endl<<std::flush;
    delete [] read_length_count;
+   //std::cout<<" ~Basic_Seq_Statistics end" <<std::endl<<std::flush;
 }
 
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
@@ -155,9 +159,11 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
 }
 
 Basic_Seq_Quality_Statistics::~Basic_Seq_Quality_Statistics(){
+   //std::cout<<" ~Basic_Seq_Quality_Statistics begin" <<std::endl<<std::flush;
    delete [] pos_quality_distribution;
    delete [] pos_quality_distribution_dev;
    delete [] pos_quality_distribution_count;
+   //std::cout<<" ~Basic_Seq_Quality_Statistics end" <<std::endl<<std::flush;
 }
 
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Quality_Statistics& _bsqs){
@@ -231,6 +237,7 @@ Output_BAM::Output_BAM(){
 }
 
 Output_BAM::~Output_BAM(){
+   //std::cout<<" ~Output_BAM" <<std::endl<<std::flush;
 }
 
 void Output_BAM::reset(){

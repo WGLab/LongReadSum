@@ -121,7 +121,8 @@ def bam_module(margs):
       for _ipf in para_dict["input_files"]:
          input_para.add_input_file( str(_ipf) ); 
 
-      bam_output = lrst.generate_statistic_from_bam( input_para );
+      bam_output = lrst.Output_BAM();
+      lrst.generate_statistic_from_bam( input_para, bam_output );
       import plot_for_BAM;
       plot_for_BAM.bam_plot(bam_output)
       print("Call BAM-module done!")
