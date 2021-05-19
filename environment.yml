@@ -1,0 +1,13 @@
+name: lrst_py39
+channels:
+  - bioconda
+  - anaconda
+  - defaults
+dependencies:
+  - python=3.9
+  - hdf5
+  - htslib
+  - samtools
+  - minimap2
+  - swig
+  - matplotlib

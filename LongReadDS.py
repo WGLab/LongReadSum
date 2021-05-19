@@ -125,6 +125,9 @@ def bam_module(margs):
       lrst.generate_statistic_from_bam( input_para, bam_output );
       import plot_for_BAM;
       plot_for_BAM.bam_plot(bam_output)
+      import generate_html
+      bam_html_gen = generate_html.ST_HTML_Generator([["read_length_distr", "map_st"], "The statistics for BAM", para_dict ]);
+      bam_html_gen.generate_st_html();
       print("Call BAM-module done!")
 
 def f5_module(margs):
