@@ -13,3 +13,23 @@ int generate_statistic_from_bam( Input_Para& _input_data, Output_BAM& py_output_
    _bam_mod.bam_st(py_output_bam);
    return 0;
 }
+
+
+int generate_statistic_from_fq( Input_Para& _input_data, Output_FQ& py_output_fq ){
+   return 0;
+}
+
+
+int generate_statistic_from_fa( Input_Para& _input_data, Output_FA& py_output_fa ){
+   return 0;
+}
+
+
+int generate_statistic_from_f5( Input_Para& _input_data, Output_F5& py_output_f5 ){
+   return 0;
+}
+
+
+
+
+
