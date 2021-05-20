@@ -35,6 +35,10 @@ def get_common_param(margs, para_dict):
          para_dict["input_files"].extend( glob(os.path.join("*".join(pat_split[:-1]), "*"+pat_split[-1])) );
       if len( para_dict["input_files"] )==0: 
          this_error_str += "No input file(s) can be found. \n"
+      else:
+         for _af in para_dict["input_files"] :
+            if not os.path.isfile( _af ):
+               this_error_str += "Cannot find "+_af+". \n"
 
    if (margs.outputfolder==None or margs.outputfolder==""):
       this_error_str += "No output file is provided. \n"
@@ -121,10 +125,13 @@ def bam_module(margs):
       for _ipf in para_dict["input_files"]:
          input_para.add_input_file( str(_ipf) ); 
 
+      if not os.path.isdir( para_dict["output_folder"]+'/'+lrst_global.default_image_path ) :
+         os.makedirs( para_dict["output_folder"]+'/'+lrst_global.default_image_path ) 
+
       bam_output = lrst.Output_BAM();
       lrst.generate_statistic_from_bam( input_para, bam_output );
       import plot_for_BAM;
-      plot_for_BAM.bam_plot(bam_output)
+      plot_for_BAM.bam_plot(bam_output, para_dict)
       import generate_html
       bam_html_gen = generate_html.ST_HTML_Generator([["read_length_distr", "map_st"], "The statistics for BAM", para_dict ]);
       bam_html_gen.generate_st_html();

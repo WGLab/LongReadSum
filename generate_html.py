@@ -6,6 +6,9 @@ class ST_HTML_Generator:
       self.image_key_list = para_list[0]
       self.header_info = para_list[1];
       self.input_para = para_list[2];
+      if len( self.input_para["input_files"] ) > 1:
+         self.more_input_files = True;
+      else: self.more_input_files = False;      
 
    def generate_header( self):
       self.html_writer = open( self.input_para["output_folder"]+'/'+self.input_para["out_prefix"]+"statistics.html", 'w')
@@ -210,8 +213,9 @@ class ST_HTML_Generator:
          <div id="header_filename">
              <script> document.write(new Date().toLocaleDateString()); </script>
       ''')
-      for _af in self.input_para["input_files"]:
-         self.html_writer.write( "<br/>"+_af); 
+      # for _af in self.input_para["input_files"]:
+      #   self.html_writer.write( "<br/>"+_af); 
+      self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
       self.html_writer.write( '''       
          </div>
       </div>''')
@@ -224,7 +228,12 @@ class ST_HTML_Generator:
       _imki = 0;     
       for _imk in self.image_key_list:
           self.html_writer.write('<li>')
-          self.html_writer.write('<a href="#lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk][1]+'</a>')
+          self.html_writer.write('<a href="#lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['title']+'</a>')
+          _imki += 1;
+          self.html_writer.write('</li>')
+      if self.more_input_files:
+          self.html_writer.write('<li>')
+          self.html_writer.write('<a href="#lrst'+str(_imki)+'">Input files</a>')
           _imki += 1;
           self.html_writer.write('</li>')
 
@@ -236,10 +245,18 @@ class ST_HTML_Generator:
       _imki = 0;
       for _imk in self.image_key_list:
          self.html_writer.write('<div class="module">');
-         self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk][2]+'</h2><p>')
-         self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk][0]+'" alt="'+lrst_global.plot_filenames[_imk][2]+'" width="800" height="600"/></p>')
+         self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
+         self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="800" height="600"/></p>')
          self.html_writer.write('</div>')
          _imki += 1;
+      if self.more_input_files:
+         self.html_writer.write('<div class="module">');
+         self.html_writer.write('<h2 id="lrst'+str(_imki)+'">The list of input files: '+str(len( self.input_para["input_files"] ))+'</h2><p>')
+         for _af in self.input_para["input_files"]:
+            self.html_writer.write( "<br/>"+_af);
+         self.html_writer.write('</p></div>')
+         _imki += 1;
+
       self.html_writer.write('</div>')
 
    def generate_end( self ):
