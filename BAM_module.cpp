@@ -142,14 +142,12 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                   ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
                }
                read_i_bam++;
-            }else{
-               if (ref_thread_data.br_list.size() == 0 ){
-                   myMutex_readBam.unlock();
-               }
             }
         }
         myMutex_readBam.unlock();
-        
+
+        if (ref_thread_data.br_list.size() == 0 ) { continue; }       
+ 
         ref_thread_data.t_secondary_alignment.clear();
         ref_thread_data.t_supplementary_alignment.clear();
         //std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." <<std::endl; 
