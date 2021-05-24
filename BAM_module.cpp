@@ -130,6 +130,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
         if (ref_thread_data.br_list.size() == 0 && !(read_i_bam < ref_input_op.num_input_files) ){
             std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." << read_i_bam <<"/"<< ref_input_op.num_input_files <<std::endl;
+            myMutex_readBam.unlock();
             break;
         }
         if ( ref_thread_data.br_list.size() < batch_size_of_record ){
@@ -141,6 +142,10 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                   ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
                }
                read_i_bam++;
+            }else{
+               if (ref_thread_data.br_list.size() == 0 ){
+                   myMutex_readBam.unlock();
+               }
             }
         }
         myMutex_readBam.unlock();
