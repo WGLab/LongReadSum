@@ -129,7 +129,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         myMutex_readBam.lock();
         ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
         if (ref_thread_data.br_list.size() == 0 && !(read_i_bam < ref_input_op.num_input_files) ){
-            std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." << read_i_bam <<"/"<< ref_input_op.num_input_files <<std::endl;
+            // std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." << read_i_bam <<"/"<< ref_input_op.num_input_files <<std::endl;
             myMutex_readBam.unlock();
             break;
         }
@@ -150,6 +150,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
  
         ref_thread_data.t_secondary_alignment.clear();
         ref_thread_data.t_supplementary_alignment.clear();
+        ref_thread_data.t_output_bam_.reset();
         //std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." <<std::endl; 
         for(br_it=ref_thread_data.br_list.begin(); br_it!=ref_thread_data.br_list.end(); br_it++){
            // std::cout<< br_it->qry_seq_len <<" " << br_it->qry_seq.length() << " " << br_it->qry_name << " " << int(br_it->map_flag) << std::endl <<std::flush;
@@ -257,7 +258,9 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         ref_supplementary_alignment.insert(ref_thread_data.t_supplementary_alignment.begin(), ref_thread_data.t_supplementary_alignment.end());
         // std::cout<< ref_secondary_alignment.size()<<std::endl;
         // std::cout<< ref_supplementary_alignment.size()<<std::endl;
+        // std::cout<< ref_output.num_primary_alignment << " from thread " << ref_thread_data._thread_id <<" " << ref_thread_data.t_output_bam_.num_primary_alignment;
         ref_output.add( ref_thread_data.t_output_bam_ );
+        // std::cout<< " =" << ref_output.num_primary_alignment <<std::endl;
 
         myMutex_output.unlock();
     }

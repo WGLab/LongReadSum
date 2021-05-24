@@ -246,7 +246,7 @@ class ST_HTML_Generator:
       for _imk in self.image_key_list:
          self.html_writer.write('<div class="module">');
          self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
-         self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="800" height="600"/></p>')
+         self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="400" height="300"/></p>')
          self.html_writer.write('</div>')
          _imki += 1;
       if self.more_input_files:
