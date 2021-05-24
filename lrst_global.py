@@ -20,6 +20,10 @@ plot_filenames= {\
 "read_length_distr": {'file':default_image_path+"read_length_distr"+default_image_suf, 'title':"Read Length", 'description':"The distribution of read length"},\
 # for bam
 "map_st": {'file':default_image_path+"map_st"+default_image_suf, 'title':"Map Information", 'description':"The statistics of mapped and unmapped reads"},\
+                                  
+"err_st": {'file':default_image_path+"err_st"+default_image_suf, 'title':"Base Alignment and Error Statistics", 'description':"Alignment statistics of mapped bases"},\
+
+"read_length_st": {'file':default_image_path+"read_length_st"+default_image_suf, 'title':"Read Length Statistics", 'description':"Statistics ofRead Lengths"},\
 
 # for fast5
 "nanopore_st": {'file':default_image_path+"nanopore_st"+default_image_suf, 'title':"ONT-Basecall", 'description':"The statistics of passed and failed reads"}\

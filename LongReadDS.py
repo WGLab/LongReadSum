@@ -133,7 +133,7 @@ def bam_module(margs):
       import plot_for_BAM;
       plot_for_BAM.bam_plot(bam_output, para_dict)
       import generate_html
-      bam_html_gen = generate_html.ST_HTML_Generator([["read_length_distr", "map_st"], "The statistics for BAM", para_dict ]);
+      bam_html_gen = generate_html.ST_HTML_Generator([["map_st", "err_st", "read_length_st"], "The statistics for BAM", para_dict ]);
       bam_html_gen.generate_st_html();
       print("Call BAM-module done!")
 
