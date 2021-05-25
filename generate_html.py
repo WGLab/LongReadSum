@@ -1,5 +1,5 @@
 import lrst_global
-
+import base64
 
 class ST_HTML_Generator:
    def __init__(self, para_list):
@@ -246,7 +246,10 @@ class ST_HTML_Generator:
       for _imk in self.image_key_list:
          self.html_writer.write('<div class="module">');
          self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
-         self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+         #self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+         m_image_file = open(self.input_para["output_folder"]+'/'+lrst_global.plot_filenames[_imk]['file'], 'rb');
+         self.html_writer.write('<img class="indented" src="data:image/png;base64,'+base64.b64encode(m_image_file.read()).decode('utf-8')+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+         m_image_file.close()
          self.html_writer.write('</div>')
          _imki += 1;
       if self.more_input_files:
