@@ -279,8 +279,8 @@ void Output_BAM::reset(){
    mapped_seq_quality_info.reset();
    unmapped_seq_quality_info.reset();
 
-   all_long_read_info.reset();
-   all_seq_quality_info.reset();
+   long_read_info.reset();
+   seq_quality_info.reset();
 }
 
 void Output_BAM::add(Output_BAM& t_output_bam){
@@ -319,10 +319,10 @@ void Output_BAM::add(Output_BAM& t_output_bam){
    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 
-   all_long_read_info.add(t_output_bam.mapped_long_read_info);
-   all_long_read_info.add(t_output_bam.unmapped_long_read_info);
-   all_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-   all_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
+   long_read_info.add(t_output_bam.mapped_long_read_info);
+   long_read_info.add(t_output_bam.unmapped_long_read_info);
+   seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
+   seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 }
 
 void Output_BAM::global_sum(){
@@ -331,8 +331,8 @@ void Output_BAM::global_sum(){
    mapped_seq_quality_info.global_sum();
    unmapped_seq_quality_info.global_sum();
 
-   all_long_read_info.global_sum();
-   all_seq_quality_info.global_sum();
+   long_read_info.global_sum();
+   seq_quality_info.global_sum();
    
    if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
    if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }

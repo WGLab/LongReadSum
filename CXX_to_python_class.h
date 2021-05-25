@@ -119,11 +119,9 @@ public:
 
    Basic_Seq_Statistics mapped_long_read_info;
    Basic_Seq_Statistics unmapped_long_read_info;
-   Basic_Seq_Statistics all_long_read_info;
    
    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
-   Basic_Seq_Quality_Statistics all_seq_quality_info;
 
    void reset();
    void add(Output_BAM& t_output_bam); 
