@@ -349,7 +349,8 @@ void Output_BAM::global_sum(){
    
    if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
    if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
-   
+  
+  /* 
    std::cout<<"for test"<<std::endl;
    std::cout<<"num_primary_alignment: "<< num_primary_alignment<<std::endl;
    std::cout<<"num_secondary_alignment: "<< num_secondary_alignment <<std::endl;
@@ -390,7 +391,7 @@ void Output_BAM::global_sum(){
    std::cout<<"n50_read_length: "<< long_read_info.n50_read_length <<std::endl;
    std::cout<<"n50_read_length: "<< long_read_info.nx_read_length[0]<<"/"<< long_read_info.nx_read_length[3]<<"/"<<long_read_info.nx_read_length[4]<<"/"<<long_read_info.nx_read_length[5]<<"/"<<long_read_info.nx_read_length[6] <<"/"<<long_read_info.nx_read_length[9] <<std::endl;
    std::cout<<"mean_read_length: "<< long_read_info.mean_read_length <<std::endl;
-
+   */
 }
 
 //// function for Output_F5
