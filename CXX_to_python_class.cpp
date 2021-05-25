@@ -58,7 +58,7 @@ void Basic_Seq_Statistics::reset(){
    for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = ZeroDefault;
    }
-   
+ 
    total_num_reads = ZeroDefault; 
    total_num_bases = ZeroDefault; 
 
@@ -79,7 +79,7 @@ void Basic_Seq_Statistics::reset(){
 
 void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_count[ _i_ ] += t_seq_st. read_length_count[ _i_ ];
+      read_length_count[ _i_ ] += t_seq_st.read_length_count[ _i_ ];
    }
    /*for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = t_seq_st. ;
@@ -121,24 +121,28 @@ void Basic_Seq_Statistics::global_sum(){
       t_read += read_length_count[ _i_ ];
       if ( t_read > 0){
          if ( t_read/float( total_num_reads )< 0.5 ) { median_read_length = _i_; }
-         else if ( t_read/float( total_num_reads ) == 0.5 && !has_cal_median ){ median_read_length = _i_; has_cal_median = true; }
-         else if ( t_read/float( total_num_reads ) > 0.5 && !has_cal_median ){
+         else if (!has_cal_median && t_read/float( total_num_reads ) == 0.5 ){ median_read_length = _i_; has_cal_median = true; }
+         else if (!has_cal_median && t_read/float( total_num_reads ) > 0.5 ){
             median_read_length = ( median_read_length + _i_ )/2;
             has_cal_median = true;
          }
          
          base_perc = double( t_base )/total_num_bases;
          start_perct = int(base_perc*10+0.5);
-         for (int _t_sp=start_perct; _t_sp<start_perct+1; _t_sp++){
-            if ( nx_read_length[ _t_sp ]==ZeroDefault && base_perc>=_t_sp/float(10) ){
+         for (int _t_sp=start_perct; _t_sp<start_perct+1&&_t_sp<10; _t_sp++){
+            /*if ( nx_read_length[ _t_sp ]==ZeroDefault && base_perc>=_t_sp/float(10) ){
                nx_read_length[ _t_sp ] = _i_;
-            }
-            if ( base_perc<0.05){ n05_read_length = _i_; }
-            if ( base_perc<0.5){ n50_read_length = _i_; }
-            if ( base_perc<0.95){ n95_read_length = _i_; }
+            }*/
+            if ( base_perc<(_t_sp+1)/float(10) ){ nx_read_length[ _t_sp ] = _i_; }
          }
+         if ( base_perc<0.05){ n05_read_length = _i_; }
+         if ( base_perc<0.5){ n50_read_length = _i_; }
+         if ( base_perc<0.95){ n95_read_length = _i_; }
       }
    }
+   if ( n05_read_length==MoneDefault){ n05_read_length = ZeroDefault; }
+   if ( n50_read_length==MoneDefault){ n50_read_length = ZeroDefault; }
+   if ( n95_read_length==MoneDefault){ n95_read_length = ZeroDefault; }
 }
 
 //// function for Basic_Seq_Quality_Statistics
@@ -223,7 +227,8 @@ void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
 }
 
 void Basic_Seq_Quality_Statistics::global_sum(){
-   ;
+   if ( min_base_quality==MoneDefault){ min_base_quality=ZeroDefault; }
+   if ( max_base_quality==MoneDefault){ max_base_quality=ZeroDefault; }
 }
 
 //// function for Output_BAM
@@ -233,7 +238,9 @@ Output_BAM::Output_BAM(){
    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
       map_quality_distribution[ _i_ ] = ZeroDefault;
    }
-   
+   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
+      accuracy_per_read[ _i_ ] = ZeroDefault;
+   }
 }
 
 Output_BAM::~Output_BAM(){
@@ -243,6 +250,9 @@ Output_BAM::~Output_BAM(){
 void Output_BAM::reset(){
    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
       map_quality_distribution[ _i_ ] = ZeroDefault;
+   }
+   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
+      accuracy_per_read[ _i_ ] = ZeroDefault;
    }
 
    num_primary_alignment = ZeroDefault; 
@@ -268,11 +278,17 @@ void Output_BAM::reset(){
    unmapped_long_read_info.reset();
    mapped_seq_quality_info.reset();
    unmapped_seq_quality_info.reset();
+
+   all_long_read_info.reset();
+   all_seq_quality_info.reset();
 }
 
 void Output_BAM::add(Output_BAM& t_output_bam){
    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
       map_quality_distribution[ _i_ ] += t_output_bam.map_quality_distribution[ _i_ ];
+   }
+   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
+      accuracy_per_read[ _i_ ] += t_output_bam.accuracy_per_read[ _i_ ];
    }
 
    num_primary_alignment += t_output_bam.num_primary_alignment ;
@@ -302,6 +318,11 @@ void Output_BAM::add(Output_BAM& t_output_bam){
    unmapped_long_read_info.add(t_output_bam.unmapped_long_read_info);
    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
+
+   all_long_read_info.add(t_output_bam.mapped_long_read_info);
+   all_long_read_info.add(t_output_bam.unmapped_long_read_info);
+   all_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
+   all_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 }
 
 void Output_BAM::global_sum(){
@@ -309,6 +330,12 @@ void Output_BAM::global_sum(){
    unmapped_long_read_info.global_sum();
    mapped_seq_quality_info.global_sum();
    unmapped_seq_quality_info.global_sum();
+
+   all_long_read_info.global_sum();
+   all_seq_quality_info.global_sum();
+   
+   if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
+   if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
 }
 
 //// function for Output_F5

@@ -122,6 +122,8 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
 
 void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment){
     std::vector<Bam1Record>::iterator br_it;
+    uint64_t match_this_read;
+    double accuracy_perc_this_read;
     while (true){
         //auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -219,11 +221,14 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
               }
            }
            if ( !( ( (br_it->map_flag)& BAM_FUNMAP ) || ((br_it->map_flag)&BAM_FSECONDARY) ) ){
+              match_this_read = 0;
+              accuracy_perc_this_read = 0;
               for(size_t _ci=0; _ci<br_it->cigar_type.size(); _ci++){
                   switch (br_it->cigar_type[_ci]){
                      case BAM_CEQUAL:
                           // ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci]; 
                      case BAM_CMATCH: // M
+                          match_this_read += br_it->cigar_len[_ci];
                           ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci];
                           break;
                      case BAM_CINS:  // I 
@@ -248,6 +253,12 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                      default:
                           std::cout<<"ERROR!!! from "<< thread_id << " Unknown cigar "<< br_it->cigar_type[_ci] << br_it->cigar_len[_ci] << " for " <<  br_it->qry_name <<std::endl;
                   }
+              }
+              accuracy_perc_this_read = int( (double(match_this_read)/br_it->qry_seq_len)*100+0.5);
+              if ( accuracy_perc_this_read <0 || accuracy_perc_this_read>=PERCENTAGE_ARRAY_SIZE) {
+                  std::cout<<"ERROR!!! #matched("<<match_this_read<<") is smaller than 0 or larger than total("<<br_it->qry_seq_len <<") for "<<  br_it->qry_name <<std::endl;
+              }else{
+                  ref_thread_data.t_output_bam_.accuracy_per_read[ int(accuracy_perc_this_read) ] += 1;
               }
            }
         }

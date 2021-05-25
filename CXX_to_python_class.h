@@ -13,6 +13,8 @@
 #define MAX_BASE_QUALITY 256
 #define MAX_SIGNAL_VALUE 5000
 
+#define PERCENTAGE_ARRAY_SIZE 101
+
 #define ZeroDefault 0
 #define MoneDefault -1
 
@@ -112,13 +114,16 @@ public:
    int64_t num_ins_bases = ZeroDefault; // the number of inserted bases;
    int64_t num_del_bases = ZeroDefault; // the number of deleted bases;
    int64_t num_clip_bases = ZeroDefault; // the number of soft-clipped bases;
- 
+
+   int64_t accuracy_per_read[PERCENTAGE_ARRAY_SIZE]; // 
 
    Basic_Seq_Statistics mapped_long_read_info;
    Basic_Seq_Statistics unmapped_long_read_info;
+   Basic_Seq_Statistics all_long_read_info;
    
    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+   Basic_Seq_Quality_Statistics all_seq_quality_info;
 
    void reset();
    void add(Output_BAM& t_output_bam); 
