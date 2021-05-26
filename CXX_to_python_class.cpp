@@ -412,4 +412,60 @@ Basic_F5_Statistics::~Basic_F5_Statistics(){
    // delete [] read_length_list;
 }
 
+Basic_F5_Statistics::reset(){
+   long_read_info.reset();
+   seq_quality_info.reset();
+
+   for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
+       signal_range[ _i_ ] = ZeroDefault;
+   }
+
+   min_signal = MoneDefault;
+   max_signal = MoneDefault;
+}
+
+Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
+   long_read_info.add( t_output_bf5.long_read_info );
+   seq_quality_info.add( t_output_bf5.seq_quality_info );
+
+   for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
+      signal_range[ _i_ ] += t_output_bf5.signal_range[ _i_ ];
+   }
+   if ( min_signal==MoneDefault || min_signal > t_output_bf5.min_signal ) {
+      min_signal = t_output_bf5.min_signal;
+   }
+   if ( max_signal < t_output_bf5.max_signal ){
+       max_signal = t_output_bf5.max_signal;
+   }
+}
+
+Basic_F5_Statistics::global_sum(){
+   long_read_info.global_sum();
+   seq_quality_info.global_sum();  
+ 
+   if ( min_signal==MoneDefault){ min_signal = ZeroDefault; }
+   if ( max_signal==MoneDefault){ max_signal = ZeroDefault; }
+}
+
+void Output_F5::reset(){
+   f5_long_read_info.reset();
+   f5_passed_long_read_info.reset();
+   f5_failed_long_read_info.reset();
+}
+
+void Output_F5::add(Output_F5& t_output_f5){
+   f5_long_read_info.add(t_output_f5.f5_long_read_info);
+   f5_passed_long_read_info.add(t_output_f5.f5_passed_long_read_info);
+   f5_failed_long_read_info.add(t_output_f5.f5_failed_long_read_info);
+}
+
+void Output_F5::global_sum(){
+   f5_long_read_info.global_sum();
+   f5_passed_long_read_info.global_sum();
+   f5_failed_long_read_info.global_sum();
+}
+
+
+
+
 

@@ -143,6 +143,10 @@ public:
    // int64_t num_reads = ZeroDefault; // The number of long reads
    // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
 
+   void reset();
+   void add(Basic_F5_Statistics& t_output_bf5);
+   void global_sum();
+
    Basic_F5_Statistics();
    ~Basic_F5_Statistics();
 };
@@ -153,6 +157,9 @@ public:
    Basic_F5_Statistics f5_passed_long_read_info;
    Basic_F5_Statistics f5_failed_long_read_info;
 
+   void reset();
+   void add(Output_F5& t_output_f5);
+   void global_sum();
 };
 
 
