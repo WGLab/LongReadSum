@@ -149,7 +149,32 @@ def f5_module(margs):
       parser.parse_args(['f5', '--help'])
       sys.exit(1004)
    else:
-      pass
+      logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]) )
+      import lrst;
+      input_para = lrst.Input_Para();
+      input_para.threads = para_dict["threads"];
+      input_para.rdm_seed = para_dict["random_seed"];
+      input_para.downsample_percentage = para_dict["downsample_percentage"];
+
+      input_para.other_flags = margs.seq;
+
+      input_para.output_folder = str(para_dict["output_folder"]) ;
+      input_para.out_prefix = str(para_dict["out_prefix"]);
+
+      for _ipf in para_dict["input_files"]:
+         input_para.add_input_file( str(_ipf) );
+
+      if not os.path.isdir( para_dict["output_folder"]+'/'+lrst_global.default_image_path ) :
+         os.makedirs( para_dict["output_folder"]+'/'+lrst_global.default_image_path )
+
+      f5_output = lrst.Output_F5();
+      lrst.generate_statistic_from_f5( input_para, f5_output );
+      import plot_for_F5;
+      plot_for_F5.f5_plot(f5_output, para_dict)
+      import generate_html
+      f5_html_gen = generate_html.ST_HTML_Generator([["read_length_st","base_st", "basic_info"], "The statistics for F5", para_dict ]);
+      f5_html_gen.generate_st_html();
+      print("Call F5-module done!")
 
 
 parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data", 
@@ -224,6 +249,7 @@ f5_parsers = subparsers.add_parser('f5',
                                                  \tpython %(prog)s  \n \
                                                 ",
                                     formatter_class=RawTextHelpFormatter)
+f5_parsers.add_argument("-S", "--seq", type=int, default=1, help="Sequence_summary.txt only? Default: 1(yes).")
 f5_parsers.set_defaults(func=f5_module);
 
 if sys.version_info[0] < 2:
