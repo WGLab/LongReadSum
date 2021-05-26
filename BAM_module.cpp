@@ -71,7 +71,7 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
       try{
          for (_i_t=0; _i_t<m_input_op.threads; _i_t++){
              std::cout<<"INFO: generate threads "<<_i_t<<std::endl<<std::flush;
-             thread_data_vector[_i_t] = new BAM_Thread_data(m_input_op, _i_t);
+             thread_data_vector[_i_t] = new BAM_Thread_data(m_input_op, _i_t, BAM_Module::batch_size_of_record);
              std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
              m_threads.push_back(std::thread((BAM_Module::BAM_do_thread), _bam_reader_ptr, std::ref(m_input_op), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_bam_info), std::ref(secondary_alignment), std::ref(supplementary_alignment) ));
          }

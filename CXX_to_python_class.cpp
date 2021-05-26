@@ -406,25 +406,33 @@ Basic_F5_Statistics::Basic_F5_Statistics(){
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] = ZeroDefault;
    }
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] = ZeroDefault;
+   }
 }
 
 Basic_F5_Statistics::~Basic_F5_Statistics(){
    // delete [] read_length_list;
 }
 
-Basic_F5_Statistics::reset(){
+void Basic_F5_Statistics::reset(){
    long_read_info.reset();
    seq_quality_info.reset();
 
    for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
        signal_range[ _i_ ] = ZeroDefault;
    }
-
    min_signal = MoneDefault;
    max_signal = MoneDefault;
+
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] = ZeroDefault;
+   }
+   min_read_quality = MoneDefault;
+   max_read_quality = MoneDefault;
 }
 
-Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
+void Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
    long_read_info.add( t_output_bf5.long_read_info );
    seq_quality_info.add( t_output_bf5.seq_quality_info );
 
@@ -437,9 +445,19 @@ Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
    if ( max_signal < t_output_bf5.max_signal ){
        max_signal = t_output_bf5.max_signal;
    }
+   
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] += t_output_bf5.read_quality_distribution[ _i_ ];
+   }
+   if ( min_read_quality==MoneDefault || min_read_quality > t_output_bf5.min_read_quality){
+      min_read_quality = t_output_bf5.min_read_quality;
+   }
+   if ( max_read_quality < t_output_bf5.max_read_quality){
+      max_read_quality = t_output_bf5.max_read_quality;
+   }
 }
 
-Basic_F5_Statistics::global_sum(){
+void Basic_F5_Statistics::global_sum(){
    long_read_info.global_sum();
    seq_quality_info.global_sum();  
  
@@ -454,7 +472,9 @@ void Output_F5::reset(){
 }
 
 void Output_F5::add(Output_F5& t_output_f5){
-   f5_long_read_info.add(t_output_f5.f5_long_read_info);
+   f5_long_read_info.add(t_output_f5.f5_passed_long_read_info);
+   f5_long_read_info.add(t_output_f5.f5_failed_long_read_info);
+
    f5_passed_long_read_info.add(t_output_f5.f5_passed_long_read_info);
    f5_failed_long_read_info.add(t_output_f5.f5_failed_long_read_info);
 }

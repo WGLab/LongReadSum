@@ -47,41 +47,6 @@ def plot_read_length_stats(f5_output, path):
     
     plt.savefig(path)
     
-def plot_base_counts(f5_output, path):
-    fig, (ax_passed, ax_failed) = plt.subplots(2, sharex=True, figsize =(8, 6))
-
-    numbers_passed=[f5_output.f5_passed_long_read_info.long_read_info.total_a_cnt, 
-             f5_output.f5_passed_long_read_info.long_read_info.total_c_cnt,
-             f5_output.f5_passed_long_read_info.long_read_info.total_g_cnt,
-             f5_output.f5_passed_long_read_info.long_read_info.total_tu_cnt, 
-             f5_output.f5_passed_long_read_info.long_read_info.total_n_cnt]
-    
-    numbers_failed=[f5_output.f5_failed_long_read_info.long_read_info.total_a_cnt, 
-             f5_output.f5_failed_long_read_info.long_read_info.total_c_cnt,
-             f5_output.f5_failed_long_read_info.long_read_info.total_g_cnt,
-             f5_output.f5_failed_long_read_info.long_read_info.total_tu_cnt, 
-             f5_output.f5_failed_long_read_info.long_read_info.total_n_cnt]
-
-    labels=['A', 'C', 'G', 'T/U', 'N']
- 
-    for ax, numbers in [(ax_passed, numbers_passed), (ax_failed, numbers_failed)]:
-        ax.set(xlabel='Base', ylabel='Counts')
-        ax.spines['right'].set_visible(False)
-        ax.spines['top'].set_visible(False)
-        ax.barh(labels, numbers)
-        ax.tick_params(labelbottom=True)
-
-        for index, value in enumerate(numbers):
-            ax.text(value+max(numbers)*0.01, index-0.08, f'{value:,}')
-            
-    plt.title('Base Counts')
-    ax_passed.set_title("Passed Reads")
-    ax_failed.set_title("Failed Reads")
-    plt.tight_layout()
-    
-    plt.savefig(path)    
-    
-
 def plot_basic_info(f5_output, path):
     fig, axes= plt.subplots(2,2, figsize =(8, 6))
     
@@ -113,5 +78,4 @@ def f5_plot( f5_output, para_dict ):
     get_image_path=lambda x: os.path.join(out_path,lrst_global.plot_filenames[x]['file'])
     
     plot_read_length_stats(f5_output, get_image_path('read_length_st'))
-    plot_base_counts(f5_output, get_image_path('base_st'))
     plot_basic_info(f5_output, get_image_path('basic_info'))

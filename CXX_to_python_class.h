@@ -11,6 +11,7 @@
 #define MAX_READ_LENGTH 10485760 
 #define MAX_MAP_QUALITY 256
 #define MAX_BASE_QUALITY 256
+#define MAX_READ_QUALITY 256
 #define MAX_SIGNAL_VALUE 5000
 
 #define PERCENTAGE_ARRAY_SIZE 101
@@ -139,6 +140,10 @@ public:
    int signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
    int min_signal = MoneDefault;  // minimum signals;
    int max_signal = MoneDefault;  // maximum signals;
+
+   int64_t read_quality_distribution[MAX_READ_QUALITY]; // The mapping quality distribution;
+   int min_read_quality = MoneDefault; // the minimum mapping quality
+   int max_read_quality = MoneDefault; // the maximum mapping quality
 
    // int64_t num_reads = ZeroDefault; // The number of long reads
    // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
