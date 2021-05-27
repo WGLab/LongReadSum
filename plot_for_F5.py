@@ -76,6 +76,8 @@ def plot_basic_info(f5_output, path):
 def f5_plot( f5_output, para_dict ):
     out_path=para_dict["output_folder"]
     get_image_path=lambda x: os.path.join(out_path,lrst_global.plot_filenames[x]['file'])
-    
+  
+    print("test array {}".format( f5_output.f5_long_read_info.read_quality_distribution[4]))
+ 
     plot_read_length_stats(f5_output, get_image_path('read_length_st'))
     plot_basic_info(f5_output, get_image_path('basic_info'))

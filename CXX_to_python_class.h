@@ -3,6 +3,7 @@
 // CXX_to_python_class
 
 #include <string>
+#include <vector>
 
 //#include <stdint.h>
 //#include <cstddef>
@@ -36,7 +37,8 @@ public:
    int64_t n95_read_length = MoneDefault; // N95
    int64_t n05_read_length = MoneDefault; // N05;
    int64_t mean_read_length = MoneDefault; // mean of read length
-   int64_t nx_read_length[10]; // can provide n10, n20, n30, ... n90; The last indicates whether this info is generated.
+   //int64_t nx_read_length[10]; // can provide n10, n20, n30, ... n90; The last indicates whether this info is generated.
+   std::vector<int64_t> nx_read_length;
    int64_t median_read_length = MoneDefault; // median of read length
 
    int64_t total_a_cnt = ZeroDefault; // A content
@@ -46,7 +48,8 @@ public:
    int64_t total_n_cnt = ZeroDefault; // N content
    double gc_cnt = ZeroDefault; // GC ratio
 
-   int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
+   //int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
+   std::vector<int64_t> read_length_count; 
    //int64_t read_length_count[MAX_READ_LENGTH];
 
    void reset();
@@ -65,15 +68,19 @@ public:
 
 class Basic_Seq_Quality_Statistics{
 public:
-   int64_t base_quality_distribution[MAX_BASE_QUALITY];  // base quality distribution: each position is the number of bases with the quality of the index.
+   //int64_t base_quality_distribution[MAX_BASE_QUALITY];  // base quality distribution: each position is the number of bases with the quality of the index.
+   std::vector<int64_t> base_quality_distribution;
    int min_base_quality = MoneDefault; // minimum base quality;
    int max_base_quality = MoneDefault; // maximum base quality;
 
-   int *pos_quality_distribution; // the base quality according to positions of long reads: each position is the mean quality at the position of long reads
-   float *pos_quality_distribution_dev; // similar to above but for the standard deviation
-   int64_t *pos_quality_distribution_count; // similar to above but for the number of bases
+   //int *pos_quality_distribution; // the base quality according to positions of long reads: each position is the mean quality at the position of long reads
+   //double *pos_quality_distribution_dev; // similar to above but for the standard deviation
+   //int64_t *pos_quality_distribution_count; // similar to above but for the number of bases
+   std::vector<int> pos_quality_distribution; 
+   std::vector<double> pos_quality_distribution_dev;
+   std::vector<int64_t> pos_quality_distribution_count;
    //int pos_quality_distribution[MAX_READ_LENGTH]; 
-   //float pos_quality_distribution_dev[MAX_READ_LENGTH]; 
+   //double pos_quality_distribution_dev[MAX_READ_LENGTH]; 
    //int64_t pos_quality_distribution_count[MAX_READ_LENGTH];
    int64_t max_length = ZeroDefault;
 
@@ -103,7 +110,8 @@ public:
    int64_t forward_alignment = ZeroDefault;
    int64_t reverse_alignment = ZeroDefault;
 
-   int64_t map_quality_distribution[MAX_MAP_QUALITY]; // The mapping quality distribution;
+   //int64_t map_quality_distribution[MAX_MAP_QUALITY]; // The mapping quality distribution;
+   std::vector<int64_t>  map_quality_distribution;
    int min_map_quality = MoneDefault; // the minimum mapping quality
    int max_map_quality = MoneDefault; // the maximum mapping quality
 
@@ -116,7 +124,8 @@ public:
    int64_t num_del_bases = ZeroDefault; // the number of deleted bases;
    int64_t num_clip_bases = ZeroDefault; // the number of soft-clipped bases;
 
-   int64_t accuracy_per_read[PERCENTAGE_ARRAY_SIZE]; // 
+   //int64_t accuracy_per_read[PERCENTAGE_ARRAY_SIZE]; // 
+   std::vector<int64_t> accuracy_per_read;
 
    Basic_Seq_Statistics mapped_long_read_info;
    Basic_Seq_Statistics unmapped_long_read_info;
@@ -137,11 +146,13 @@ public:
    Basic_Seq_Statistics long_read_info;
    Basic_Seq_Quality_Statistics seq_quality_info;
    
-   int signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
+   //int signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
+   std::vector<int> signal_range;
    int min_signal = MoneDefault;  // minimum signals;
    int max_signal = MoneDefault;  // maximum signals;
 
-   int64_t read_quality_distribution[MAX_READ_QUALITY]; // The mapping quality distribution;
+   //int64_t read_quality_distribution[MAX_READ_QUALITY]; // The mapping quality distribution;
+   std::vector<int64_t> read_quality_distribution;
    int min_read_quality = MoneDefault; // the minimum mapping quality
    int max_read_quality = MoneDefault; // the maximum mapping quality
 

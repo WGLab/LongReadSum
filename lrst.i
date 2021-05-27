@@ -1,13 +1,24 @@
 %module lrst
 %{
+#include <string>
+#include <vector>
 #include "Python_to_CXX_class.h"
 #include "CXX_to_python_class.h"
 #include "LRST_function.h"
-#include <string>
 %}
 
+typedef long int int64_t;
+%apply long int { int64_t };
 %include <std_string.i>
 %include <stdint.i>
+%include <std_vector.i>
+
+namespace std{
+  %template(IntVector) vector<int>;
+  %template(DoubleVector) vector<double>;
+  %template(Int64Vector) vector<int64_t>;
+};
+
 
 %include "Python_to_CXX_class.h"
 %include "CXX_to_python_class.h"
