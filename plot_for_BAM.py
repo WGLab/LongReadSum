@@ -46,10 +46,10 @@ def bam_plot( bam_output, para_dict ):
     print("num_primary_alignment: {}".format(bam_output.num_primary_alignment))
     
     plot_alignment_numbers(bam_output, get_image_path('map_st'))
-    
     plot_errors(bam_output, get_image_path('err_st'))
-    plot_read_length_stats(bam_output, get_image_path('read_length_st'))
-    plot_base_counts(bam_output, get_image_path('base_st'))
-    plot_basic_info(bam_output.mapped_long_read_info,bam_output.unmapped_long_read_info,['Mapped Reads', 'Unmapped Reads'], get_image_path('basic_info'))
+    
+    plot_read_length_stats([bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('read_length_st'), subtitles=['Mapped Reads', 'Unmapped Reads'])
+    plot_base_counts([bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('base_st'), subtitles=['Mapped Reads', 'Unmapped Reads'])
+    plot_basic_info([bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('basic_info'), categories=['Mapped Reads', 'Unmapped Reads'])
     
     
