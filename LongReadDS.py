@@ -64,6 +64,7 @@ def get_common_param(margs, para_dict):
    para_dict["threads"] = margs.thread;
 
    para_dict["random_seed"] = margs.seed;
+   para_dict["detail"] = margs.detail;
 
    return this_error_str;
 
@@ -115,7 +116,7 @@ def bam_module(margs):
       input_para.rdm_seed = para_dict["random_seed"];
       input_para.downsample_percentage = para_dict["downsample_percentage"];
 
-      input_para.other_flags = 0 ;
+      input_para.other_flags = (1 if para_dict["detail"]>0 else 0) ;
 
       input_para.output_folder = str(para_dict["output_folder"]) ;
       input_para.out_prefix = str(para_dict["out_prefix"]);
@@ -156,7 +157,9 @@ def f5_module(margs):
       input_para.rdm_seed = para_dict["random_seed"];
       input_para.downsample_percentage = para_dict["downsample_percentage"];
 
-      input_para.other_flags = margs.seq;
+      input_para.other_flags = (margs.seq)
+      input_para.other_flags << 4;
+      input_para.other_flags += (1 if para_dict["detail"]>0 else 0) ;
 
       input_para.output_folder = str(para_dict["output_folder"]) ;
       input_para.out_prefix = str(para_dict["out_prefix"]);
@@ -202,7 +205,7 @@ common_grp_param = parent_parser.add_argument_group("Common parameters for %(pro
 input_files_group = common_grp_param.add_mutually_exclusive_group();
 input_files_group.add_argument("-i", "--input", type=str, default=None, help="The input file for the analysis");
 input_files_group.add_argument("-I", "--inputs", type=str, default=None, help="The input files for the analysis");
-input_files_group.add_argument("-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *.");
+input_files_group.add_argument("-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *. The format is \"patter*n\" where \" is required. ");
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0, help="The percentage of downsampling for quick run. Default: 1.0 without downsampling");
 
 common_grp_param.add_argument("-g", "--log", type=str, default="log_output.log", help="Log file")
@@ -212,6 +215,7 @@ common_grp_param.add_argument("-o", "--outputfolder", type=str, default="output_
 common_grp_param.add_argument("-t", "--thread", type=int, default=1, help="The number of threads used. Default: 1.")
 common_grp_param.add_argument("-Q", "--outprefix", type=str, default="st_", help="The prefix of output. Default: `st_`.")
 common_grp_param.add_argument("-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
+common_grp_param.add_argument("-d", "--detail", type=int, default=0, help="Will output detail in files? Default: 0(no).")
 
 
 fq_parsers = subparsers.add_parser('fq', 
