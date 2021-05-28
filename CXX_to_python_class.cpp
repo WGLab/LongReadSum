@@ -187,6 +187,7 @@ void Basic_Seq_Statistics::global_sum(){
    if ( n05_read_length==MoneDefault){ n05_read_length = ZeroDefault; }
    if ( n50_read_length==MoneDefault){ n50_read_length = ZeroDefault; }
    if ( n95_read_length==MoneDefault){ n95_read_length = ZeroDefault; }
+   if ( median_read_length==MoneDefault){ median_read_length = ZeroDefault; }
 }
 
 //// function for Basic_Seq_Quality_Statistics
