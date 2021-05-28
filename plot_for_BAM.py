@@ -90,8 +90,8 @@ def bam_plot( bam_output, para_dict ):
     plot_alignment_numbers(bam_output, get_image_path('map_st'))
     plot_errors(bam_output, get_image_path('err_st'))
     
-    plot_read_length_stats([bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('read_length_st'), subtitles=['Mapped Reads', 'Unmapped Reads'])
-    plot_base_counts([bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('base_st'), subtitles=['Mapped Reads', 'Unmapped Reads'])
-    plot_basic_info([bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('basic_info'), categories=['Mapped Reads', 'Unmapped Reads'])
+    plot_read_length_stats([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('read_length_st'), subtitles=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
+    plot_base_counts([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('base_st'), subtitles=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
+    plot_basic_info([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('basic_info'), categories=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
     
     

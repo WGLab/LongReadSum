@@ -42,8 +42,8 @@ def plot_base_counts(data, path, subtitles=None, categories=None):
     numbers_list=[[x.total_a_cnt, x.total_c_cnt, x.total_g_cnt, x.total_tu_cnt, x.total_n_cnt] for x in data]
     
     category_list=itertools.cycle([['A', 'C', 'G', 'T/U', 'N']])
-    ylabel_list=itertools.cycle(['Base'])
-    xlabel_list=itertools.cycle(['Counts'])
+    xlabel_list=itertools.cycle([None])
+    ylabel_list=itertools.cycle(['Counts'])
     subtitle_list=subtitles
     bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path)
     #lrst_global.plot_filenames['base_st']['summary']='GC Content: {:.2%}'.format(bam_output.mapped_long_read_info.gc_cnt)
