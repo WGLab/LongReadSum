@@ -134,7 +134,7 @@ def bam_module(margs):
       import plot_for_BAM;
       plot_for_BAM.bam_plot(bam_output, para_dict)
       import generate_html
-      bam_html_gen = generate_html.ST_HTML_Generator([["map_st", "err_st", "read_length_st","base_st", "basic_info"], "The statistics for BAM", para_dict ]);
+      bam_html_gen = generate_html.ST_HTML_Generator([["basic_st", "map_st", "err_st", "read_length_st","base_st", "basic_info"], "The statistics for BAM", para_dict ]);
       bam_html_gen.generate_st_html();
       print("Call BAM-module done!")
 
@@ -175,7 +175,10 @@ def f5_module(margs):
       import plot_for_F5;
       plot_for_F5.f5_plot(f5_output, para_dict)
       import generate_html
-      f5_html_gen = generate_html.ST_HTML_Generator([["read_length_st","base_st","basic_info"], "The statistics for F5", para_dict ]);
+      if margs.seq==0:
+         f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","base_st","basic_info"], "The statistics for F5", para_dict ]);
+      else:
+         f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","basic_info"], "The statistics for F5", para_dict ]);
       f5_html_gen.generate_st_html();
       print("Call F5-module done!")
 

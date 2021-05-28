@@ -168,7 +168,7 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
         ref_thread_data.t_output_F5_.reset();
         for(read_ss_i=0; read_ss_i<read_ss_size; read_ss_i++){
            Basic_F5_Statistics* _f5_st = NULL;
-           if ( ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.compare("True")!=0){
+           if ( ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.compare("True")==0){
                _f5_st = &(ref_thread_data.t_output_F5_.f5_passed_long_read_info);
            }else{
                _f5_st = &(ref_thread_data.t_output_F5_.f5_failed_long_read_info);

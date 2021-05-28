@@ -247,9 +247,12 @@ class ST_HTML_Generator:
          self.html_writer.write('<div class="module">');
          self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
          #self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
-         m_image_file = open(self.input_para["output_folder"]+'/'+lrst_global.plot_filenames[_imk]['file'], 'rb');
-         self.html_writer.write('<img class="indented" src="data:image/png;base64,'+base64.b64encode(m_image_file.read()).decode('utf-8')+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
-         m_image_file.close()
+         if _imk=="basic_st":
+            self.html_writer.write( lrst_global.plot_filenames["basic_st"]['detail'] )
+         else:
+            m_image_file = open(self.input_para["output_folder"]+'/'+lrst_global.plot_filenames[_imk]['file'], 'rb');
+            self.html_writer.write('<img class="indented" src="data:image/png;base64,'+base64.b64encode(m_image_file.read()).decode('utf-8')+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+            m_image_file.close()
          self.html_writer.write('</div>')
          _imki += 1;
       if self.more_input_files:
