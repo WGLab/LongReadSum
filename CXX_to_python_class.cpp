@@ -162,6 +162,7 @@ void Basic_Seq_Statistics::global_sum(){
    if ( n05_read_length==MoneDefault){ n05_read_length = ZeroDefault; }
    if ( n50_read_length==MoneDefault){ n50_read_length = ZeroDefault; }
    if ( n95_read_length==MoneDefault){ n95_read_length = ZeroDefault; }
+   if ( median_read_length==MoneDefault){ median_read_length = ZeroDefault; }
 }
 
 //// function for Basic_Seq_Quality_Statistics
@@ -219,6 +220,12 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Qual
    max_base_quality = _bsqs.max_base_quality;
 
    max_length = _bsqs.max_length;
+
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] += _bsqs.read_quality_distribution[ _i_ ];
+   }
+   min_read_quality = _bsqs.min_read_quality;
+   max_read_quality = _bsqs.max_read_quality;
 }
 
 void Basic_Seq_Quality_Statistics::reset(){
@@ -277,6 +284,8 @@ void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
 void Basic_Seq_Quality_Statistics::global_sum(){
    if ( min_base_quality==MoneDefault){ min_base_quality=ZeroDefault; }
    if ( max_base_quality==MoneDefault){ max_base_quality=ZeroDefault; }
+   if ( min_read_quality ==MoneDefault){ min_read_quality=ZeroDefault; }
+   if ( max_read_quality ==MoneDefault){ max_read_quality=ZeroDefault; }
 }
 
 //// function for Output_BAM

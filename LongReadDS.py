@@ -62,6 +62,10 @@ def get_common_param(margs, para_dict):
         try:
             if not os.path.isdir(para_dict["output_folder"]):
                 os.makedirs(para_dict["output_folder"])
+            if not os.path.isdir(para_dict["output_folder"]+'/'+lrst_global.default_image_path):
+                os.makedirs(para_dict["output_folder"]+'/' +
+                        lrst_global.default_image_path)
+
         except OSError as e:
             this_error_str += "Cannot create folder for " + \
                 para_dict["output_folder"]+" \n"
@@ -80,6 +84,8 @@ def get_common_param(margs, para_dict):
     para_dict["threads"] = margs.thread
 
     para_dict["random_seed"] = margs.seed
+
+    para_dict["detail"] = margs.detail;
 
     return this_error_str
 
@@ -104,18 +110,13 @@ def fq_module(margs):
         input_para.downsample_percentage = para_dict["downsample_percentage"]
 
         input_para.other_flags = 0
+        input_para.user_defined_fastq_base_qual_offset = margs.udqual; 
 
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
-        #input_para.set_output_folder( para_dict["output_folder"]) ;
-        #input_para.set_out_prefix( para_dict["out_prefix"]);
 
         for _ipf in para_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
-
-        if not os.path.isdir(para_dict["output_folder"]+'/'+lrst_global.default_image_path):
-            os.makedirs(para_dict["output_folder"]+'/' +
-                        lrst_global.default_image_path)
 
         fq_output = lrst.Output_FQ()
         lrst.generate_statistic_from_fq(input_para, fq_output)
@@ -154,20 +155,12 @@ def bam_module(margs):
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
         input_para.downsample_percentage = para_dict["downsample_percentage"]
-
-        input_para.other_flags = 0
-
+        input_para.other_flags =  (1 if para_dict["detail"]>0 else 0) ;
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
-        #input_para.set_output_folder( para_dict["output_folder"]) ;
-        #input_para.set_out_prefix( para_dict["out_prefix"]);
 
         for _ipf in para_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
-
-        if not os.path.isdir(para_dict["output_folder"]+'/'+lrst_global.default_image_path):
-            os.makedirs(para_dict["output_folder"]+'/' +
-                        lrst_global.default_image_path)
 
         bam_output = lrst.Output_BAM()
         lrst.generate_statistic_from_bam(input_para, bam_output)
@@ -175,7 +168,7 @@ def bam_module(margs):
         plot_for_BAM.bam_plot(bam_output, para_dict)
         import generate_html
         bam_html_gen = generate_html.ST_HTML_Generator(
-            [["map_st", "err_st", "read_length_st", "base_st", "basic_info"], "The statistics for BAM", para_dict])
+            [["basic_st","map_st", "err_st", "read_length_st", "base_st", "basic_info"], "The statistics for BAM", para_dict])
         bam_html_gen.generate_st_html()
         print("Call BAM-module done!")
 
@@ -198,26 +191,25 @@ def f5_module(margs):
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
         input_para.downsample_percentage = para_dict["downsample_percentage"]
-
         input_para.other_flags = margs.seq
-
+        input_para.other_flags << 4;
+        input_para.other_flags += (1 if para_dict["detail"]>0 else 0) ;
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
 
         for _ipf in para_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
 
-        if not os.path.isdir(para_dict["output_folder"]+'/'+lrst_global.default_image_path):
-            os.makedirs(para_dict["output_folder"]+'/' +
-                        lrst_global.default_image_path)
-
         f5_output = lrst.Output_F5()
         lrst.generate_statistic_from_f5(input_para, f5_output)
         import plot_for_F5
         plot_for_F5.f5_plot(f5_output, para_dict)
         import generate_html
-        f5_html_gen = generate_html.ST_HTML_Generator(
-            [["read_length_st", "basic_info"], "The statistics for F5", para_dict])
+        if margs.seq==0:
+           f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","base_st","basic_info"], "The statistics for F5", para_dict ]);
+        else:
+           f5_html_gen = generate_html.ST_HTML_Generator(
+               [["basic_st", "read_length_st", "basic_info"], "The statistics for F5", para_dict])
         f5_html_gen.generate_st_html()
         print("Call F5-module done!")
 
@@ -249,9 +241,9 @@ input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
     "-i", "--input", type=str, default=None, help="The input file for the analysis")
 input_files_group.add_argument(
-    "-I", "--inputs", type=str, default=None, help="The input files for the analysis")
+    "-I", "--inputs", type=str, default=None, help="The input files for the analysis. Files are separated by ','.")
 input_files_group.add_argument(
-    "-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *.")
+    "-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *. The format is \"patter*n\" where \" is required. ")
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
                                help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
 
@@ -268,7 +260,7 @@ common_grp_param.add_argument("-Q", "--outprefix", type=str,
                               default="st_", help="The prefix of output. Default: `st_`.")
 common_grp_param.add_argument(
     "-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
-
+common_grp_param.add_argument("-d", "--detail", type=int, default=0, help="Will output detail in files? Default: 0(no).")
 
 fq_parsers = subparsers.add_parser('fq',
                                    parents=[parent_parser],
@@ -277,6 +269,8 @@ fq_parsers = subparsers.add_parser('fq',
                                                  \tpython %(prog)s  \n \
                                                 ",
                                    formatter_class=RawTextHelpFormatter)
+fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
+                        help="User defined quality offset for bases in fq. Default: -1.")
 fq_parsers.set_defaults(func=fq_module)
 
 
