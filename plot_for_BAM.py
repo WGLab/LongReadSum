@@ -67,7 +67,7 @@ def generate_bs( bam_output, para_dict ):
                  bam_output.mapped_long_read_info.gc_cnt*100, \
                  bam_output.unmapped_long_read_info.gc_cnt*100, \
                  bam_output.long_read_info.gc_cnt*100);
-   table_str += int_str_for_format.format("Mean Read Length", \
+   table_str += double_str_for_format.format("Mean Read Length", \
                  bam_output.mapped_long_read_info.mean_read_length, \
                  bam_output.unmapped_long_read_info.mean_read_length, \
                  bam_output.long_read_info.mean_read_length);

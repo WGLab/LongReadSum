@@ -221,6 +221,7 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Qual
 
    max_length = _bsqs.max_length;
 
+   read_quality_distribution.resize( MAX_READ_QUALITY );
    for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
       read_quality_distribution[ _i_ ] += _bsqs.read_quality_distribution[ _i_ ];
    }

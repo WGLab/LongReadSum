@@ -32,7 +32,7 @@ def generate_bs( f5_output, para_dict ):
                  f5_output.f5_passed_long_read_info.long_read_info.n50_read_length, \
                  f5_output.f5_failed_long_read_info.long_read_info.n50_read_length, \
                  f5_output.f5_long_read_info.long_read_info.n50_read_length);
-   table_str += int_str_for_format.format("Mean Read Length", \
+   table_str += double_str_for_format.format("Mean Read Length", \
                  f5_output.f5_passed_long_read_info.long_read_info.mean_read_length, \
                  f5_output.f5_failed_long_read_info.long_read_info.mean_read_length, \
                  f5_output.f5_long_read_info.long_read_info.mean_read_length);
