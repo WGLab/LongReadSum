@@ -103,6 +103,7 @@ def fq_module(margs):
         sys.exit(1001)
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "fq_";
         import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
@@ -120,6 +121,13 @@ def fq_module(margs):
 
         fq_output = lrst.Output_FQ()
         lrst.generate_statistic_from_fq(input_para, fq_output)
+        import plot_for_FQ
+        plot_for_FQ.fq_plot(fq_output, para_dict)
+        import generate_html
+        fq_html_gen = generate_html.ST_HTML_Generator(
+            [["basic_st", "read_length_st", "base_st", "basic_info"], "The statistics for FQ", para_dict])
+        fq_html_gen.generate_st_html()
+        print("Call FQ-module done!")
 
 
 def fa_module(margs):
@@ -150,6 +158,7 @@ def bam_module(margs):
         sys.exit(1003)
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "bam_";
         import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
@@ -186,6 +195,7 @@ def f5_module(margs):
         sys.exit(1004)
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "f5_";
         import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
