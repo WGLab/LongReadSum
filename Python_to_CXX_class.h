@@ -29,7 +29,7 @@ public:
    //std::vector<std::string> input_files;
    //std::string *input_files;
    std::string input_files[MAX_INPUT_FILES];
-   
+   int32_t user_defined_fastq_base_qual_offset = -1; //
    /*//char output_folder[PATH_LENGTH];
    char input_files[MAX_INPUT_FILES][PATH_LENGTH];
    //char out_prefix[PATH_LENGTH];
@@ -40,7 +40,7 @@ public:
 
    std::string out_prefix;
 
-   int64_t other_flags;  
+   int64_t other_flags;
 
    /// functions list;
    std::string add_input_file(const std::string& _ip_file);
