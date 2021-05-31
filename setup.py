@@ -1,7 +1,7 @@
 from distutils.core import setup, Extension
 
 lrst_mod = Extension("_lrst",
-                     sources=["lrst_wrap.cxx", "Python_to_CXX_class.cpp", "CXX_to_python_class.cpp", "LRST_function.cpp","BAM_module.cpp", "BamReader.cpp", "F5_module.cpp", "ComFunction.cpp", "ComStruct.cpp" ],
+                     sources=["lrst_wrap.cxx", "Python_to_CXX_class.cpp", "CXX_to_python_class.cpp", "LRST_function.cpp","BAM_module.cpp", "BamReader.cpp", "F5_module.cpp", "kseq.cpp", "FASTQ_module.cpp", "ComFunction.cpp", "ComStruct.cpp" ],
                      language='c++',
                      extra_compile_args=['-std=c++14'],
                      libraries=["rt", "pthread", "z", "dl", "m", "hts"])

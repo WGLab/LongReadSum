@@ -180,13 +180,13 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
            }
            _f5_st->long_read_info.read_length_count[ ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template<MAX_READ_LENGTH?ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template:(MAX_READ_LENGTH-1) ] += 1;
            
-           _f5_st->long_read_info.read_quality_distribution[ int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template ) ] += 1;
-           if ( _f5_st->long_read_info.min_read_quality == MoneDefault || 
-               _f5_st->long_read_info.min_read_quality>int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template ) ){
-              _f5_st->long_read_info.min_read_quality = int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template );
+           _f5_st->seq_quality_info.read_quality_distribution[ int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template ) ] += 1;
+           if ( _f5_st->seq_quality_info.min_read_quality == MoneDefault || 
+               _f5_st->seq_quality_info.min_read_quality>int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template ) ){
+              _f5_st->seq_quality_info.min_read_quality = int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template );
            }
-           if ( _f5_st->long_read_info.max_read_quality < int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template) ){
-              _f5_st->long_read_info.max_read_quality = int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template); 
+           if ( _f5_st->seq_quality_info.max_read_quality < int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template) ){
+              _f5_st->seq_quality_info.max_read_quality = int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template); 
            }
         }
 

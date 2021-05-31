@@ -21,7 +21,7 @@ int generate_statistic_from_bam(Input_Para &_input_data, Output_BAM &py_output_b
 
 int generate_statistic_from_fq(Input_Para &_input_data, Output_FQ &py_output_fq)
 {
-   qc_fastq_files(Input_Para & _input_data, Output_FQ & py_output_fq);
+   qc_fastq_files(_input_data, py_output_fq);
    return 0;
 }
 

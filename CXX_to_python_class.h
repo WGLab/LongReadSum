@@ -90,6 +90,10 @@ public:
    //int64_t pos_quality_distribution_count[MAX_READ_LENGTH];
    int64_t max_length = ZeroDefault;
 
+   std::vector<int64_t> read_quality_distribution;
+   int min_read_quality = MoneDefault; // the minimum mapping quality
+   int max_read_quality = MoneDefault; // the maximum mapping quality
+
    void reset();
    void add(Basic_Seq_Quality_Statistics &t_qual_st);
    void global_sum();
@@ -161,9 +165,10 @@ public:
    int max_signal = MoneDefault; // maximum signals;
 
    //int64_t read_quality_distribution[MAX_READ_QUALITY]; // The mapping quality distribution;
-   std::vector<int64_t> read_quality_distribution;
+   /*std::vector<int64_t> read_quality_distribution;
    int min_read_quality = MoneDefault; // the minimum mapping quality
    int max_read_quality = MoneDefault; // the maximum mapping quality
+   */
 
    // int64_t num_reads = ZeroDefault; // The number of long reads
    // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;

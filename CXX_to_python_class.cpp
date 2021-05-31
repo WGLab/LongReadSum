@@ -31,6 +31,8 @@ Basic_Seq_Statistics::~Basic_Seq_Statistics(){
 }
 
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
+   read_gc_content_count = _bss.read_gc_content_count;
+
    //read_length_count = new int64_t[MAX_READ_LENGTH];
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -181,6 +183,11 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
    for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
       base_quality_distribution[ _i_ ] = ZeroDefault;
    }
+
+   read_quality_distribution.resize( MAX_READ_QUALITY );
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] = ZeroDefault;
+   }
 }
 
 Basic_Seq_Quality_Statistics::~Basic_Seq_Quality_Statistics(){
@@ -228,6 +235,12 @@ void Basic_Seq_Quality_Statistics::reset(){
    max_base_quality = MoneDefault; 
 
    max_length = ZeroDefault;
+
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] = ZeroDefault;
+   }
+   min_read_quality = MoneDefault;
+   max_read_quality = MoneDefault;
 }
 void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -248,6 +261,16 @@ void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
 
    if ( max_length < t_qual_st.max_length){
       max_length = t_qual_st.max_length;
+   }
+
+   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
+      read_quality_distribution[ _i_ ] += t_qual_st.read_quality_distribution[ _i_ ];
+   }
+   if ( min_read_quality==MoneDefault || min_read_quality > t_qual_st.min_read_quality){
+      min_read_quality = t_qual_st.min_read_quality;
+   }
+   if ( max_read_quality < t_qual_st.max_read_quality){
+      max_read_quality = t_qual_st.max_read_quality;
    }
 }
 
@@ -421,10 +444,6 @@ Basic_F5_Statistics::Basic_F5_Statistics(){
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] = ZeroDefault;
    }
-   read_quality_distribution.resize( MAX_READ_QUALITY );
-   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
-      read_quality_distribution[ _i_ ] = ZeroDefault;
-   }
 }
 
 Basic_F5_Statistics::~Basic_F5_Statistics(){
@@ -440,12 +459,6 @@ void Basic_F5_Statistics::reset(){
    }
    min_signal = MoneDefault;
    max_signal = MoneDefault;
-
-   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
-      read_quality_distribution[ _i_ ] = ZeroDefault;
-   }
-   min_read_quality = MoneDefault;
-   max_read_quality = MoneDefault;
 }
 
 void Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
@@ -460,16 +473,6 @@ void Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
    }
    if ( max_signal < t_output_bf5.max_signal ){
        max_signal = t_output_bf5.max_signal;
-   }
-   
-   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
-      read_quality_distribution[ _i_ ] += t_output_bf5.read_quality_distribution[ _i_ ];
-   }
-   if ( min_read_quality==MoneDefault || min_read_quality > t_output_bf5.min_read_quality){
-      min_read_quality = t_output_bf5.min_read_quality;
-   }
-   if ( max_read_quality < t_output_bf5.max_read_quality){
-      max_read_quality = t_output_bf5.max_read_quality;
    }
 }
 
