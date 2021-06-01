@@ -125,7 +125,7 @@ def fq_module(margs):
         plot_for_FQ.fq_plot(fq_output, para_dict)
         import generate_html
         fq_html_gen = generate_html.ST_HTML_Generator(
-            [["basic_st", "read_length_st", "base_st", "basic_info"], "The statistics for FQ", para_dict])
+            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FQ", para_dict])
         fq_html_gen.generate_st_html()
         print("Call FQ-module done!")
 
@@ -164,7 +164,7 @@ def fa_module(margs):
         plot_for_FA.fa_plot(fa_output, para_dict)
         import generate_html
         fa_html_gen = generate_html.ST_HTML_Generator(
-            [["basic_st", "read_length_st", "base_st", "basic_info"], "The statistics for FA", para_dict])
+            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FA", para_dict])
         fa_html_gen.generate_st_html()
         print("Call FA-module done!")
 
@@ -240,10 +240,10 @@ def f5_module(margs):
         plot_for_F5.f5_plot(f5_output, para_dict)
         import generate_html
         if margs.seq==0:
-           f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","base_st","basic_info"], "The statistics for F5", para_dict ]);
+           f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "The statistics for F5", para_dict ]);
         else:
            f5_html_gen = generate_html.ST_HTML_Generator(
-               [["basic_st", "read_length_st", "basic_info"], "The statistics for F5", para_dict])
+               [["basic_st", "read_length_st","read_length_hist", "basic_info"], "The statistics for F5", para_dict])
         f5_html_gen.generate_st_html()
         print("Call F5-module done!")
 

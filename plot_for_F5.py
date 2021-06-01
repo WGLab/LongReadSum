@@ -57,3 +57,5 @@ def f5_plot( f5_output, para_dict ):
     plot_base_counts([f5_output.f5_long_read_info.long_read_info, f5_output.f5_passed_long_read_info.long_read_info, f5_output.f5_failed_long_read_info.long_read_info], get_image_path('base_st'), subtitles=['All Reads', 'Passed Reads', 'Failed Reads'])
     
     plot_basic_info([f5_output.f5_long_read_info.long_read_info, f5_output.f5_passed_long_read_info.long_read_info, f5_output.f5_failed_long_read_info.long_read_info], get_image_path('basic_info'), categories=['All Reads', 'Passed Reads', 'Failed Reads'])
+    
+    histogram(f5_output.f5_long_read_info.long_read_info, get_image_path('read_length_hist'))

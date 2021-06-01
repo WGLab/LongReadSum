@@ -48,4 +48,5 @@ def fa_plot( fa_output, para_dict ):
     plot_base_counts([fa_output.long_read_info], get_image_path('base_st'), subtitles=['Long Reads'])
     plot_basic_info([fa_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
     
-    
+    histogram(fa_output.long_read_info, get_image_path('read_length_hist'))
+
