@@ -142,7 +142,32 @@ def fa_module(margs):
         parser.parse_args(['fa', '--help'])
         sys.exit(1002)
     else:
-        pass
+        logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "fa_";
+        import lrst
+        input_para = lrst.Input_Para()
+        input_para.threads = para_dict["threads"]
+        input_para.rdm_seed = para_dict["random_seed"]
+        input_para.downsample_percentage = para_dict["downsample_percentage"]
+
+        input_para.other_flags = 0
+        input_para.user_defined_fastq_base_qual_offset = margs.udqual;
+
+        input_para.output_folder = str(para_dict["output_folder"])
+        input_para.out_prefix = str(para_dict["out_prefix"])
+
+        for _ipf in para_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        fa_output = lrst.Output_FA()
+        lrst.generate_statistic_from_fa(input_para, fa_output)
+        import plot_for_FA
+        plot_for_FA.fa_plot(fa_output, para_dict)
+        import generate_html
+        fa_html_gen = generate_html.ST_HTML_Generator(
+            [["basic_st", "read_length_st", "base_st", "basic_info"], "The statistics for FA", para_dict])
+        fa_html_gen.generate_st_html()
+        print("Call FA-module done!")
 
 
 def bam_module(margs):
