@@ -129,9 +129,9 @@ int F5_Module::F5_st( Output_F5& t_output_F5_info){
    t_output_F5_info.global_sum();
  
    auto relapse_end_time = std::chrono::high_resolution_clock::now();
-   std::cout<<"Total time(replase): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
+   std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
 
-   std::cout<<"<Stastitics on F5>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
+   std::cout<<"<Statistics on F5>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
  
    //return t_output_F5_info; 
    return has_error;

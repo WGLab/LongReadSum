@@ -112,9 +112,9 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
    t_output_bam_info.global_sum();
  
    auto relapse_end_time = std::chrono::high_resolution_clock::now();
-   std::cout<<"Total time(replase): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
+   std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
 
-   std::cout<<"<Stastitics on BAM>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
+   std::cout<<"<Statistics on BAM>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
  
    //return t_output_bam_info; 
    return has_error;

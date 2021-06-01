@@ -215,7 +215,7 @@ class ST_HTML_Generator:
       ''')
       # for _af in self.input_para["input_files"]:
       #   self.html_writer.write( "<br/>"+_af); 
-      self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
+      #self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
       self.html_writer.write( '''       
          </div>
       </div>''')
@@ -231,7 +231,7 @@ class ST_HTML_Generator:
           self.html_writer.write('<a href="#lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['title']+'</a>')
           _imki += 1;
           self.html_writer.write('</li>')
-      if self.more_input_files:
+      if True: #self.more_input_files:
           self.html_writer.write('<li>')
           self.html_writer.write('<a href="#lrst'+str(_imki)+'">Input files</a>')
           _imki += 1;
@@ -255,7 +255,7 @@ class ST_HTML_Generator:
             m_image_file.close()
          self.html_writer.write('</div>')
          _imki += 1;
-      if self.more_input_files:
+      if True: #self.more_input_files:
          self.html_writer.write('<div class="module">');
          self.html_writer.write('<h2 id="lrst'+str(_imki)+'">The list of input files: '+str(len( self.input_para["input_files"] ))+'</h2><p>')
          for _af in self.input_para["input_files"]:
