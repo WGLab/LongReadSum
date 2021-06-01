@@ -88,7 +88,7 @@ def bar_plot(fig, numbers_list,category_list, xlabel_list, ylabel_list, subtitle
     
 def histogram(data, path):
     plt.subplots_adjust(hspace=0.5,wspace=0.5)
-    fig, axes= plt.subplots(2,1, figsize=(12,9))
+    fig, axes= plt.subplots(2,1, figsize=(8,6))
     colors = {'Mean':'g', 'Median':'r', 'N50':'k'}
     
     mat=data.read_length_count
@@ -133,4 +133,5 @@ def histogram(data, path):
     ax.spines['top'].set_visible(False)
     ax.set_xlim(xmin=100)
     
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=2.0)
     plt.savefig(path) 
