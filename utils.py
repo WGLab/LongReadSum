@@ -85,3 +85,52 @@ def bar_plot(fig, numbers_list,category_list, xlabel_list, ylabel_list, subtitle
 
     
     plt.savefig(path) 
+    
+def histogram(data, path):
+    plt.subplots_adjust(hspace=0.5,wspace=0.5)
+    fig, axes= plt.subplots(2,1, figsize=(12,9))
+    colors = {'Mean':'g', 'Median':'r', 'N50':'k'}
+    
+    mat=data.read_length_count
+    stats = {'Mean':int(data.mean_read_length), 'Median':data.median_read_length, 'N50':data.n50_read_length}
+    
+    
+    mat=np.array(mat)[:,np.newaxis]
+    mat=mat[:np.max(np.nonzero(mat))+1]
+    bin_size=500
+    mat_full=np.vstack([mat, np.zeros(bin_size-len(mat)%bin_size)[:,np.newaxis]])
+    mat_full=mat_full.ravel()
+
+    lengths=np.arange(0,len(mat_full))
+    
+    ax=axes[0]
+    ax.set_title('Read Length Histogram')
+    ax.set(ylabel='Frequency', xlabel='Length(bp)')
+    ax.hist(lengths, weights=mat_full/np.sum(mat_full), bins=np.arange(0,len(lengths), bin_size))
+    for x in stats:
+        ax.axvline(x=stats[x], color=colors[x], linestyle='--',linewidth=1, label='{} = {}'.format(x,stats[x]))
+
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+
+    ax.legend()
+    
+    ax=axes[1]
+    
+    logbins = np.logspace(0,np.log10(lengths[-1]),len(lengths)//500)
+    
+    ax.set_title('Log Read Length Histogram')
+    ax.set(ylabel='Frequency', xlabel='Length(bp)')
+
+    ax.hist(lengths,weights=mat_full/np.sum(mat_full), bins=logbins)
+
+    ax.set_xscale('log')
+
+    for x in stats:
+        ax.axvline(x=stats[x], color=colors[x], linestyle='--',linewidth=1)
+
+    ax.spines['right'].set_visible(False)
+    ax.spines['top'].set_visible(False)
+    ax.set_xlim(xmin=100)
+    
+    plt.savefig(path) 

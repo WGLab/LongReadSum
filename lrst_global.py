@@ -28,7 +28,8 @@ plot_filenames= {\
 "base_st": {'file':default_image_path+"base_st"+default_image_suf, 'title':"Base Count Statistics", 'description':"Statistics of Base Counts", 'summary':""},\
 
 "basic_info": {'file':default_image_path+"basic_info"+default_image_suf, 'title':"Basic Statistics", 'description':"Basic Statistics", 'summary':""},\
-                
+
+"read_length_hist":{'file':default_image_path+"read_length_hist"+default_image_suf, 'title':"Read Length Histogram", 'description':"Read Length Histogram", 'summary':""},\
 # for fast5
 "nanopore_st": {'file':default_image_path+"nanopore_st"+default_image_suf, 'title':"ONT-Basecall", 'description':"The statistics of passed and failed reads"}\
 }
