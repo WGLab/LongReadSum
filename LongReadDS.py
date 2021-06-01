@@ -151,7 +151,6 @@ def fa_module(margs):
         input_para.downsample_percentage = para_dict["downsample_percentage"]
 
         input_para.other_flags = 0
-        input_para.user_defined_fastq_base_qual_offset = margs.udqual;
 
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
