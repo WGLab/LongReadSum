@@ -4,7 +4,7 @@ from textwrap import wrap
 import numpy as np
 
 def fmt(x):
-    if abs(x)>=1e9:
+    if abs(x)>=1e7:
         return f'{x:.3E}'
     
     elif abs(x)>=1e3 or float(x).is_integer():
@@ -24,7 +24,7 @@ def wrap(s):
     return '\n'.join([' '.join(x) for x in split])
 
 def plot_read_length_stats(data, path, subtitles=None, categories=None):
-    fig, axes = plt.subplots(len(data), sharex=True, figsize =(8, 6))
+    fig, axes = plt.subplots(len(data), sharey=True, figsize =(8, 6))
     
     numbers_list=[[x.n50_read_length, x.mean_read_length, x.median_read_length] for x in data]
 
@@ -37,7 +37,7 @@ def plot_read_length_stats(data, path, subtitles=None, categories=None):
         
     
 def plot_base_counts(data, path, subtitles=None, categories=None):
-    fig, axes = plt.subplots(len(data), sharey=True, figsize =(8, 6))
+    fig, axes = plt.subplots(len(data), figsize =(8, 6))
 
     numbers_list=[[x.total_a_cnt, x.total_c_cnt, x.total_g_cnt, x.total_tu_cnt, x.total_n_cnt] for x in data]
     
@@ -65,13 +65,17 @@ def plot_basic_info(data, path, subtitles=None, categories=None):
     
 def bar_plot(fig, numbers_list,category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='v', print_value =True):
     plt.subplots_adjust(hspace=0.5,wspace=0.5)
+    #plt.ticklabel_format(axis='both',style='sci', scilimits=(0,0))
+        
     for ax, numbers, category, xlabel, ylabel, subtitle in zip(fig.axes, numbers_list,category_list, xlabel_list, ylabel_list, subtitle_list):
+        #ax.set_major_formatter(matplotlib.ticker.ScalarFormatter())
         ax.set(ylabel=ylabel, xlabel=xlabel)
         ax.set_title(subtitle, pad=10)
         ax.spines['right'].set_visible(False)
         ax.spines['top'].set_visible(False)
         ax.tick_params(labelbottom=True)
-        
+        ax.ticklabel_format(style='sci',scilimits=(-3,4),axis='both')
+
         if orientation=='h':
             ax.barh(category, numbers)
             for index, value in enumerate(numbers):

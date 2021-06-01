@@ -10,7 +10,7 @@ from utils import *
 def generate_bs( f5_output, para_dict ):
    lrst_global.plot_filenames["basic_st"] = {};
    lrst_global.plot_filenames["basic_st"]['file'] = ""
-   lrst_global.plot_filenames["basic_st"]['title'] = "Basic Statistics"
+   lrst_global.plot_filenames["basic_st"]['title'] = "Table of Statistics Summary"
    lrst_global.plot_filenames["basic_st"]['description'] = "Basic Statistics for F5 summary"
    
    table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Passed</th><th>Failed</th><th>All</th></tr>\n</thead>"

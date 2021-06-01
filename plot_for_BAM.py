@@ -40,7 +40,7 @@ def plot_errors(bam_output, path):
 def generate_bs( bam_output, para_dict ):
     lrst_global.plot_filenames["basic_st"] = {};
     lrst_global.plot_filenames["basic_st"]['file'] = ""
-    lrst_global.plot_filenames["basic_st"]['title'] = "Basic Statistics"
+    lrst_global.plot_filenames["basic_st"]['title'] = "Table of Statistics Summary"
     lrst_global.plot_filenames["basic_st"]['description'] = "Basic Statistics for BAM summary"
 
     table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n</thead>"
