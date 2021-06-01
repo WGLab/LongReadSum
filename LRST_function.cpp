@@ -3,6 +3,7 @@
 #include "BAM_module.h"
 #include "F5_module.h"
 #include "FASTQ_module.h"
+#include "FASTA_module.h"
 
 /*
 Output_BAM generate_statistic_from_bam( Input_Para& _input_data ){
@@ -27,6 +28,7 @@ int generate_statistic_from_fq(Input_Para &_input_data, Output_FQ &py_output_fq)
 
 int generate_statistic_from_fa(Input_Para &_input_data, Output_FA &py_output_fa)
 {
+   qc_fasta_files(_input_data, py_output_fa);
    return 0;
 }
 
