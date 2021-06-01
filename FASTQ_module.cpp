@@ -159,9 +159,9 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
 
-    read_details_file = _input_data.out_prefix + ".read_details.txt";
-    read_summary_file = _input_data.out_prefix + ".read_summary.txt";
-    std::cout << "read_details_file is: " << read_details_file << std::endl;
+    read_details_file = _input_data.output_folder + "/FASTQ_details.txt";
+    read_summary_file = _input_data.output_folder + "/FASTQ_summary.txt";
+    
     py_output_fq.long_read_info.total_num_reads = ZeroDefault; // total number of long reads
     py_output_fq.long_read_info.total_num_bases = ZeroDefault; // total number of bases
 
