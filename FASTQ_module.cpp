@@ -11,16 +11,15 @@
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
-static int qc1fastq(const char *input_file, int32_t fastq_base_qual_offset, Output_FQ &py_output_fq, FILE *read_details_fp)
+static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &py_output_fq, FILE *read_details_fp)
 {
     gzFile input_fp;
     kseq_t *seq;
     char *read_seq;
     char *raw_read_qual;
     char *read_name;
+    char baseq;
     int read_len;
-    int l;
-    int i;
     double read_gc_cnt;
     double read_mean_base_qual;
 
@@ -33,34 +32,27 @@ static int qc1fastq(const char *input_file, int32_t fastq_base_qual_offset, Outp
         exit(1);
     }
     seq = kseq_init(input_fp);
-    while ((l = kseq_read(seq)) >= 0)
+    while ((read_len = kseq_read(seq)) >= 0)
     {
-        if (l == 0)
-        {
-            continue;
-        }
+        if (read_len == 0) {continue;}
         read_name = seq->name.s;
         read_seq = seq->seq.s;
         raw_read_qual = seq->qual.s;
-        read_len = l;
         if ((uint64_t)read_len > long_read_info.longest_read_length)
         {
             long_read_info.longest_read_length = read_len;
         }
         long_read_info.total_num_reads += 1;
         long_read_info.total_num_bases += read_len;
-        if ((uint64_t)read_len < long_read_info.read_length_count.size())
-        {
+        if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
             long_read_info.read_length_count[read_len] += 1;
-        }
-        else
-        {
+        } else {
             long_read_info.read_length_count.resize(read_len + 1000, 0);
             long_read_info.read_length_count[read_len] += 1;
         }
         read_gc_cnt = 0;
         read_mean_base_qual = 0;
-        for (i = 0; i < read_len; i++)
+        for (int i = 0; i < read_len; i++)
         {
             if (read_seq[i] == 'A' || read_seq[i] == 'a')
             {
@@ -80,14 +72,15 @@ static int qc1fastq(const char *input_file, int32_t fastq_base_qual_offset, Outp
             {
                 long_read_info.total_tu_cnt += 1;
             }
-            seq_quality_info.base_quality_distribution[raw_read_qual[i]] += 1;
-            read_mean_base_qual += raw_read_qual[i];
+            baseq = raw_read_qual[i] - fastq_base_qual_offset;
+            seq_quality_info.base_quality_distribution[baseq] += 1;
+            read_mean_base_qual += baseq;
         }
         read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
         long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-        read_mean_base_qual /= l;
-        seq_quality_info.read_average_base_quality_distribution[(int)(read_mean_base_qual + 0.5)] += 1;
-        fprintf(read_details_fp, "%s\t%d\t%.2f\n", read_name, read_len, read_gc_cnt);
+        read_mean_base_qual /= (double) read_len;
+        seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
+        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, read_len, read_gc_cnt, read_mean_base_qual);
     }
 
     kseq_destroy(seq);
@@ -97,23 +90,72 @@ static int qc1fastq(const char *input_file, int32_t fastq_base_qual_offset, Outp
     return 0;
 }
 
-static int32_t predict_base_quality_offset(std::vector<int64_t> &raw_base_quality_distribution)
+static uint8_t predict_base_quality_offset(Input_Para &_input_data)
 {
     // to be implemented
-    for (int i = 33; i < 64; i++)
+    const char * input_file; 
+    gzFile input_fp;
+    kseq_t *seq;
+    char *raw_read_qual;
+    int read_len;
+    char fastq_base_qual_offset;
+    int max_num_reads;
+    int num_processed_reads;
+
+    if (_input_data.num_input_files == 0)
     {
-        if (raw_base_quality_distribution[i] > 0)
-        {
-            return 33;
-        }
+        fprintf(stderr, "ERROR! num_input_files = 0! Please check your input! \n");
+        exit(1);
     }
-    return 64;
+
+    max_num_reads = 100000;
+    num_processed_reads = 0;
+    fastq_base_qual_offset = 0;
+    for (size_t i = 0; i < _input_data.num_input_files; i++)
+    {
+        if (fastq_base_qual_offset){break;}
+        input_file = _input_data.input_files[i].c_str();
+        input_fp = gzopen(input_file, "r");
+        if (!input_fp)
+        {
+            fprintf(stderr, "ERROR! Failed to open file for reading: %s", input_file);
+            exit(1);
+        }
+        seq = kseq_init(input_fp);
+        while ((read_len = kseq_read(seq)) >= 0)
+        {
+            if (fastq_base_qual_offset) {break;}
+            if (read_len == 0) {continue;}
+            raw_read_qual = seq->qual.s;
+            for (int j = 0; j < read_len; j++)
+            {
+                if (raw_read_qual[j] < 64) {
+                    fastq_base_qual_offset = 33;
+                    break;
+                }
+            }
+            num_processed_reads++;
+            if (num_processed_reads > max_num_reads){
+                fastq_base_qual_offset = 64;
+                break;
+            }
+
+        }
+        kseq_destroy(seq);
+        gzclose(input_fp);
+    }
+
+    if (fastq_base_qual_offset == 0){
+        fastq_base_qual_offset = 64;
+    }
+    fprintf(stderr, "NOTICE: predicted FASTQ base quality offset is %u\n", fastq_base_qual_offset);
+    return fastq_base_qual_offset;
 }
 
 int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
 {
     const char *input_file = NULL;
-    int32_t fastq_base_qual_offset;
+    char fastq_base_qual_offset;
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
 
@@ -161,13 +203,19 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
     py_output_fq.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
     // base_quality_distribution[x] means number of reads that average base quality = x.
 
+    if (_input_data.user_defined_fastq_base_qual_offset > 0) {
+        fastq_base_qual_offset = _input_data.user_defined_fastq_base_qual_offset;
+    } else {
+        fastq_base_qual_offset = predict_base_quality_offset(_input_data);
+    }
+
     read_details_fp = fopen(read_details_file.c_str(), "w");
     if (NULL == read_details_fp)
     {
         std::cerr << "ERROR! failed to write output file: " << read_details_file << std::endl;
         exit(1);
     }
-    fprintf(read_details_fp, "#read_name\tlength\tGC\n");
+    fprintf(read_details_fp, "#read_name\tlength\tGC\taverage_baseq_quality\n");
 
     for (size_t i = 0; i < _input_data.num_input_files; i++)
     {
@@ -235,26 +283,19 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
         fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, py_output_fq.long_read_info.read_gc_content_count[gc_ratio]);
     }
 
-    if (_input_data.user_defined_fastq_base_qual_offset > 0)
-    {
-        fastq_base_qual_offset = _input_data.user_defined_fastq_base_qual_offset;
-    }
-    else
-    {
-        fastq_base_qual_offset = predict_base_quality_offset(py_output_fq.seq_quality_info.base_quality_distribution);
-    }
+    
     fprintf(read_summary_fp, "\n\n");
     fprintf(read_summary_fp, "base quality\tnumber of bases\n");
-    for (int baseq = 0; baseq < 60; baseq++)
+    for (int baseq = 0; baseq <= 60; baseq++)
     {
-        fprintf(read_summary_fp, "%d\t%ld\n", baseq, py_output_fq.seq_quality_info.base_quality_distribution[baseq + fastq_base_qual_offset]);
+        fprintf(read_summary_fp, "%d\t%ld\n", baseq, py_output_fq.seq_quality_info.base_quality_distribution[baseq]);
     }
 
     fprintf(read_summary_fp, "\n\n");
     fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
-    for (int baseq = 0; baseq < 60; baseq++)
+    for (int baseq = 0; baseq <= 60; baseq++)
     {
-        fprintf(read_summary_fp, "%d\t%ld\n", baseq, py_output_fq.seq_quality_info.read_average_base_quality_distribution[baseq + fastq_base_qual_offset]);
+        fprintf(read_summary_fp, "%d\t%ld\n", baseq, py_output_fq.seq_quality_info.read_average_base_quality_distribution[baseq]);
     }
     fclose(read_summary_fp);
 
