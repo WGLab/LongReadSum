@@ -30,6 +30,13 @@ Basic_Seq_Statistics::~Basic_Seq_Statistics(){
    //std::cout<<" ~Basic_Seq_Statistics end" <<std::endl<<std::flush;
 }
 
+void Basic_Seq_Statistics::resize(){
+   read_gc_content_count.resize(PERCENTAGE_ARRAY_SIZE);
+   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
+      read_gc_content_count[ _i_ ] = ZeroDefault;
+   }
+}
+
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_gc_content_count = _bss.read_gc_content_count;
 
@@ -67,6 +74,10 @@ void Basic_Seq_Statistics::reset(){
    for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = ZeroDefault;
    }
+
+   for(size_t _i_=0; _i_<read_gc_content_count.size(); _i_++){
+      read_gc_content_count[ _i_ ] = ZeroDefault;
+   }
  
    total_num_reads = ZeroDefault; 
    total_num_bases = ZeroDefault; 
@@ -90,6 +101,10 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] += t_seq_st.read_length_count[ _i_ ];
    }
+   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
+      read_gc_content_count[ _i_ ] += t_seq_st.read_gc_content_count[ _i_ ];
+   }
+
    /*for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = t_seq_st. ;
    }

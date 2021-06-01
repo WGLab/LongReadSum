@@ -58,6 +58,7 @@ public:
    void reset();
    void add(Basic_Seq_Statistics &t_seq_st);
    void global_sum();
+   void resize();
 
    Basic_Seq_Statistics();
    Basic_Seq_Statistics(const Basic_Seq_Statistics &_bss);

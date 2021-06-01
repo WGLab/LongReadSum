@@ -66,6 +66,10 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
    if (has_error==0){
        m_threads.reserve(m_input_op.threads+3);
 
+      t_output_bam_info.unmapped_long_read_info.resize();
+      t_output_bam_info.mapped_long_read_info.resize();
+      t_output_bam_info.long_read_info.resize();
+
       int _i_t=0;
       BAM_Thread_data** thread_data_vector = new BAM_Thread_data*[m_input_op.threads];
       try{
@@ -124,6 +128,8 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
     std::vector<Bam1Record>::iterator br_it;
     uint64_t match_this_read;
     double accuracy_perc_this_read;
+    uint64_t _t_a, _t_c, _t_g, _t_tu;
+    double _t_gc_per;
     while (true){
         //auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -153,6 +159,9 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         ref_thread_data.t_secondary_alignment.clear();
         ref_thread_data.t_supplementary_alignment.clear();
         ref_thread_data.t_output_bam_.reset();
+        ref_thread_data.t_output_bam_.unmapped_long_read_info.resize();
+        ref_thread_data.t_output_bam_.mapped_long_read_info.resize();
+        ref_thread_data.t_output_bam_.long_read_info.resize();
         //std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." <<std::endl; 
         for(br_it=ref_thread_data.br_list.begin(); br_it!=ref_thread_data.br_list.end(); br_it++){
            // std::cout<< br_it->qry_seq_len <<" " << br_it->qry_seq.length() << " " << br_it->qry_name << " " << int(br_it->map_flag) << std::endl <<std::flush;
@@ -193,6 +202,12 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
               if( br_it->qry_seq_len > _seq_st->longest_read_length){ _seq_st->longest_read_length = br_it->qry_seq_len; }
               if (  br_it->qry_seq_len < MAX_READ_LENGTH ){ _seq_st->read_length_count[br_it->qry_seq_len] += 1; }
               
+              _t_a=0;
+              _t_c=0;
+              _t_g=0; 
+              _t_tu=0;
+              _t_gc_per = 0;
+
               for (size_t _si=0; _si<br_it->qry_seq_len; _si++){
                  int _base_qual_int = int(br_it->qry_qual[_si]);
                  if ( _base_qual_int > MAX_BASE_QUALITY || _base_qual_int <0){
@@ -206,18 +221,26 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
 
                  switch( br_it->qry_seq[ _si ] ){
                      case 'A': case 'a':
-                        _seq_st->total_a_cnt += 1;                           break;
+                        _seq_st->total_a_cnt += 1;    _t_a += 1;                       break;
                      case 'C': case 'c':
-                        _seq_st->total_c_cnt += 1;                           break;
+                        _seq_st->total_c_cnt += 1;    _t_c += 1;                       break;
                      case 'G': case 'g':
-                        _seq_st->total_g_cnt += 1;                           break;
+                        _seq_st->total_g_cnt += 1;    _t_g += 1;                       break;
                      case 'T': case 't': case 'U': case 'u':
-                        _seq_st->total_tu_cnt += 1;                           break;
+                        _seq_st->total_tu_cnt += 1;   _t_tu += 1;                        break;
                      case 'N': case 'n':
                         _seq_st->total_n_cnt += 1;                           break;
                      default:
                         std::cout<<"Error!!! from "<< thread_id << " Unknown type of nucletides: "<< br_it->qry_seq[ _si ] << " for " <<  br_it->qry_name <<std::endl;
                  }
+              }
+              _t_gc_per = ( _t_c + _t_g)/( (br_it->qry_seq_len>0?br_it->qry_seq_len:-1)/100.0 );
+              if ( br_it->qry_seq_len>0 ){
+                  if ( int(_t_gc_per+0.5) < PERCENTAGE_ARRAY_SIZE){
+                     _seq_st->read_gc_content_count[ int(_t_gc_per+0.5) ] += 1;
+                  }else{
+                     std::cout<<"ERROR!!! GC (%) content("<<_t_gc_per<<") is larger than total("<<PERCENTAGE_ARRAY_SIZE <<") for "<<  br_it->qry_name <<std::endl;
+                  }
               }
            }
            if ( !( ( (br_it->map_flag)& BAM_FUNMAP ) || ((br_it->map_flag)&BAM_FSECONDARY) ) ){
