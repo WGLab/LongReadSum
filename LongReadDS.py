@@ -338,7 +338,7 @@ f5_parsers = subparsers.add_parser('f5',
                                    formatter_class=RawTextHelpFormatter)
 f5_parsers.add_argument("-S", "--seq", type=int, default=1,
                         help="Sequence_summary.txt only? Default: 1(yes).")
-f5_parsers.add_argument("-s", "--sum_type", type=int, default=1, choices=[1,2,3],
+f5_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1,2,3],
                         help="Different fields in Sequence_summary.txt. Default: 1.")
 
 f5_parsers.set_defaults(func=f5_module)

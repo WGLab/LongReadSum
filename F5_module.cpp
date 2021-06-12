@@ -49,6 +49,33 @@ size_t F5_Thread_data::read_ss_record(std::ifstream* ref_F5_reader_ss){
 
    return num_ss_read_record;
 }
+size_t F5_Thread_data::read_ss_record_2(std::ifstream* ref_F5_reader_ss){
+   num_ss_read_record = 0;
+   std::string fq_file;
+   int muxv;
+   float median_template, mad_template;
+   while( std::getline( *ref_F5_reader_ss, _line_seq_sum )) {
+       std::istringstream iss( _line_seq_sum );
+       F5_SS_Record _t_f5_ss_record;
+       if (!(iss >> fq_file >> _F5_ss_records[num_ss_read_record].filename >> _F5_ss_records[num_ss_read_record].read_id
+                 >> _F5_ss_records[num_ss_read_record].run_id >> _F5_ss_records[num_ss_read_record].channel >> muxv
+                 >> _F5_ss_records[num_ss_read_record].start_time >> _F5_ss_records[num_ss_read_record].duration
+                 >> _F5_ss_records[num_ss_read_record].num_events >> _F5_ss_records[num_ss_read_record].passes_filtering
+                 >> _F5_ss_records[num_ss_read_record].template_start >> _F5_ss_records[num_ss_read_record].num_events_template
+                 >> _F5_ss_records[num_ss_read_record].template_duration
+                 >> _F5_ss_records[num_ss_read_record].sequence_length_template 
+                 >> _F5_ss_records[num_ss_read_record].mean_qscore_template >> _F5_ss_records[num_ss_read_record].strand_score_template
+                 >> median_template >> mad_template)) {
+             std::cout<<"Error!!! for <"<<_line_seq_sum<<">"<<std::endl;
+             break;
+       }
+
+       num_ss_read_record++;
+       if ( num_ss_read_record >= _batch_size){ break; }
+   }
+
+   return num_ss_read_record;
+}
 
 F5_Module::F5_Module(Input_Para& _m_input){
    m_input_op = _m_input;
@@ -139,11 +166,19 @@ int F5_Module::F5_st( Output_F5& t_output_F5_info){
 
 void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_input_op, int thread_id, F5_Thread_data& ref_thread_data, Output_F5& ref_output ){
     size_t read_ss_size, read_ss_i;
+    int sum_type = ((ref_input_op.other_flags) & 15);
+    std::cout<<"sum_type="<< sum_type <<std::endl;
     while (true){
         //ref_thread_data._F5_ss_records.clear();
         myMutex_readF5.lock();
         //
-        read_ss_size = ref_thread_data.read_ss_record(ref_F5_reader_ss);
+        if ( sum_type ==1 ){
+           read_ss_size = ref_thread_data.read_ss_record(ref_F5_reader_ss);
+        }else if ( sum_type ==2 ){
+           read_ss_size = ref_thread_data.read_ss_record_2(ref_F5_reader_ss);
+        }else{
+           read_ss_size = 0;
+        }
 
         if (read_ss_size == 0 && !(read_i_F5 < ref_input_op.num_input_files) ){
             myMutex_readF5.unlock();
