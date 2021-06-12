@@ -226,10 +226,10 @@ def f5_module(margs):
         input_para.rdm_seed = para_dict["random_seed"]
         input_para.downsample_percentage = para_dict["downsample_percentage"]
         input_para.other_flags = margs.seq
-        input_para.other_flags << 4;
+        input_para.other_flags = (input_para.other_flags << 4);
         input_para.other_flags += (1 if para_dict["detail"]>0 else 0) ;
-        input_para.other_flags << 4;
-        input_para.other_flags += int(sum_type)
+        input_para.other_flags = (input_para.other_flags << 4);
+        input_para.other_flags += int(margs.sum_type)
 
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])

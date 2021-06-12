@@ -16,6 +16,10 @@ F5_Thread_data::F5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_
    for (int _i_=0; _i_<p_batch_size+1; _i_++){
       _F5_ss_records.push_back( F5_SS_Record() );
    }
+
+   /*t_output_F5_.f5_long_read_info.long_read_info.resize();
+   t_output_F5_.f5_passed_long_read_info.long_read_info.resize();
+   t_output_F5_.f5_failed_long_read_info.long_read_info.resize();*/
 }
 
 F5_Thread_data::~F5_Thread_data(){ 
@@ -57,6 +61,7 @@ size_t F5_Thread_data::read_ss_record_2(std::ifstream* ref_F5_reader_ss){
    while( std::getline( *ref_F5_reader_ss, _line_seq_sum )) {
        std::istringstream iss( _line_seq_sum );
        F5_SS_Record _t_f5_ss_record;
+       //std::cout<<"(" << _line_seq_sum << ")"<<std::endl;
        if (!(iss >> fq_file >> _F5_ss_records[num_ss_read_record].filename >> _F5_ss_records[num_ss_read_record].read_id
                  >> _F5_ss_records[num_ss_read_record].run_id >> _F5_ss_records[num_ss_read_record].channel >> muxv
                  >> _F5_ss_records[num_ss_read_record].start_time >> _F5_ss_records[num_ss_read_record].duration
@@ -117,6 +122,10 @@ Output_F5 F5_Module::F5_st(){
 int F5_Module::F5_st( Output_F5& t_output_F5_info){  
    auto relapse_start_time = std::chrono::high_resolution_clock::now();
 
+   t_output_F5_info.f5_long_read_info.long_read_info.resize();
+   t_output_F5_info.f5_passed_long_read_info.long_read_info.resize();
+   t_output_F5_info.f5_failed_long_read_info.long_read_info.resize();
+
    if (has_error==0){
        m_threads.reserve(m_input_op.threads+3);
 
@@ -166,8 +175,8 @@ int F5_Module::F5_st( Output_F5& t_output_F5_info){
 
 void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_input_op, int thread_id, F5_Thread_data& ref_thread_data, Output_F5& ref_output ){
     size_t read_ss_size, read_ss_i;
-    int sum_type = ((ref_input_op.other_flags) & 15);
-    std::cout<<"sum_type="<< sum_type <<std::endl;
+    int64_t sum_type = ((ref_input_op.other_flags) & 15);
+    //std::cout<<"sum_type="<< sum_type <<std::endl;
     while (true){
         //ref_thread_data._F5_ss_records.clear();
         myMutex_readF5.lock();
@@ -197,17 +206,22 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
             }
         }
         myMutex_readF5.unlock();
-
+        //std::cout<<"read_ss_size="<< read_ss_size  <<std::endl;
         if (read_ss_size == 0 ) { continue; }       
  
         ref_thread_data.t_output_F5_.reset();
+        ref_thread_data.t_output_F5_.f5_long_read_info.long_read_info.resize();
+        ref_thread_data.t_output_F5_.f5_passed_long_read_info.long_read_info.resize();
+        ref_thread_data.t_output_F5_.f5_failed_long_read_info.long_read_info.resize();
         for(read_ss_i=0; read_ss_i<read_ss_size; read_ss_i++){
            Basic_F5_Statistics* _f5_st = NULL;
+           //std::cout<< read_ss_i << " " << ref_thread_data._F5_ss_records[read_ss_i].passes_filtering <<std::endl;
            if ( ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.compare("True")==0){
                _f5_st = &(ref_thread_data.t_output_F5_.f5_passed_long_read_info);
            }else{
                _f5_st = &(ref_thread_data.t_output_F5_.f5_failed_long_read_info);
            }
+           //std::cout<< ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template  <<std::endl;
            _f5_st->long_read_info.total_num_reads++;
            _f5_st->long_read_info.total_num_bases += ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template;
            if ( _f5_st->long_read_info.longest_read_length < ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template){
@@ -215,6 +229,7 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
            }
            _f5_st->long_read_info.read_length_count[ ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template<MAX_READ_LENGTH?ref_thread_data._F5_ss_records[read_ss_i].sequence_length_template:(MAX_READ_LENGTH-1) ] += 1;
            
+           //std::cout<< ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template <<std::endl;
            _f5_st->seq_quality_info.read_quality_distribution[ int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template ) ] += 1;
            if ( _f5_st->seq_quality_info.min_read_quality == MoneDefault || 
                _f5_st->seq_quality_info.min_read_quality>int( ref_thread_data._F5_ss_records[read_ss_i].mean_qscore_template ) ){
@@ -226,7 +241,7 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
         }
 
         myMutex_output.lock();
-       
+        //std::cout<< "add"<<std::endl;
         ref_output.add( ref_thread_data.t_output_F5_ );
 
         myMutex_output.unlock();

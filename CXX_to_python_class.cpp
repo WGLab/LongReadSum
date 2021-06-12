@@ -98,13 +98,15 @@ void Basic_Seq_Statistics::reset(){
 }
 
 void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
+   //std::cout<<"read_length_count"<<std::endl;
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] += t_seq_st.read_length_count[ _i_ ];
    }
+   //std::cout<<"read_gc_content_count"<<std::endl;
    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
       read_gc_content_count[ _i_ ] += t_seq_st.read_gc_content_count[ _i_ ];
    }
-
+   //std::cout<<"read_gc_content_count"<<std::endl;
    /*for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = t_seq_st. ;
    }
@@ -487,9 +489,11 @@ void Basic_F5_Statistics::reset(){
 }
 
 void Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
+   //std::cout<<"seq"<<std::endl;
    long_read_info.add( t_output_bf5.long_read_info );
+   //std::cout<<"qual"<<std::endl;
    seq_quality_info.add( t_output_bf5.seq_quality_info );
-
+   //std::cout<<"signal"<<std::endl;
    for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] += t_output_bf5.signal_range[ _i_ ];
    }
@@ -516,10 +520,14 @@ void Output_F5::reset(){
 }
 
 void Output_F5::add(Output_F5& t_output_f5){
+   //std::cout<<"long- passed"<<std::endl;
    f5_long_read_info.add(t_output_f5.f5_passed_long_read_info);
+   //std::cout<<"long- failed"<<std::endl;
    f5_long_read_info.add(t_output_f5.f5_failed_long_read_info);
 
+   //std::cout<<"passed"<<std::endl;
    f5_passed_long_read_info.add(t_output_f5.f5_passed_long_read_info);
+   //std::cout<<"failed"<<std::endl;
    f5_failed_long_read_info.add(t_output_f5.f5_failed_long_read_info);
 }
 
