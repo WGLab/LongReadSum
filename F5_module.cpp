@@ -2,6 +2,8 @@
 #include "ComFunction.h"
 
 #include <iostream>
+#include <algorithm>
+
 
 size_t F5_Module::batch_size_of_record=3000;
 std::mutex F5_Module::myMutex_readF5;
@@ -216,7 +218,10 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
         for(read_ss_i=0; read_ss_i<read_ss_size; read_ss_i++){
            Basic_F5_Statistics* _f5_st = NULL;
            //std::cout<< read_ss_i << " " << ref_thread_data._F5_ss_records[read_ss_i].passes_filtering <<std::endl;
-           if ( ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.compare("True")==0){
+           std::transform( ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.begin(), 
+                           ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.end(), 
+                           ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.begin(), [](unsigned char c) -> unsigned char { return std::tolower(c); } );
+           if ( ref_thread_data._F5_ss_records[read_ss_i].passes_filtering.compare("true")==0){
                _f5_st = &(ref_thread_data.t_output_F5_.f5_passed_long_read_info);
            }else{
                _f5_st = &(ref_thread_data.t_output_F5_.f5_failed_long_read_info);
