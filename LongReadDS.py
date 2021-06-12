@@ -228,6 +228,9 @@ def f5_module(margs):
         input_para.other_flags = margs.seq
         input_para.other_flags << 4;
         input_para.other_flags += (1 if para_dict["detail"]>0 else 0) ;
+        input_para.other_flags << 4;
+        input_para.other_flags += int(sum_type)
+
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
 
@@ -335,6 +338,9 @@ f5_parsers = subparsers.add_parser('f5',
                                    formatter_class=RawTextHelpFormatter)
 f5_parsers.add_argument("-S", "--seq", type=int, default=1,
                         help="Sequence_summary.txt only? Default: 1(yes).")
+f5_parsers.add_argument("-s", "--sum_type", type=int, default=1, choices=[1,2,3],
+                        help="Different fields in Sequence_summary.txt. Default: 1.")
+
 f5_parsers.set_defaults(func=f5_module)
 
 if sys.version_info[0] < 2:
