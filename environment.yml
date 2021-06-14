@@ -11,3 +11,4 @@ dependencies:
   - minimap2
   - swig
   - matplotlib
+  - plotly
