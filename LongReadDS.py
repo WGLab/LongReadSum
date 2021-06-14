@@ -125,8 +125,13 @@ def fq_module(margs):
         plot_for_FQ.fq_plot(fq_output, para_dict)
         import generate_html
         fq_html_gen = generate_html.ST_HTML_Generator(
-            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FQ", para_dict])
+            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=True)
         fq_html_gen.generate_st_html()
+        
+        fq_html_gen = generate_html.ST_HTML_Generator(
+            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=False)
+        fq_html_gen.generate_st_html()
+        
         print("Call FQ-module done!")
 
 
@@ -164,7 +169,11 @@ def fa_module(margs):
         plot_for_FA.fa_plot(fa_output, para_dict)
         import generate_html
         fa_html_gen = generate_html.ST_HTML_Generator(
-            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FA", para_dict])
+            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FA", para_dict], static=True)
+        fa_html_gen.generate_st_html()
+        
+        fa_html_gen = generate_html.ST_HTML_Generator(
+            [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FA", para_dict], static=False)
         fa_html_gen.generate_st_html()
         print("Call FA-module done!")
 
@@ -201,8 +210,14 @@ def bam_module(margs):
         plot_for_BAM.bam_plot(bam_output, para_dict)
         import generate_html
         bam_html_gen = generate_html.ST_HTML_Generator(
-            [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info"], "The statistics for BAM", para_dict])
+            [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info"], "The statistics for BAM", para_dict], static=True)
         bam_html_gen.generate_st_html()
+        
+        bam_html_gen = generate_html.ST_HTML_Generator(
+            [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for BAM", para_dict], static=False)
+        bam_html_gen.generate_st_html()
+        
+        
         print("Call BAM-module done!")
 
 

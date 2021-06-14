@@ -2,6 +2,9 @@ import os, itertools
 import matplotlib.pyplot as plt
 from textwrap import wrap
 import numpy as np
+import plotly.graph_objs as go
+from plotly.subplots import make_subplots
+
 
 def fmt(x):
     if abs(x)>=1e7:
@@ -91,51 +94,92 @@ def bar_plot(fig, numbers_list,category_list, xlabel_list, ylabel_list, subtitle
     plt.savefig(path) 
     
 def histogram(data, path):
-    plt.subplots_adjust(hspace=0.5,wspace=0.5)
-    fig, axes= plt.subplots(2,1, figsize=(8,6))
-    colors = {'Mean':'g', 'Median':'r', 'N50':'k'}
-    
     mat=data.read_length_count
-    stats = {'Mean':int(data.mean_read_length), 'Median':data.median_read_length, 'N50':data.n50_read_length}
+    mean, median, n50=int(data.mean_read_length), data.median_read_length, data.n50_read_length
     
     
     mat=np.array(mat)[:,np.newaxis]
     mat=mat[:np.max(np.nonzero(mat))+1]
-    bin_size=500
+    bin_size=1000
     mat_full=np.vstack([mat, np.zeros(bin_size-len(mat)%bin_size)[:,np.newaxis]])
     mat_full=mat_full.ravel()
 
     lengths=np.arange(0,len(mat_full))
     
-    ax=axes[0]
-    ax.set_title('Read Length Histogram')
-    ax.set(ylabel='Frequency', xlabel='Length(bp)')
-    ax.hist(lengths, weights=mat_full/np.sum(mat_full), bins=np.arange(0,len(lengths), bin_size))
-    for x in stats:
-        ax.axvline(x=stats[x], color=colors[x], linestyle='--',linewidth=1, label='{} = {}'.format(x,stats[x]))
-
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-
-    ax.legend()
+    binsize=1000
+    hist, bins = np.histogram(lengths, weights=mat_full, bins=np.arange(0,len(lengths)+1, bin_size))
+    log_hist, log_bins = np.histogram(np.log10(lengths+1), weights=mat_full, bins=len(lengths)//binsize)
     
-    ax=axes[1]
+    fig = make_subplots(
+    rows=2, cols=1,
+    subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing = 0.18,)
+    fig.update_layout(showlegend=False, autosize=False,
+        width=800,
+        height=600)
     
-    logbins = np.logspace(0,np.log10(lengths[-1]),len(lengths)//500)
+    fig.update_annotations(font_size=16)
+
+    xd=bins[1:]
+    customdata=np.dstack((bins[:-1],bins[1:], hist))[0,:,:]
+    yd=hist
+    y_max=np.max(hist)
+    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata, hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>', marker_color='#36a5c7'), row=1, col=1)
+
+    fig.add_vline(mean, line_width=1, line_dash="dash",annotation_text='Mean', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+    fig.add_vline(median, line_width=1, line_dash="dash",annotation_text='Median', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+
+
+    xd=log_bins[1:]
+    customdata=np.dstack((np.power(10,log_bins)[:-1],np.power(10,log_bins)[1:],log_hist))[0,:,:]
+    yd=log_hist
+    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata, hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>', marker_color='#36a5c7') , row=2, col=1)
+
+    fig.add_vline(np.log10(mean), line_width=1, line_dash="dash",annotation_text='Mean', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=2, col=1)
+    fig.add_vline(np.log10(median), line_width=1, line_dash="dash",annotation_text='Median', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=2, col=1)
+    fig.add_vline(np.log10(n50), line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=2, col=1)
+
+    fig.update_xaxes(
+        tickmode = 'array',
+        tickvals = list(range(0, 12)),
+        ticktext = ['0']+['{:,}'.format(10**x) for x in range(1, 12)],
+        ticks="outside", row=2, col=1)
+
+    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff= 0)
+    fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff= 0)    
+
+    fig.write_image(path,engine="kaleido")
     
-    ax.set_title('Log Read Length Histogram')
-    ax.set(ylabel='Frequency', xlabel='Length(bp)')
+    return fig.to_html(full_html=False)
 
-    ax.hist(lengths,weights=mat_full/np.sum(mat_full), bins=logbins)
 
-    ax.set_xscale('log')
-
-    for x in stats:
-        ax.axvline(x=stats[x], color=colors[x], linestyle='--',linewidth=1)
-
-    ax.spines['right'].set_visible(False)
-    ax.spines['top'].set_visible(False)
-    ax.set_xlim(xmin=100)
+def base_quality(data, path):
     
-    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=2.0)
-    plt.savefig(path) 
+    xd=np.arange(256)
+    yd=np.array(data.base_quality_distribution)
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
+    
+    fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff= 0)
+    fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff= 0)
+    
+    fig.write_image(path,engine="kaleido")
+    
+    return fig.to_html(full_html=False)
+
+
+def read_avg_base_quality(data, path):
+    
+    xd=np.arange(256)
+    yd=np.array(data.read_average_base_quality_distribution)
+    fig = go.Figure()
+    
+    fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
+    
+    fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff= 0)
+    fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff= 0)
+    
+    fig.write_image(path,engine="kaleido")
+    
+    return fig.to_html(full_html=False)

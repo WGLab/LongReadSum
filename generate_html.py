@@ -2,16 +2,22 @@ import lrst_global
 import base64
 
 class ST_HTML_Generator:
-   def __init__(self, para_list):
+   def __init__(self, para_list, static=True):
       self.image_key_list = para_list[0]
+       
       self.header_info = para_list[1];
       self.input_para = para_list[2];
+      self.static=static
+        
       if len( self.input_para["input_files"] ) > 1:
          self.more_input_files = True;
       else: self.more_input_files = False;      
 
    def generate_header( self):
-      self.html_writer = open( self.input_para["output_folder"]+'/'+self.input_para["out_prefix"]+"statistics.html", 'w')
+      if self.static:
+          self.html_writer = open( self.input_para["output_folder"]+'/'+self.input_para["out_prefix"]+"statistics.html", 'w')
+      else:
+          self.html_writer = open( self.input_para["output_folder"]+'/'+self.input_para["out_prefix"]+"statistics_dynamic.html", 'w')
       self.html_writer.write("<html>")
       self.html_writer.write( "<head>" )
       self.html_writer.write("<title>" )
@@ -244,17 +250,25 @@ class ST_HTML_Generator:
       self.html_writer.write('<div class="main">')
       _imki = 0;
       for _imk in self.image_key_list:
-         self.html_writer.write('<div class="module">');
-         self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
-         #self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
-         if _imk=="basic_st":
-            self.html_writer.write( lrst_global.plot_filenames["basic_st"]['detail'] )
-         else:
-            m_image_file = open(self.input_para["output_folder"]+'/'+lrst_global.plot_filenames[_imk]['file'], 'rb');
-            self.html_writer.write('<img class="indented" src="data:image/png;base64,'+base64.b64encode(m_image_file.read()).decode('utf-8')+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
-            m_image_file.close()
-         self.html_writer.write('</div>')
-         _imki += 1;
+        self.html_writer.write('<div class="module">');
+        self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
+         #self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')    
+        
+        if 'dynamic' in lrst_global.plot_filenames[_imk] and self.static==False:
+            self.html_writer.write(lrst_global.plot_filenames[_imk]['dynamic'])
+         
+        else:
+            if _imk=="basic_st":
+                 self.html_writer.write( lrst_global.plot_filenames["basic_st"]['detail'] )
+            else:
+                 m_image_file = open(self.input_para["output_folder"]+'/'+lrst_global.plot_filenames[_imk]['file'], 'rb');
+                 self.html_writer.write('<img class="indented" src="data:image/png;base64,'+base64.b64encode(m_image_file.read()).decode('utf-8')+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="800" height="600"/></p>')
+                 m_image_file.close()
+
+        self.html_writer.write('</div>')
+            
+        _imki += 1;
+      
       if True: #self.more_input_files:
          self.html_writer.write('<div class="module">');
          self.html_writer.write('<h2 id="lrst'+str(_imki)+'">The list of input files: '+str(len( self.input_para["input_files"] ))+'</h2><p>')

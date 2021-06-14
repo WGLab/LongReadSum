@@ -95,4 +95,6 @@ def bam_plot( bam_output, para_dict ):
     plot_base_counts([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('base_st'), subtitles=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
     plot_basic_info([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('basic_info'), categories=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
     
-    histogram(bam_output.long_read_info, get_image_path('read_length_hist'))
+    lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(bam_output.long_read_info, get_image_path('read_length_hist'))
+    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(bam_output.seq_quality_info, get_image_path('base_quality'))
+    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(bam_output.seq_quality_info, get_image_path('read_avg_base_quality'))

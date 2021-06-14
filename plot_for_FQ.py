@@ -48,5 +48,6 @@ def fq_plot( fq_output, para_dict ):
     plot_base_counts([fq_output.long_read_info], get_image_path('base_st'), subtitles=['Long Reads'])
     plot_basic_info([fq_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
     
-    histogram(fq_output.long_read_info, get_image_path('read_length_hist'))
-
+    lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(fq_output.long_read_info, get_image_path('read_length_hist'))
+    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(fq_output.seq_quality_info, get_image_path('base_quality'))
+    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(fq_output.seq_quality_info, get_image_path('read_avg_base_quality'))
