@@ -83,6 +83,35 @@ size_t F5_Thread_data::read_ss_record_2(std::ifstream* ref_F5_reader_ss){
 
    return num_ss_read_record;
 }
+size_t F5_Thread_data::read_ss_record_3(std::ifstream* ref_F5_reader_ss){
+   num_ss_read_record = 0;
+   std::string fq_file;
+   int muxv;
+   int batch_id;
+   float median_template, mad_template;
+   while( std::getline( *ref_F5_reader_ss, _line_seq_sum )) {
+       std::istringstream iss( _line_seq_sum );
+       F5_SS_Record _t_f5_ss_record;
+       //std::cout<<"(" << _line_seq_sum << ")"<<std::endl;
+       if (!(iss >> fq_file >> _F5_ss_records[num_ss_read_record].filename >> _F5_ss_records[num_ss_read_record].read_id
+                 >> _F5_ss_records[num_ss_read_record].run_id >> batch_id >> _F5_ss_records[num_ss_read_record].channel >> muxv
+                 >> _F5_ss_records[num_ss_read_record].start_time >> _F5_ss_records[num_ss_read_record].duration
+                 >> _F5_ss_records[num_ss_read_record].num_events >> _F5_ss_records[num_ss_read_record].passes_filtering
+                 >> _F5_ss_records[num_ss_read_record].template_start >> _F5_ss_records[num_ss_read_record].num_events_template
+                 >> _F5_ss_records[num_ss_read_record].template_duration
+                 >> _F5_ss_records[num_ss_read_record].sequence_length_template
+                 >> _F5_ss_records[num_ss_read_record].mean_qscore_template >> _F5_ss_records[num_ss_read_record].strand_score_template
+                 >> median_template >> mad_template)) {
+             std::cout<<"Error!!! for <"<<_line_seq_sum<<">"<<std::endl;
+             break;
+       }
+
+       num_ss_read_record++;
+       if ( num_ss_read_record >= _batch_size){ break; }
+   }
+
+   return num_ss_read_record;
+}
 
 F5_Module::F5_Module(Input_Para& _m_input){
    m_input_op = _m_input;
@@ -187,6 +216,8 @@ void F5_Module::F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_in
            read_ss_size = ref_thread_data.read_ss_record(ref_F5_reader_ss);
         }else if ( sum_type ==2 ){
            read_ss_size = ref_thread_data.read_ss_record_2(ref_F5_reader_ss);
+        }else if ( sum_type ==3 ){
+           read_ss_size = ref_thread_data.read_ss_record_3(ref_F5_reader_ss);
         }else{
            read_ss_size = 0;
         }

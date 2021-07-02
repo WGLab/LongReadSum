@@ -11,4 +11,4 @@ dependencies:
   - minimap2
   - swig
   - matplotlib
-  - plotly
+  - plotly=4.14

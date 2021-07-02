@@ -51,6 +51,7 @@ private:
 
       size_t read_ss_record(std::ifstream* ref_F5_reader_ss);
       size_t read_ss_record_2(std::ifstream* ref_F5_reader_ss);
+      size_t read_ss_record_3(std::ifstream* ref_F5_reader_ss);
 
       F5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size);
       ~F5_Thread_data();
