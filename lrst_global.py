@@ -1,7 +1,7 @@
 
 import os
 
-prg_name = "LongReadDS"
+prg_name = "LongReadSum"
 originalError = '!!!Error: !!!!!! \n'
 
 LOG_ALL = 0;
@@ -33,8 +33,10 @@ plot_filenames= {\
 
 "base_quality":{'file':default_image_path+"base_quality"+default_image_suf, 'title':"Base Quality", 'description':"Base Quality"},
                  
-"read_avg_base_quality":{'file':default_image_path+"read_avg_base_quality"+default_image_suf, 'title':"Average Read Base Quality", 'description':"Average Read Base Quality"},                 
+"read_avg_base_quality":{'file':default_image_path+"read_avg_base_quality"+default_image_suf, 'title':"Average Read Base Quality", 'description':"Average Read Base Quality"},
                  
+"pos_quality":{'file':default_image_path+"pos_quality"+default_image_suf, 'title':"Base Position Quality", 'description':"Base Position Quality"},
+                                  
 # for fast5
 "nanopore_st": {'file':default_image_path+"nanopore_st"+default_image_suf, 'title':"ONT-Basecall", 'description':"The statistics of passed and failed reads"}\
 }

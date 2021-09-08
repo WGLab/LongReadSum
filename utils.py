@@ -99,7 +99,7 @@ def histogram(data, path):
     
     
     mat=np.array(mat)[:,np.newaxis]
-    mat=mat[:np.max(np.nonzero(mat))+1]
+    mat=mat[:data.longest_read_length+1]
     bin_size=1000
     mat_full=np.vstack([mat, np.zeros(bin_size-len(mat)%bin_size)[:,np.newaxis]])
     mat_full=mat_full.ravel()
@@ -159,7 +159,8 @@ def base_quality(data, path):
     yd=np.array(data.base_quality_distribution)
     fig = go.Figure()
     
-    fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
+    customdata=np.dstack((xd,yd))[0,:,:]
+    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata, hovertemplate='Base Quality: %{customdata[0]:.0f}<br>Base Counts:%{customdata[1]:.0f}<extra></extra>', marker_color='#36a5c7'))
     
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff= 0)
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff= 0)
@@ -175,6 +176,9 @@ def read_avg_base_quality(data, path):
     yd=np.array(data.read_average_base_quality_distribution)
     fig = go.Figure()
     
+    #customdata=np.dstack((xd,yd))[0,:,:]
+    
+    #fig.add_trace(go.Bar(x=xd, y=yd,  customdata=customdata, hovertemplate='Average Base Quality: %{customdata[0]:.0f}<br>Read Counts:%{customdata[1]:.0f}<extra></extra>', marker_color='#36a5c7'))
     fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
     
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff= 0)
@@ -183,3 +187,21 @@ def read_avg_base_quality(data, path):
     fig.write_image(path,engine="kaleido")
     
     return fig.to_html(full_html=False)
+
+def pos_quality(data, max_len, path):
+    qual=np.array(data.pos_quality_distribution)[:max_len+1]
+
+    xd=np.arange(max_len+1)
+    stdev=np.array(data.pos_quality_distribution_dev)[:max_len+1]
+    
+    fig = go.Figure()
+    
+    fig.add_trace(go.Scatter(x=xd, y=qual, marker_color='#36a5c7'))
+    fig.update_xaxes(ticks="outside", title_text='Base position in read', title_standoff= 0)
+    fig.update_yaxes(ticks="outside", title_text='Average Base Quality', title_standoff= 0)
+    
+    
+    fig.write_image(path,engine="kaleido")
+    
+    return fig.to_html(full_html=False)
+    

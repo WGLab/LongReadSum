@@ -97,4 +97,5 @@ def bam_plot( bam_output, para_dict ):
     
     lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(bam_output.long_read_info, get_image_path('read_length_hist'))
     lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(bam_output.seq_quality_info, get_image_path('base_quality'))
-    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(bam_output.seq_quality_info, get_image_path('read_avg_base_quality'))
+    #lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(bam_output.seq_quality_info, get_image_path('read_avg_base_quality'))
+    #lrst_global.plot_filenames['pos_quality']['dynamic'] = pos_quality(bam_output.seq_quality_info, bam_output.long_read_info.longest_read_length , get_image_path('pos_quality'))

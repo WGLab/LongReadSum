@@ -51,3 +51,5 @@ def fq_plot( fq_output, para_dict ):
     lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(fq_output.long_read_info, get_image_path('read_length_hist'))
     lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(fq_output.seq_quality_info, get_image_path('base_quality'))
     lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(fq_output.seq_quality_info, get_image_path('read_avg_base_quality'))
+    
+    #lrst_global.plot_filenames['pos_quality']['dynamic'] = pos_quality(fq_output.seq_quality_info, fq_output.long_read_info.longest_read_length , get_image_path('pos_quality'))
