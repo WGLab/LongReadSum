@@ -12,3 +12,4 @@ dependencies:
   - swig
   - matplotlib
   - plotly=4.14
+  - python-kaleido
