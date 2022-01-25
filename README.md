@@ -23,17 +23,22 @@ It is easy to install the dependent packages of LongReadSum using `annoconda`. T
 git clone https://github.com/WGLab/LongReadSum
 cd LongReadSum
 conda env create -f environment.yml
-source activate lrst_py39   #if you change conda env name, please replace `lrst_py39`
+
+#if you change conda env name, please replace `lrst_py39`
+conda env config vars set -n lrst_py39 PATH=$PWD:$PATH
+source activate lrst_py39   
+
 make
+chmod +x LongReadSum
 ```
 
-Then, you can run `python LongReadSum.py`
+Then, you can run `LongReadSum`
 
 
 # General Usage
-After installation, simply type `python LongReadSum/LongReadSum.py` will tell you the options.
+After installation, simply type `LongReadSum` will tell you the options.
 ```
-usage: LongReadSum.py [-h] {fq,fa,bam,f5} ...
+usage: LongReadSum [-h] {fq,fa,bam,f5} ...
 
 Data analysis tools for long-read sequencing data
 
@@ -48,10 +53,10 @@ optional arguments:
   -h, --help      show this help message and exit
 
 For example,
-                                                python LongReadSum.py fq: with fq or fastq input
-                                                python LongReadSum.py fa: with fa or fasta input
-                                                python LongReadSum.py bam: with bam input
-                                                python LongReadSum.py f5: with fast5 input
+                                                LongReadSum fq: with fq or fastq input
+                                                LongReadSum fa: with fa or fasta input
+                                                LongReadSum bam: with bam input
+                                                LongReadSum f5: with fast5 input
 ```
 
 
