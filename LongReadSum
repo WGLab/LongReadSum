@@ -314,7 +314,7 @@ fq_parsers = subparsers.add_parser('fq',
                                    parents=[parent_parser],
                                    help="Show data analysis for fq files",
                                    description="For example, \n \
-                                                 \tpython %(prog)s  \n \
+                                                 \t%(prog)s  \n \
                                                 ",
                                    formatter_class=RawTextHelpFormatter)
 fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
@@ -326,7 +326,7 @@ fa_parsers = subparsers.add_parser('fa',
                                    parents=[parent_parser],
                                    help="Show data analysis for fa files",
                                    description="For example, \n \
-                                                 \tpython %(prog)s  \n \
+                                                 \t%(prog)s  \n \
                                                 ",
                                    formatter_class=RawTextHelpFormatter)
 fa_parsers.set_defaults(func=fa_module)
@@ -335,7 +335,7 @@ bam_parsers = subparsers.add_parser('bam',
                                     parents=[parent_parser],
                                     help="Show data analysis for bam files",
                                     description="For example, \n \
-                                                 \tpython %(prog)s  \n \
+                                                 \t%(prog)s  \n \
                                                 ",
                                     formatter_class=RawTextHelpFormatter)
 bam_parsers.set_defaults(func=bam_module)
@@ -344,7 +344,7 @@ f5_parsers = subparsers.add_parser('f5',
                                    parents=[parent_parser],
                                    help="Show data analysis for f5 files",
                                    description="For example, \n \
-                                                 \tpython %(prog)s  \n \
+                                                 \t%(prog)s  \n \
                                                 ",
                                    formatter_class=RawTextHelpFormatter)
 f5_parsers.add_argument("-S", "--seq", type=int, default=1,
