@@ -264,10 +264,10 @@ def f5_module(margs):
 
 parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",
                                  epilog="For example, \n \
-                                         \tpython %(prog)s fq: with fq or fastq input\n\
-                                         \tpython %(prog)s fa: with fa or fasta input\n\
-                                         \tpython %(prog)s bam: with bam input\n\
-                                         \tpython %(prog)s f5: with fast5 input\n\
+                                         \t%(prog)s fq: with fq or fastq input\n\
+                                         \t%(prog)s fa: with fa or fasta input\n\
+                                         \t%(prog)s bam: with bam input\n\
+                                         \t%(prog)s f5: with fast5 input\n\
                                          ",
                                  formatter_class=RawTextHelpFormatter)
 
