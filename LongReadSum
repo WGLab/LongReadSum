@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+"""
+LongReadSum.py:
+Parse arguments and run the filetype-specific module.
+"""
 
 import lrst_global
 import os
@@ -34,11 +38,19 @@ def get_log_level(log_l):
 
 
 def get_common_param(margs, para_dict):
+    """
+    Format a dict object para_dict to contain our input files/output folder parameters
+    Output a string containing all parse argument errors.
+    Inputs:
+    margs: Command line input arguments (dict).
+    """
+    # TODO: The para_dict input is always empty in this function. Thus, it can be defined in this function.
     this_error_str = ""
 
     if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (margs.inputPattern == None or margs.inputPattern == ""):
         this_error_str += "No input file(s) are provided. \n"
     else:
+        # Populate our
         para_dict["input_files"] = []
         if not (margs.input == None or margs.input == ""):
             para_dict["input_files"].append(margs.input)
@@ -93,6 +105,7 @@ def get_common_param(margs, para_dict):
 def fq_module(margs):
     para_dict = {}
     errorStr = lrst_global.originalError
+
     errorStr += get_common_param(margs, para_dict)
 
     if not errorStr == lrst_global.originalError:
@@ -134,17 +147,28 @@ def fq_module(margs):
 
 
 def fa_module(margs):
+    """
+    Run the *.FA filetype module.
+    Input:
+    """
     para_dict = {}
     errorStr = lrst_global.originalError
-    errorStr += get_common_param(margs, para_dict)
 
+    # Format a dict object to contain our input files/output folder parameters
+    errorStr += get_common_param(margs, para_dict)  # TODO: para_dict is always an empty dict in these calls
+
+    # If original error string has not been appended to by get_common_params(), this means that there were no parse
+    # errors. TODO: originalError can be an empty string in lrst_global.py
+    #  TODO: Define these global variables at the top of this file (or module function) instead
     if not errorStr == lrst_global.originalError:
+        # If there are parse errors, display the filetype-specific help instructions
         print(errorStr)
         print("#############################################\n")
         # parser.print_help()
         parser.parse_args(['fa', '--help'])
         sys.exit(1002)
     else:
+        # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "fa_";
         import lrst
@@ -278,8 +302,10 @@ parser = argparse.ArgumentParser(description="Data analysis tools for long-read 
 #
 ##############################################################################
 
-
+# The subparser will determine our filetype-specific modules
 subparsers = parser.add_subparsers()
+
+# The parent parser contains parameters common to all modules (input/output file, etc.)
 parent_parser = argparse.ArgumentParser(add_help=False)
 
 common_grp_param = parent_parser.add_argument_group(
@@ -365,4 +391,6 @@ else:
             parser.print_help()
         else:
             args = parser.parse_args()
+
+            # Run the filetype-specific module
             args.func(args)

@@ -1,3 +1,9 @@
+"""
+lrst_global.py:
+Format image filenames based on the provided output folder parameter.
+Set the log error code variables.
+"""
+
 
 import os
 
