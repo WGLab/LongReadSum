@@ -154,7 +154,9 @@ def histogram(data, path):
 
 
 def base_quality(data, path):
-    
+    """
+    Save the 'Base quality' plot image.
+    """
     xd=np.arange(256)
     yd=np.array(data.base_quality_distribution)
     fig = go.Figure()
@@ -171,7 +173,9 @@ def base_quality(data, path):
 
 
 def read_avg_base_quality(data, path):
-    
+    """
+    Save the 'Average base quality' plot image.
+    """
     xd=np.arange(256)
     yd=np.array(data.read_average_base_quality_distribution)
     fig = go.Figure()
@@ -189,6 +193,9 @@ def read_avg_base_quality(data, path):
     return fig.to_html(full_html=False)
 
 def pos_quality(data, max_len, path):
+    """
+    Save the 'Average base quality' plot image.
+    """
     qual=np.array(data.pos_quality_distribution)[:max_len+1]
 
     xd=np.arange(max_len+1)

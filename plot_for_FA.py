@@ -1,3 +1,8 @@
+"""
+plot_for_FA.py:
+Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
+"""
+
 import lrst_global
 import os, itertools
 import matplotlib.pyplot as plt
@@ -44,9 +49,8 @@ def fa_plot( fa_output, para_dict ):
     #print("num_primary_alignment: {}".format(fa_output.num_primary_alignment))
     generate_bs( fa_output, para_dict)
 
+    # Save plot images using statistics generated from the C++ module
     plot_read_length_stats([fa_output.long_read_info], get_image_path('read_length_st'), subtitles=['Long Reads'])
     plot_base_counts([fa_output.long_read_info], get_image_path('base_st'), subtitles=['Long Reads'])
     plot_basic_info([fa_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
-    
     histogram(fa_output.long_read_info, get_image_path('read_length_hist'))
-

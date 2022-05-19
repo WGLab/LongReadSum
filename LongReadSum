@@ -117,6 +117,8 @@ def fq_module(margs):
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "fq_";
+
+        # Import the SWIG Python wrapper for our C++ module
         import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]

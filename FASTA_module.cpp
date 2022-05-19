@@ -1,3 +1,7 @@
+/*
+FASTA_module.cpp:
+
+*/
 #include <stdio.h>
 #include <stdlib.h>
 #include <zlib.h>
@@ -11,6 +15,7 @@
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
+// Helper function for saving formatted read statistics to an output text file
 static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_details_fp)
 {
     gzFile input_fp;
@@ -79,7 +84,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
     return 0;
 }
 
-
+// Save summary statistics to the output file
 int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
 {
     const char *input_file = NULL;
