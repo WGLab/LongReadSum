@@ -1,3 +1,8 @@
+/*
+Python_to_CXX_class.h:
+Define the Python bindings from our C++ modules
+*/
+
 #ifndef PYTHON_TO_CXX_CLASS_H
 #define PYTHON_TO_CXX_CLASS_H
 // Python_to_CXX_class
@@ -11,6 +16,11 @@
 #define MAX_INPUT_FILES 2048
 //#define PATH_LENGTH 1024
 
+
+/*
+Input_Para:
+Python-invoked C++ class
+*/
 class Input_Para{
 private:
    /*char output_folder[PATH_LENGTH];

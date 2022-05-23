@@ -1,6 +1,10 @@
 #ifndef CXX_TO_PYTHON_CLASS_H
 #define CXX_TO_PYTHON_CLASS_H
-// CXX_to_python_class
+
+/*
+CXX_to_python_class.h:
+Define the C++ bindings from our Python modules
+*/
 
 #include <string>
 #include <vector>
@@ -28,6 +32,11 @@ public:
    Output_Info();
 };
 
+
+
+/*
+Basic_Seq_Statistics: Python-invoked C++ class
+*/
 class Basic_Seq_Statistics
 {
 public:
