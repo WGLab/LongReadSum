@@ -173,6 +173,9 @@ def fa_module(margs):
         # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "fa_";
+
+        # TODO: Multiple calls to the Python-wrapped C++ module are made (the lrst calls), but only a single
+        #  module call to the filetype-specific function should be needed. Could improve performance
         import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]

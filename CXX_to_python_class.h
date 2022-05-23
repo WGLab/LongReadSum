@@ -24,6 +24,10 @@ Define the C++ bindings from our Python modules
 #define ZeroDefault 0
 #define MoneDefault -1
 
+
+/*
+Output_FQ: Base class which contains error output.
+*/
 class Output_Info
 {
 public:
@@ -35,7 +39,7 @@ public:
 
 
 /*
-Basic_Seq_Statistics: Python-invoked C++ class
+Basic_Seq_Statistics: Python-invoked C++ class which contains basic statistics from the C++ module
 */
 class Basic_Seq_Statistics
 {
@@ -113,6 +117,10 @@ public:
    ~Basic_Seq_Quality_Statistics();
 };
 
+
+/*
+TODO: Output_FQ appears to have the same members as the FA parent class, so may not be needed.
+*/
 class Output_FQ : public Output_FA
 {
 public:

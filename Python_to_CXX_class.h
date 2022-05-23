@@ -1,6 +1,7 @@
 /*
 Python_to_CXX_class.h:
 Define the Python bindings from our C++ modules
+TODO: Not C++-specific functionality so this wrapper may not be needed by the python module
 */
 
 #ifndef PYTHON_TO_CXX_CLASS_H

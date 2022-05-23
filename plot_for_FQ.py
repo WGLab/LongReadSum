@@ -1,3 +1,8 @@
+"""
+plot_for_FQ.py:
+Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
+"""
+
 import lrst_global
 import os, itertools
 import matplotlib.pyplot as plt
