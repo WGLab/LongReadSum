@@ -1,6 +1,10 @@
 #ifndef CXX_TO_PYTHON_CLASS_H
 #define CXX_TO_PYTHON_CLASS_H
-// CXX_to_python_class
+
+/*
+CXX_to_python_class.h:
+Define the C++ bindings from our Python modules
+*/
 
 #include <string>
 #include <vector>
@@ -20,6 +24,10 @@
 #define ZeroDefault 0
 #define MoneDefault -1
 
+
+/*
+Output_FQ: Base class which contains error output.
+*/
 class Output_Info
 {
 public:
@@ -28,6 +36,11 @@ public:
    Output_Info();
 };
 
+
+
+/*
+Basic_Seq_Statistics: Python-invoked C++ class which contains basic statistics from the C++ module
+*/
 class Basic_Seq_Statistics
 {
 public:
@@ -104,6 +117,10 @@ public:
    ~Basic_Seq_Quality_Statistics();
 };
 
+
+/*
+TODO: Output_FQ appears to have the same members as the FA parent class, so may not be needed.
+*/
 class Output_FQ : public Output_FA
 {
 public:
