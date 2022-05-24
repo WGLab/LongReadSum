@@ -5,30 +5,34 @@ generate_html.py: Generate the HTML file from our plot images.
 import lrst_global  # Contains our image filepaths
 import base64
 
+
 class ST_HTML_Generator:
-   def __init__(self, para_list, static=True):
-      self.image_key_list = para_list[0]
-       
-      self.header_info = para_list[1];
-      self.input_para = para_list[2];
-      self.static=static
-        
-      if len( self.input_para["input_files"] ) > 1:
-         self.more_input_files = True;
-      else: self.more_input_files = False;      
+    def __init__(self, para_list, static=True):
+        self.image_key_list = para_list[0]  # List of statistics variables to look for
 
-   def generate_header( self):
-      if self.static:
-          self.html_writer = open( self.input_para["output_folder"]+'/'+self.input_para["out_prefix"]+"statistics.html", 'w')
-      else:
-          self.html_writer = open( self.input_para["output_folder"]+'/'+self.input_para["out_prefix"]+"statistics_dynamic.html", 'w')
-      self.html_writer.write("<html>")
-      self.html_writer.write( "<head>" )
-      self.html_writer.write("<title>" )
-      self.html_writer.write( self.header_info )
-      self.html_writer.write("</title>" )
+        self.header_info = para_list[1]  # The webpage's title
+        self.input_para = para_list[2]  # List of the input parameters used for these statistics
+        self.static = static  # Static vs. dynamic webpage boolean
 
-      self.html_writer.write('''<style  type="text/css">
+        if len(self.input_para["input_files"]) > 1:
+            self.more_input_files = True;
+        else:
+            self.more_input_files = False;
+
+    def generate_header(self):
+        if self.static:
+            self.html_writer = open(
+                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "statistics.html", 'w')
+        else:
+            self.html_writer = open(
+                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "statistics_dynamic.html", 'w')
+        self.html_writer.write("<html>")
+        self.html_writer.write("<head>")
+        self.html_writer.write("<title>")
+        self.html_writer.write(self.header_info)
+        self.html_writer.write("</title>")
+
+        self.html_writer.write('''<style  type="text/css">
  @media screen {
   div.summary {
     width: 18em;
@@ -216,86 +220,91 @@ class ST_HTML_Generator:
   }
       </style>''')
 
-      self.html_writer.write( "</head>" )
-      self.html_writer.write( "<body>" )  
-      self.html_writer.write( '''<div class="header"> 
+        self.html_writer.write("</head>")
+        self.html_writer.write("<body>")
+        self.html_writer.write('''<div class="header"> 
          <div id="header_title">{} Report</div>
          <div id="header_filename">
              <script> document.write(new Date().toLocaleDateString()); </script>
       '''.format(lrst_global.prg_name))
-      # for _af in self.input_para["input_files"]:
-      #   self.html_writer.write( "<br/>"+_af); 
-      #self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
-      self.html_writer.write( '''       
+        # for _af in self.input_para["input_files"]:
+        #   self.html_writer.write( "<br/>"+_af);
+        # self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
+        self.html_writer.write('''       
          </div>
       </div>''')
- 
-   def generate_left( self ):
-      self.html_writer.write('<div class="summary">');
-      self.html_writer.write('<h2>Summary</h2>')
-      self.html_writer.write('<ul>')
- 
-      _imki = 0;     
-      for _imk in self.image_key_list:
-          self.html_writer.write('<li>')
-          self.html_writer.write('<a href="#lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['title']+'</a>')
-          _imki += 1;
-          self.html_writer.write('</li>')
-      if True: #self.more_input_files:
-          self.html_writer.write('<li>')
-          self.html_writer.write('<a href="#lrst'+str(_imki)+'">Input files</a>')
-          _imki += 1;
-          self.html_writer.write('</li>')
 
-      self.html_writer.write("</ul>")
-      self.html_writer.write('</div>')
+    def generate_left(self):
+        self.html_writer.write('<div class="summary">');
+        self.html_writer.write('<h2>Summary</h2>')
+        self.html_writer.write('<ul>')
 
-   def generate_right( self ):
-      self.html_writer.write('<div class="main">')
-      _imki = 0;
-      for _imk in self.image_key_list:
-        self.html_writer.write('<div class="module">');
-        self.html_writer.write('<h2 id="lrst'+str(_imki)+'">'+lrst_global.plot_filenames[_imk]['description']+'</h2><p>')
-         #self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')    
-        
-        if 'dynamic' in lrst_global.plot_filenames[_imk] and self.static==False:
-            self.html_writer.write(lrst_global.plot_filenames[_imk]['dynamic'])
-         
-        else:
-            if _imk=="basic_st":
-                 self.html_writer.write( lrst_global.plot_filenames["basic_st"]['detail'] )
+        _imki = 0
+        for _imk in self.image_key_list:
+            self.html_writer.write('<li>')
+            self.html_writer.write(
+                '<a href="#lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['title'] + '</a>')
+            _imki += 1;
+            self.html_writer.write('</li>')
+        if True:  # self.more_input_files:
+            self.html_writer.write('<li>')
+            self.html_writer.write('<a href="#lrst' + str(_imki) + '">Input files</a>')
+            _imki += 1;
+            self.html_writer.write('</li>')
+
+        self.html_writer.write("</ul>")
+        self.html_writer.write('</div>')
+
+    def generate_right(self):
+        self.html_writer.write('<div class="main">')
+        _imki = 0
+        for _imk in self.image_key_list:
+            self.html_writer.write('<div class="module">')
+            self.html_writer.write(
+                '<h2 id="lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['description'] + '</h2><p>')
+            # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'"
+            # alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+
+            if 'dynamic' in lrst_global.plot_filenames[_imk] and self.static == False:
+                self.html_writer.write(lrst_global.plot_filenames[_imk]['dynamic'])
+
             else:
-                 m_image_file = open(self.input_para["output_folder"]+'/'+lrst_global.plot_filenames[_imk]['file'], 'rb');
-                 self.html_writer.write('<img class="indented" src="data:image/png;base64,'+base64.b64encode(m_image_file.read()).decode('utf-8')+'" alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="800" height="600"/></p>')
-                 m_image_file.close()
+                if _imk == "basic_st":
+                    self.html_writer.write(lrst_global.plot_filenames["basic_st"]['detail'])
+                else:
+                    m_image_file = open(
+                        self.input_para["output_folder"] + '/' + lrst_global.plot_filenames[_imk]['file'], 'rb');
+                    self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
+                        m_image_file.read()).decode('utf-8') + '" alt="' + lrst_global.plot_filenames[_imk][
+                                               'description'] + '" width="800" height="600"/></p>')
+                    m_image_file.close()
+
+            self.html_writer.write('</div>')
+
+            _imki += 1
+
+        if True:  # self.more_input_files:  # TODO: Implement multi-file HTML generation?
+            self.html_writer.write('<div class="module">')
+            self.html_writer.write('<h2 id="lrst' + str(_imki) + '">The list of input files: ' + str(
+                len(self.input_para["input_files"])) + '</h2><p>')
+            for _af in self.input_para["input_files"]:
+                self.html_writer.write("<br/>" + _af)
+            self.html_writer.write('</p></div>')
+            _imki += 1
 
         self.html_writer.write('</div>')
-            
-        _imki += 1;
-      
-      if True: #self.more_input_files:
-         self.html_writer.write('<div class="module">');
-         self.html_writer.write('<h2 id="lrst'+str(_imki)+'">The list of input files: '+str(len( self.input_para["input_files"] ))+'</h2><p>')
-         for _af in self.input_para["input_files"]:
-            self.html_writer.write( "<br/>"+_af);
-         self.html_writer.write('</p></div>')
-         _imki += 1;
 
-      self.html_writer.write('</div>')
+    def generate_end(self):
+        self.html_writer.write(
+            '<div class="footer"> Generated by <a href="https://github.com/WGLab/{}">{}</a> </div>'.format(
+                lrst_global.prg_name, lrst_global.prg_name))
 
-   def generate_end( self ):
-      self.html_writer.write( '<div class="footer"> Generated by <a href="https://github.com/WGLab/{}">{}</a> </div>'.format(lrst_global.prg_name, lrst_global.prg_name) )
+        self.html_writer.write("</body>")
+        self.html_writer.write("</html>")
+        self.html_writer.close()
 
-      self.html_writer.write( "</body>" )
-      self.html_writer.write("</html>")
-      self.html_writer.close();
-
-   def generate_st_html( self ):
-      self.generate_header( );
-   
-      self.generate_left( );
-      self.generate_right( );
-
-      self.generate_end( );
-
-
+    def generate_st_html(self):
+        self.generate_header()
+        self.generate_left()
+        self.generate_right()
+        self.generate_end()
