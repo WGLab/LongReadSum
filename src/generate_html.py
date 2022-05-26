@@ -265,12 +265,16 @@ class ST_HTML_Generator:
             # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'"
             # alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
 
+            # If dynamic, access the stored plot objects
             if 'dynamic' in lrst_global.plot_filenames[_imk] and self.static == False:
                 self.html_writer.write(lrst_global.plot_filenames[_imk]['dynamic'])
 
+            # If static:
             else:
+                # If statistics only, no plot images are needed and access the statistics detail text
                 if _imk == "basic_st":
                     self.html_writer.write(lrst_global.plot_filenames["basic_st"]['detail'])
+                # Access the stored plot images from their file locations
                 else:
                     m_image_file = open(
                         self.input_para["output_folder"] + '/' + lrst_global.plot_filenames[_imk]['file'], 'rb');
