@@ -22,4 +22,6 @@ jobs:
         environment-file: environment.yml
         python-version: 3.9
         auto-activate-base: false
+    - name: make
+      shell: bash -l {0}
       run: make
