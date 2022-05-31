@@ -23,5 +23,5 @@ jobs:
         python-version: 3.9
         auto-activate-base: false
     - name: make
-      shell: bash -l {0}
+      shell: bash --login {0}  # --login enables PATH variable access
       run: make
