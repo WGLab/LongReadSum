@@ -1,6 +1,6 @@
 # This workflow will build LongReadSum
 
-name: Build LongReadSum
+name: build
 
 on:
   push:
