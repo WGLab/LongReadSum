@@ -22,5 +22,4 @@ jobs:
         environment-file: environment.yml
         python-version: 3.9
         auto-activate-base: false
-    - name: make
       run: make
