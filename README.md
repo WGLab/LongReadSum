@@ -1,5 +1,7 @@
 # LongReadSum: a fast and flexible tools for data statistics of long-read sequencing data 
 
+[![build](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml/badge.svg?branch=main&event=push)](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml)
+
 LongReadSum supports fq, fa, bam and fast5 inputs for quick generation of long-read data in a HTML format.
 
 # System requirements
