@@ -13,5 +13,6 @@ dependencies:
   - matplotlib
   - plotly=4.14
   - pytest
+  - pip
   - pip:
           - kaleido
