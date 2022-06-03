@@ -22,6 +22,12 @@ jobs:
         environment-file: environment.yml
         python-version: 3.9
         auto-activate-base: false
-    - name: make
+    - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
       run: make
+    - name: Run tests
+      shell: bash --login {0}
+      run: |
+        pip install pytest
+        pip install pytest-cov
+        pytest tests.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
