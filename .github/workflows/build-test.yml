@@ -25,6 +25,13 @@ jobs:
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
       run: make
+    - name: Download assets
+      uses: dsaltares/fetch-gh-release-asset@1.0.0
+      with:
+        repo: 'WGLab/LongReadSum'
+        version: 'tags/v0.1.0'
+        file: 'FASTA.zip'
+        target: 'TestInputs/FASTA.zip'
     - name: Run tests
       shell: bash --login {0}
       run: |
