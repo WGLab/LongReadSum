@@ -10,21 +10,10 @@ on:
 
 jobs:
   build-linux:
-
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
-    - name: Set up conda environment
-      uses: conda-incubator/setup-miniconda@v2
-      with:
-        activate-environment: lrst_py39
-        environment-file: environment.yml
-        python-version: 3.9
-        auto-activate-base: false
-    - name: Build LongReadSum
-      shell: bash --login {0}  # --login enables PATH variable access
-      run: make
+
     - name: Download assets
       uses: dsaltares/fetch-gh-release-asset@1.0.0
       with:
@@ -32,9 +21,23 @@ jobs:
         version: 'tags/v0.1.0'
         file: 'FASTA.zip'
         target: 'TestInputs/FASTA.zip'
+
     - name: Unzip assets
       shell: bash --login {0}
       run: unzip TestInputs/FASTA.zip -d TestInputs
+
+    - name: Set up conda environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        activate-environment: lrst_py39
+        environment-file: environment.yml
+        python-version: 3.9
+        auto-activate-base: false
+
+    - name: Build LongReadSum
+      shell: bash --login {0}  # --login enables PATH variable access
+      run: make
+
     - name: Run tests
       shell: bash --login {0}
       run: |
