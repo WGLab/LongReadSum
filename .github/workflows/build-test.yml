@@ -32,9 +32,12 @@ jobs:
         version: 'tags/v0.1.0'
         file: 'FASTA.zip'
         target: 'TestInputs/FASTA.zip'
+    - name: Unzip assets
+      shell: bash --login {0}
+      run: unzip TestInputs/FASTA.zip -d TestInputs
     - name: Run tests
       shell: bash --login {0}
       run: |
+        mkdir output  # Output folder for tests
         pip install pytest
-        pip install pytest-cov
-        pytest test/test_statistics.py --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
+        pytest

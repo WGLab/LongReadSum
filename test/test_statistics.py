@@ -21,7 +21,7 @@ def test_fasta_n50():
     input_para.other_flags = 0
     output_folder = os.path.abspath(str("output/"))
     input_para.output_folder = output_folder
-    input_file = os.path.abspath(str("../TestInput/all_chr.hap1.cns.fa"))
+    input_file = os.path.abspath(str("TestInputs/all_chr.hap1.cns.fa"))
     input_para.add_input_file(input_file)
     input_para.out_prefix = str("fa_")
 
@@ -49,9 +49,9 @@ def test_two_fasta_n50():
     input_para.other_flags = 0
     output_folder = os.path.abspath(str("output/"))
     input_para.output_folder = output_folder
-    input_file1 = os.path.abspath(str("../TestInput/all_chr.hap1.cns.fa"))
+    input_file1 = os.path.abspath(str("TestInputs/all_chr.hap1.cns.fa"))
     input_para.add_input_file(input_file1)
-    input_file2 = os.path.abspath(str("../TestInput/all_chr.hap2.cns.fa"))
+    input_file2 = os.path.abspath(str("TestInputs/all_chr.hap2.cns.fa"))
     input_para.add_input_file(input_file2)
     input_para.out_prefix = str("fa_")
 
