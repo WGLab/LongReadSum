@@ -1,3 +1,9 @@
+/*
+F5_module.cpp:
+Class for calling FAST5 statistics modules.
+
+*/
+
 #include "F5_module.h"
 #include "ComFunction.h"
 
@@ -73,6 +79,7 @@ size_t F5_Thread_data::read_ss_record_2(std::ifstream* ref_F5_reader_ss){
                  >> _F5_ss_records[num_ss_read_record].sequence_length_template 
                  >> _F5_ss_records[num_ss_read_record].mean_qscore_template >> _F5_ss_records[num_ss_read_record].strand_score_template
                  >> median_template >> mad_template)) {
+             // TODO: Make the warning below more informative, here it prints out the whole read record  w/o info about the line parsing error.
              std::cout<<"Error!!! for <"<<_line_seq_sum<<">"<<std::endl;
              break;
        }
@@ -93,6 +100,7 @@ size_t F5_Thread_data::read_ss_record_3(std::ifstream* ref_F5_reader_ss){
        std::istringstream iss( _line_seq_sum );
        F5_SS_Record _t_f5_ss_record;
        //std::cout<<"(" << _line_seq_sum << ")"<<std::endl;
+       // TODO: How many of these stored variables are used for generating statistics?
        if (!(iss >> fq_file >> _F5_ss_records[num_ss_read_record].filename >> _F5_ss_records[num_ss_read_record].read_id
                  >> _F5_ss_records[num_ss_read_record].run_id >> batch_id >> _F5_ss_records[num_ss_read_record].channel >> muxv
                  >> _F5_ss_records[num_ss_read_record].start_time >> _F5_ss_records[num_ss_read_record].duration
@@ -113,6 +121,7 @@ size_t F5_Thread_data::read_ss_record_3(std::ifstream* ref_F5_reader_ss){
    return num_ss_read_record;
 }
 
+// F5_Module Constructor
 F5_Module::F5_Module(Input_Para& _m_input){
    m_input_op = _m_input;
 
