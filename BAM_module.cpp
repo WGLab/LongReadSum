@@ -1,3 +1,8 @@
+/*
+BAM_module.cpp:
+Class for generating BAM file statistics. Records are accessed using multi-threading.
+*/
+
 #include "BAM_module.h"
 #include "ComFunction.h"
 
@@ -12,8 +17,8 @@ BAM_Thread_data::~BAM_Thread_data(){
    //std::cout<<" ~BAM_Thread_data " << _thread_id <<std::endl<<std::flush;
 }
 
-size_t BAM_Module::batch_size_of_record=3000;
-std::mutex BAM_Module::myMutex_readBam;
+size_t BAM_Module::batch_size_of_record=3000;  // Number of records for each thread
+std::mutex BAM_Module::myMutex_readBam;  // Mutex allows you to compile data across threads
 std::mutex BAM_Module::myMutex_output;
 size_t BAM_Module::read_i_bam = 0;
 
@@ -50,7 +55,7 @@ BAM_Module::BAM_Module(Input_Para& _m_input){
 
 BAM_Module::~BAM_Module(){
    //std::cout<<" ~BAM_Module begin" <<std::endl<<std::flush;
-   if (_bam_reader_ptr!=NULL){ 
+   if (_bam_reader_ptr!=NULL){
        delete _bam_reader_ptr; 
    }
    _bam_reader_ptr = NULL;
@@ -73,10 +78,13 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
       int _i_t=0;
       BAM_Thread_data** thread_data_vector = new BAM_Thread_data*[m_input_op.threads];
       try{
+
          for (_i_t=0; _i_t<m_input_op.threads; _i_t++){
              std::cout<<"INFO: generate threads "<<_i_t<<std::endl<<std::flush;
              thread_data_vector[_i_t] = new BAM_Thread_data(m_input_op, _i_t, BAM_Module::batch_size_of_record);
              std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
+
+             // Push the next N records onto a thread for statistics computations
              m_threads.push_back(std::thread((BAM_Module::BAM_do_thread), _bam_reader_ptr, std::ref(m_input_op), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_bam_info), std::ref(secondary_alignment), std::ref(supplementary_alignment) ));
          }
 
@@ -93,7 +101,7 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
          std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
       }
      
-      // std::cout<<" del "<<std::endl<<std::flush; 
+      // std::cout<<" del "<<std::endl<<std::flush;
       for (_i_t=0; _i_t<m_input_op.threads; _i_t++){
          // std::cout<<" del >"<< _i_t <<std::endl<<std::flush;
          delete thread_data_vector[_i_t];
@@ -119,11 +127,12 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
    std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
 
    std::cout<<"<Statistics on BAM>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
- 
-   //return t_output_bam_info; 
+
+   //return t_output_bam_info;
    return has_error;
 }
 
+// Calculate statistics computations on a thread for the next N set of records from the BAM file
 void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment){
     std::vector<Bam1Record>::iterator br_it;
     uint64_t match_this_read;
@@ -135,6 +144,8 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
 
         ref_thread_data.br_list.clear();
         myMutex_readBam.lock();
+
+        // Read the record into the thread pointer
         ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
         if (ref_thread_data.br_list.size() == 0 && !(read_i_bam < ref_input_op.num_input_files) ){
             // std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." << read_i_bam <<"/"<< ref_input_op.num_input_files <<std::endl;
@@ -162,13 +173,13 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         ref_thread_data.t_output_bam_.unmapped_long_read_info.resize();
         ref_thread_data.t_output_bam_.mapped_long_read_info.resize();
         ref_thread_data.t_output_bam_.long_read_info.resize();
-        //std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." <<std::endl; 
+        //std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." <<std::endl;
         for(br_it=ref_thread_data.br_list.begin(); br_it!=ref_thread_data.br_list.end(); br_it++){
            // std::cout<< br_it->qry_seq_len <<" " << br_it->qry_seq.length() << " " << br_it->qry_name << " " << int(br_it->map_flag) << std::endl <<std::flush;
            Basic_Seq_Statistics* _seq_st = NULL;
            Basic_Seq_Quality_Statistics* _seq_qual_st = NULL;
            if ( (br_it->map_flag)& BAM_FUNMAP ) { 
-               // ref_thread_data.t_output_bam_.unmapped_long_read_info.total_num_reads += 1; 
+               // ref_thread_data.t_output_bam_.unmapped_long_read_info.total_num_reads += 1;
                // ref_thread_data.t_output_bam_.unmapped_long_read_info.total_num_bases += br_it->qry_seq_len;
                _seq_st = &( ref_thread_data.t_output_bam_.unmapped_long_read_info);
                _seq_qual_st = &(ref_thread_data.t_output_bam_.unmapped_seq_quality_info);
@@ -249,7 +260,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
               for(size_t _ci=0; _ci<br_it->cigar_type.size(); _ci++){
                   switch (br_it->cigar_type[_ci]){
                      case BAM_CEQUAL:
-                          // ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci]; 
+                          // ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci];
                      case BAM_CMATCH: // M
                           match_this_read += br_it->cigar_len[_ci];
                           ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci];
