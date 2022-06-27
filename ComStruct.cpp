@@ -1,16 +1,6 @@
 #include "ComStruct.h"
 
 Fast5ReaderRunOption::Fast5ReaderRunOption(){
-   /*
-   f5events.resize(MAX_F5EVENT_SIZE);
-   f5eventsOld0.resize(MAX_F5EVENT_SIZE);
-   f5eventsOld1.resize(MAX_F5EVENT_SIZE);
-   f5signals.resize(MAX_F5SIGNAL_SIZE);
-   f5moves.resize(MAX_F5SIGNAL_SIZE);
-   group_dif.resize(MAX_F5SIGNAL_SIZE+1);
-   group_sum.resize(MAX_F5SIGNAL_SIZE+1);
-   */
-
    f5events = new F5Event[MAX_F5EVENT_SIZE];
    f5eventsOld0 = new F5EventOld0[MAX_F5EVENT_SIZE];
    f5eventsOld1 = new F5EventOld1[MAX_F5EVENT_SIZE];

@@ -85,6 +85,7 @@ typedef struct Map1Base{
   char qry_base;
   char ref_base;
 } Map1Base;
+
 // 0-based, like bam and bed format
 typedef struct Map1BasePos{
   uint64_t qry_pos;
@@ -113,9 +114,6 @@ typedef struct Map1BasePosPred{
   uint64_t qry_pos;
   uint64_t ref_pos;
   uint64_t map_type;
-  
-  //float pred1;
-  //float pred2;
   float pred;
 } Map1BasePosPred;
 
@@ -125,43 +123,14 @@ typedef struct MapRecord{
    std::string qry_readname;
    uint64_t _start_;
 
-   //std::vector<Map1BasePos> map_detail;
    std::vector<Map1BasePosPred> map_detail;
 } MapRecord;
-
-
-////////////////////////////
-
-/*typedef struct Fast5ReaderRunOption{
-  uint64_t group_size; 
-  std::string read_num;
-  std::string read_id;
-  F5Event f5events[MAX_F5EVENT_SIZE];
-  F5EventOld0 f5eventsOld0[MAX_F5EVENT_SIZE];
-  F5EventOld1 f5eventsOld1[MAX_F5EVENT_SIZE];
-  int16_t f5signals [MAX_F5SIGNAL_SIZE];
-  int8_t f5moves [MAX_F5SIGNAL_SIZE];
-  double group_dif[MAX_F5SIGNAL_SIZE+1];
-  double group_sum[MAX_F5SIGNAL_SIZE+1];
-  //std::map<std::string, std::vector<std::string> > errorInfo;
-
-  //std::map<std::string, std::string> readToF5;
-  //std::map<std::string, bool> readOfInterest;
-} Fast5ReaderRunOption;
-*/
 
 class Fast5ReaderRunOption{
 public:
   uint64_t group_size;
   std::string read_num;
   std::string read_id;
-  /*std::vector<F5Event> f5events;
-  std::vector<F5EventOld0> f5eventsOld0;
-  std::vector<F5EventOld1> f5eventsOld1;
-  std::vector<int16_t> f5signals;
-  std::vector<int8_t> f5moves;
-  std::vector<double> group_dif;
-  std::vector<double> group_sum;*/
 
   F5Event *f5events;
   F5EventOld0 *f5eventsOld0;
@@ -170,14 +139,6 @@ public:
   int8_t * f5moves;
   double *group_dif;
   double * group_sum;
-
-  //F5Event f5events[MAX_F5EVENT_SIZE];
-  //F5EventOld0 f5eventsOld0[MAX_F5EVENT_SIZE];
-  //F5EventOld1 f5eventsOld1[MAX_F5EVENT_SIZE];
-  //int16_t f5signals [MAX_F5SIGNAL_SIZE];
-  //int8_t f5moves [MAX_F5SIGNAL_SIZE];
-  //double group_dif[MAX_F5SIGNAL_SIZE+1];
-  //double group_sum[MAX_F5SIGNAL_SIZE+1];
 
   Fast5ReaderRunOption();
   ~Fast5ReaderRunOption();
@@ -191,10 +152,11 @@ typedef struct GenomicRegion{
 } GenomicRegion;
 
 // 0-based, like bam and bed format; end-not-included
+// Data structure for storing a repeat region
 typedef struct RepeatRegion{
    uint64_t start_pos;
    uint64_t end_pos;
-   char chrn[CHAR_SIZE];
+   char repeat_size[CHAR_SIZE];
    int len_repeat_unit;
 } RepeatRegion;
 
