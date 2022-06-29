@@ -20,7 +20,7 @@ def test_fasta_n50():
     input_para.other_flags = 0
     output_folder = os.path.abspath(str("output/"))
     input_para.output_folder = output_folder
-    input_file = os.path.abspath(str("TestInputs/fasta_trim1.fa"))
+    input_file = os.path.abspath(str("TestInputs/fasta_trim1.fa"))  # Remote path
     # input_file = str("/home/perdomoj/github/LongReadSum/SampleData trimmed/SampleData/fasta_trim1.fa") # Local path
     input_para.add_input_file(input_file)
     input_para.out_prefix = str("fa_")
@@ -31,4 +31,4 @@ def test_fasta_n50():
 
     # Ensure the N50 value is correct
     n50_read_length = fa_output.long_read_info.n50_read_length
-    assert exit_code == 0 and n50_read_length == 9726200
+    assert (exit_code == 0) and (n50_read_length == 9726200)
