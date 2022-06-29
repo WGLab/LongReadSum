@@ -14,10 +14,6 @@ def test_fasta_n50():
 
     # Set parameters
     input_para = lrst.Input_Para()
-    input_para.threads = 1
-    input_para.rdm_seed = 1
-    input_para.downsample_percentage = 1.0
-    input_para.other_flags = 0
     output_folder = os.path.abspath(str("output/"))
     input_para.output_folder = output_folder
     input_file = os.path.abspath(str("SampleData/fasta_trim1.fa"))  # Remote path
