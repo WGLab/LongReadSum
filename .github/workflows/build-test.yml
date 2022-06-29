@@ -20,11 +20,10 @@ jobs:
         repo: 'WGLab/LongReadSum'
         version: 'tags/v0.1.0'
         file: 'SampleData.zip'
-        target: 'TestInputs/SampleData.zip'
 
     - name: Unzip assets
       shell: bash --login {0}
-      run: unzip TestInputs/SampleData.zip -d TestInputs
+      run: unzip SampleData.zip
 
     - name: Set up conda environment
       uses: conda-incubator/setup-miniconda@v2
