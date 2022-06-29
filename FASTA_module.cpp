@@ -33,54 +33,55 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
         fprintf(stderr, "ERROR! Failed to open file for reading: %s", input_file);
         //exit(1);
         exit_code = 3;
-    }
-    seq = kseq_init(input_fp);
-    while ((read_len = kseq_read(seq)) >= 0)
-    {
-        if (read_len == 0) {continue;}
-        read_name = seq->name.s;
-        read_seq = seq->seq.s;
-        if ((uint64_t)read_len > long_read_info.longest_read_length)
+    } else {
+        seq = kseq_init(input_fp);
+        while ((read_len = kseq_read(seq)) >= 0)
         {
-            long_read_info.longest_read_length = read_len;
-        }
-        long_read_info.total_num_reads += 1;
-        long_read_info.total_num_bases += read_len;
-        if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
-            long_read_info.read_length_count[read_len] += 1;
-        } else {
-            long_read_info.read_length_count.resize(read_len + 1000, 0);
-            long_read_info.read_length_count[read_len] += 1;
-        }
-        read_gc_cnt = 0;
+            if (read_len == 0) {continue;}
+            read_name = seq->name.s;
+            read_seq = seq->seq.s;
+            if ((uint64_t)read_len > long_read_info.longest_read_length)
+            {
+                long_read_info.longest_read_length = read_len;
+            }
+            long_read_info.total_num_reads += 1;
+            long_read_info.total_num_bases += read_len;
+            if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
+                long_read_info.read_length_count[read_len] += 1;
+            } else {
+                long_read_info.read_length_count.resize(read_len + 1000, 0);
+                long_read_info.read_length_count[read_len] += 1;
+            }
+            read_gc_cnt = 0;
 
-        for (int i = 0; i < read_len; i++)
-        {
-            if (read_seq[i] == 'A' || read_seq[i] == 'a')
+            for (int i = 0; i < read_len; i++)
             {
-                long_read_info.total_a_cnt += 1;
+                if (read_seq[i] == 'A' || read_seq[i] == 'a')
+                {
+                    long_read_info.total_a_cnt += 1;
+                }
+                else if (read_seq[i] == 'G' || read_seq[i] == 'g')
+                {
+                    long_read_info.total_g_cnt += 1;
+                    read_gc_cnt += 1;
+                }
+                else if (read_seq[i] == 'C' || read_seq[i] == 'c')
+                {
+                    long_read_info.total_c_cnt += 1;
+                    read_gc_cnt += 1;
+                }
+                else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
+                {
+                    long_read_info.total_tu_cnt += 1;
+                }
             }
-            else if (read_seq[i] == 'G' || read_seq[i] == 'g')
-            {
-                long_read_info.total_g_cnt += 1;
-                read_gc_cnt += 1;
-            }
-            else if (read_seq[i] == 'C' || read_seq[i] == 'c')
-            {
-                long_read_info.total_c_cnt += 1;
-                read_gc_cnt += 1;
-            }
-            else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
-            {
-                long_read_info.total_tu_cnt += 1;
-            }
+            read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
+            long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+            fprintf(read_details_fp, "%s\t%d\t%.2f\n", read_name, read_len, read_gc_cnt);
         }
-        read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
-        long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-        fprintf(read_details_fp, "%s\t%d\t%.2f\n", read_name, read_len, read_gc_cnt);
+
+        kseq_destroy(seq);
     }
-
-    kseq_destroy(seq);
     gzclose(input_fp);
 
     return exit_code;
@@ -159,59 +160,61 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
             fprintf(stderr, "ERROR! total_num_bases is not consistent! this is a bug!");
             //exit(1);
             exit_code = 4;
-        }
-        py_output_fa.long_read_info.gc_cnt = g_c / a_tu_g_c;
+        } else {
+            py_output_fa.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
-        int percent = 1;
-        int64_t num_bases_sum = 0;
-        int64_t num_reads_sum = 0;
-        py_output_fa.long_read_info.median_read_length = -1;
-        for (int read_len = py_output_fa.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
-        {
-            num_reads_sum += py_output_fa.long_read_info.read_length_count[read_len];
-            num_bases_sum += py_output_fa.long_read_info.read_length_count[read_len] * read_len;
-            if (num_reads_sum * 2 > py_output_fa.long_read_info.total_num_reads && py_output_fa.long_read_info.median_read_length < 0)
+            int percent = 1;
+            int64_t num_bases_sum = 0;
+            int64_t num_reads_sum = 0;
+            py_output_fa.long_read_info.median_read_length = -1;
+            for (int read_len = py_output_fa.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
             {
-                py_output_fa.long_read_info.median_read_length = read_len;
-            }
-            if (num_bases_sum * 100 > py_output_fa.long_read_info.total_num_bases * percent)
-            {
-                py_output_fa.long_read_info.NXX_read_length[percent] = read_len;
-                percent += 1;
-                if (percent > 100)
+                num_reads_sum += py_output_fa.long_read_info.read_length_count[read_len];
+                num_bases_sum += py_output_fa.long_read_info.read_length_count[read_len] * read_len;
+                if (num_reads_sum * 2 > py_output_fa.long_read_info.total_num_reads && py_output_fa.long_read_info.median_read_length < 0)
                 {
-                    break;
+                    py_output_fa.long_read_info.median_read_length = read_len;
+                }
+                if (num_bases_sum * 100 > py_output_fa.long_read_info.total_num_bases * percent)
+                {
+                    py_output_fa.long_read_info.NXX_read_length[percent] = read_len;
+                    percent += 1;
+                    if (percent > 100)
+                    {
+                        break;
+                    }
                 }
             }
+
+            py_output_fa.long_read_info.n50_read_length = py_output_fa.long_read_info.NXX_read_length[50];
+            py_output_fa.long_read_info.n95_read_length = py_output_fa.long_read_info.NXX_read_length[95];
+            py_output_fa.long_read_info.n05_read_length = py_output_fa.long_read_info.NXX_read_length[5];
+            py_output_fa.long_read_info.mean_read_length = (double)py_output_fa.long_read_info.total_num_bases / (double)py_output_fa.long_read_info.total_num_reads;
+
+            read_summary_fp = fopen(read_summary_file.c_str(), "w");
+            fprintf(read_summary_fp, "total number of reads\t%ld\n", py_output_fa.long_read_info.total_num_reads);
+            fprintf(read_summary_fp, "total number of bases\t%ld\n", py_output_fa.long_read_info.total_num_bases);
+            fprintf(read_summary_fp, "longest read length\t%lu\n", py_output_fa.long_read_info.longest_read_length);
+            fprintf(read_summary_fp, "N50 read length\t%ld\n", py_output_fa.long_read_info.n50_read_length);
+            fprintf(read_summary_fp, "mean read length\t%.2f\n", py_output_fa.long_read_info.mean_read_length);
+            fprintf(read_summary_fp, "median read length\t%ld\n", py_output_fa.long_read_info.median_read_length);
+            fprintf(read_summary_fp, "GC%%\t%.2f\n", py_output_fa.long_read_info.gc_cnt * 100);
+            fprintf(read_summary_fp, "\n\n");
+            for (int percent = 5; percent < 100; percent += 5)
+            {
+                fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
+            }
+
+            fprintf(read_summary_fp, "\n\n");
+
+            fprintf(read_summary_fp, "GC content\tnumber of reads\n");
+            for (int gc_ratio = 0; gc_ratio <= 100; gc_ratio++)
+            {
+                fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
+            }
+            fclose(read_summary_fp);
         }
 
-        py_output_fa.long_read_info.n50_read_length = py_output_fa.long_read_info.NXX_read_length[50];
-        py_output_fa.long_read_info.n95_read_length = py_output_fa.long_read_info.NXX_read_length[95];
-        py_output_fa.long_read_info.n05_read_length = py_output_fa.long_read_info.NXX_read_length[5];
-        py_output_fa.long_read_info.mean_read_length = (double)py_output_fa.long_read_info.total_num_bases / (double)py_output_fa.long_read_info.total_num_reads;
-
-        read_summary_fp = fopen(read_summary_file.c_str(), "w");
-        fprintf(read_summary_fp, "total number of reads\t%ld\n", py_output_fa.long_read_info.total_num_reads);
-        fprintf(read_summary_fp, "total number of bases\t%ld\n", py_output_fa.long_read_info.total_num_bases);
-        fprintf(read_summary_fp, "longest read length\t%lu\n", py_output_fa.long_read_info.longest_read_length);
-        fprintf(read_summary_fp, "N50 read length\t%ld\n", py_output_fa.long_read_info.n50_read_length);
-        fprintf(read_summary_fp, "mean read length\t%.2f\n", py_output_fa.long_read_info.mean_read_length);
-        fprintf(read_summary_fp, "median read length\t%ld\n", py_output_fa.long_read_info.median_read_length);
-        fprintf(read_summary_fp, "GC%%\t%.2f\n", py_output_fa.long_read_info.gc_cnt * 100);
-        fprintf(read_summary_fp, "\n\n");
-        for (int percent = 5; percent < 100; percent += 5)
-        {
-            fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
-        }
-
-        fprintf(read_summary_fp, "\n\n");
-
-        fprintf(read_summary_fp, "GC content\tnumber of reads\n");
-        for (int gc_ratio = 0; gc_ratio <= 100; gc_ratio++)
-        {
-            fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
-        }
-        fclose(read_summary_fp);
     }
 
 
