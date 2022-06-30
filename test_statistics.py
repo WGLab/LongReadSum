@@ -6,6 +6,7 @@ import os
 import lrst
 import pytest
 
+
 @pytest.fixture(scope='class')
 def fasta_output():
     """
@@ -15,10 +16,17 @@ def fasta_output():
     default_parameters = lrst.Input_Para()
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
-    input_file = os.path.abspath(str("SampleData/fasta_trim1.fa"))  # Remote path
-    # input_file = str("/home/perdomoj/github/LongReadSum/SampleData trimmed/SampleData/fasta_trim1.fa") # Local path    default_parameters.add_input_file(input_file)
-    default_parameters.add_input_file(input_file)
     default_parameters.out_prefix = str("fa_")
+
+    # Check if running remotely
+    local_dir = '/home/perdomoj/github/LongReadSum'
+    if os.path.samefile(os.getcwd(), local_dir):
+        input_file = str("/home/perdomoj/github/LongReadSum/SampleData/fasta_trim1.fa") # Local path
+    else:
+        input_file = os.path.abspath(str("SampleData/fasta_trim1.fa"))  # Remote path
+
+    # Add input files
+    default_parameters.add_input_file(input_file)
 
     # Run the FASTA statistics module
     output = lrst.Output_FA()
@@ -33,4 +41,3 @@ class TestFASTA:
         # Ensure the N50 value is correct
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert (exit_code == 0) and (n50_read_length == 9726200)
-
