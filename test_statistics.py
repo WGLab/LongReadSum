@@ -19,9 +19,9 @@ def fasta_output():
     default_parameters.out_prefix = str("fa_")
 
     # Check if running remotely
-    local_dir = '/home/perdomoj/github/LongReadSum'
+    local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.path.samefile(os.getcwd(), local_dir):
-        input_file = str("/home/perdomoj/github/LongReadSum/SampleData/fasta_trim1.fa") # Local path
+        input_file = os.path.join(local_dir, "SampleData/fasta_trim1.fa") # Local path
     else:
         input_file = os.path.abspath(str("SampleData/fasta_trim1.fa"))  # Remote path
 
