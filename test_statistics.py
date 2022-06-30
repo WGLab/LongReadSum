@@ -96,6 +96,34 @@ def bam_output():
     yield [exit_code, output]
 
 
+@pytest.fixture(scope='class')
+def unmapped_bam_output():
+    """
+    Run the BAM module on unmapped inputs.
+    """
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("bam_")
+
+    # Check if running remotely
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        input_file = os.path.join(local_dir, "SampleData/pacbio_unmapped_trim.bam") # Local path
+    else:
+        input_file = os.path.abspath(str("SampleData/pacbio_unmapped_trim.bam"))  # Remote path
+
+    # Add input files
+    default_parameters.add_input_file(input_file)
+
+    # Run the FASTA statistics module
+    output = lrst.Output_BAM()
+    exit_code = lrst.callBAMModule(default_parameters, output)
+
+    yield [exit_code, output]
+
+
 # Filetype-specific unit test classes
 class TestFASTA:
     """
@@ -168,20 +196,50 @@ class TestBAM:
         assert exit_code == 0
 
     # Unit tests
-    @pytest.mark.dependency(depends=["TestFASTA::test_success"])
+    @pytest.mark.dependency(depends=["TestBAM::test_success"])
     def test_base_count(self, bam_output):
         output_statistics = bam_output[1]
         base_count = output_statistics.long_read_info.total_num_bases
         assert base_count == 340189
 
-    @pytest.mark.dependency(depends=["TestFASTA::test_success"])
+    @pytest.mark.dependency(depends=["TestBAM::test_success"])
     def test_read_count(self, bam_output):
         output_statistics = bam_output[1]
         read_count = output_statistics.long_read_info.total_num_reads
         assert read_count == 50
 
-    @pytest.mark.dependency(depends=["TestFASTA::test_success"])
+    @pytest.mark.dependency(depends=["TestBAM::test_success"])
     def test_n50(self, bam_output):
         output_statistics = bam_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 7415
+
+
+class TestUnmappedBAM:
+    """
+    Unit tests for unmapped BAM inputs.
+    """
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, unmapped_bam_output):
+        exit_code = unmapped_bam_output[0]
+        assert exit_code == 0
+
+    # Unit tests
+    @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
+    def test_base_count(self, unmapped_bam_output):
+        output_statistics = unmapped_bam_output[1]
+        base_count = output_statistics.long_read_info.total_num_bases
+        assert base_count == 1297818
+
+    @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
+    def test_read_count(self, unmapped_bam_output):
+        output_statistics = unmapped_bam_output[1]
+        read_count = output_statistics.long_read_info.total_num_reads
+        assert read_count == 95
+
+    @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
+    def test_n50(self, unmapped_bam_output):
+        output_statistics = unmapped_bam_output[1]
+        n50_read_length = output_statistics.long_read_info.n50_read_length
+        assert n50_read_length == 21391
