@@ -57,6 +57,7 @@ private:
       ~F5_Thread_data();
 };
 
+// Main class for FAST5 file statistics generation
 class F5_Module{
 private:
       static size_t read_i_F5;
@@ -75,8 +76,10 @@ public:
 
    int has_error;
 
+
    static void F5_do_thread(std::ifstream* ref_F5_reader_ss, Input_Para& ref_input_op, int thread_id, F5_Thread_data& ref_thread_data, Output_F5& ref_output);   
 
+   // Function for generating statistics
    int F5_st( Output_F5& t_output_F5_info);
 
    F5_Module(Input_Para& _m_input);

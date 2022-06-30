@@ -2,6 +2,7 @@ name: lrst_py39
 channels:
   - bioconda
   - anaconda
+  - conda-forge
   - defaults
 dependencies:
   - python=3.9
@@ -12,5 +13,8 @@ dependencies:
   - swig
   - matplotlib
   - plotly=4.14
+  - pytest
+  - pytest-dependency
+  - pip
   - pip:
           - kaleido

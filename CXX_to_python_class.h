@@ -84,24 +84,18 @@ public:
    Basic_Seq_Statistics long_read_info;
 };
 
+
+
 class Basic_Seq_Quality_Statistics
 {
 public:
-   //int64_t base_quality_distribution[MAX_BASE_QUALITY];  // base quality distribution: each position is the number of bases with the quality of the index.
    std::vector<int64_t> base_quality_distribution;
    std::vector<int64_t> read_average_base_quality_distribution;
    int min_base_quality = MoneDefault; // minimum base quality;
    int max_base_quality = MoneDefault; // maximum base quality;
-
-   //int *pos_quality_distribution; // the base quality according to positions of long reads: each position is the mean quality at the position of long reads
-   //double *pos_quality_distribution_dev; // similar to above but for the standard deviation
-   //int64_t *pos_quality_distribution_count; // similar to above but for the number of bases
    std::vector<int> pos_quality_distribution;
    std::vector<double> pos_quality_distribution_dev;
    std::vector<int64_t> pos_quality_distribution_count;
-   //int pos_quality_distribution[MAX_READ_LENGTH];
-   //double pos_quality_distribution_dev[MAX_READ_LENGTH];
-   //int64_t pos_quality_distribution_count[MAX_READ_LENGTH];
    int64_t max_length = ZeroDefault;
 
    std::vector<int64_t> read_quality_distribution;
@@ -118,14 +112,12 @@ public:
 };
 
 
-/*
-TODO: Output_FQ appears to have the same members as the FA parent class, so may not be needed.
-*/
 class Output_FQ : public Output_FA
 {
 public:
    Basic_Seq_Quality_Statistics seq_quality_info;
 };
+
 
 class Output_BAM : public Output_FQ
 {

@@ -25,7 +25,6 @@ namespace std{
 };
 
 // These are the header functions wrapped by our lrst module
-%include "Python_to_CXX_class.h"
-%include "CXX_to_python_class.h"
-%include "LRST_function.h"
-
+%include "Python_to_CXX_class.h"  // Contains InputPara for passing parameters to C++
+%include "CXX_to_python_class.h"  // Contains data structures for storing statistics for each file type
+%include "LRST_function.h"  // Functions for calling the C++ statistics computation modules

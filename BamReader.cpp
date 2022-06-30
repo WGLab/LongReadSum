@@ -1,3 +1,10 @@
+/*
+
+BamReader.cpp:
+Class for reading a set number of records from a BAM file. Used for multi-threading.
+
+*/
+
 #include "BamReader.h"
 #include <htslib/sam.h>
 
