@@ -35,9 +35,18 @@ def fasta_output():
     yield [exit_code, output]
 
 class TestFASTA:
-    def test_module_load(self, fasta_output):
-        exit_code, output_statistics = fasta_output
+    """
+    Test the FASTA output.
+    """
+    @pytest.mark.dependency()
+    def test_success(self, fasta_output):
+        # Ensure the FASTA module ran successfully
+        exit_code = fasta_output[0]
+        assert exit_code == 0
 
+    @pytest.mark.dependency(depends=["TestFASTA::test_success"])
+    def test_n50(self, fasta_output):
         # Ensure the N50 value is correct
+        output_statistics = fasta_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
-        assert (exit_code == 0) and (n50_read_length == 9726200)
+        assert n50_read_length == 9726200
