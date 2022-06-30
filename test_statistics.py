@@ -7,6 +7,7 @@ import lrst
 import pytest
 
 
+# Fixtures for module outputs
 @pytest.fixture(scope='class')
 def fasta_output():
     """
@@ -34,19 +35,95 @@ def fasta_output():
 
     yield [exit_code, output]
 
+@pytest.fixture(scope='class')
+def multiple_fasta_output():
+    """
+    Run the FASTA module for multiple inputs.
+    """
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("faX2_")
+
+    # Check if running remotely
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        # Local paths
+        input_file1 = os.path.join(local_dir, "SampleData/fasta_trim1.fa")
+        input_file2 = os.path.join(local_dir, "SampleData/fasta_trim2.fa")
+    else:
+        # Remote paths
+        input_file1 = os.path.abspath(str("SampleData/fasta_trim1.fa"))
+        input_file2 = os.path.abspath(str("SampleData/fasta_trim2.fa"))
+
+    # Add input files
+    default_parameters.add_input_file(input_file1)
+    default_parameters.add_input_file(input_file2)
+
+    # Run the FASTA statistics module
+    output = lrst.Output_FA()
+    exit_code = lrst.callFASTAModule(default_parameters, output)
+
+    yield [exit_code, output]
+
+
+# Filetype-specific unit test classes
 class TestFASTA:
     """
-    Test the FASTA output.
+    Unit tests for FASTA inputs.
     """
+    # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, fasta_output):
-        # Ensure the FASTA module ran successfully
         exit_code = fasta_output[0]
         assert exit_code == 0
 
+    # Unit tests
+    @pytest.mark.dependency(depends=["TestFASTA::test_success"])
+    def test_base_count(self, fasta_output):
+        output_statistics = fasta_output[1]
+        base_count = output_statistics.long_read_info.total_num_bases
+        assert base_count == 126055194
+
+    @pytest.mark.dependency(depends=["TestFASTA::test_success"])
+    def test_read_count(self, fasta_output):
+        output_statistics = fasta_output[1]
+        read_count = output_statistics.long_read_info.total_num_reads
+        assert read_count == 100
+
     @pytest.mark.dependency(depends=["TestFASTA::test_success"])
     def test_n50(self, fasta_output):
-        # Ensure the N50 value is correct
         output_statistics = fasta_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 9726200
+
+
+class TestMultipleFASTA:
+    """
+    Unit tests for multiple FASTA inputs
+    """
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, multiple_fasta_output):
+        exit_code = multiple_fasta_output[0]
+        assert exit_code == 0
+
+    # Unit tests
+    @pytest.mark.dependency(depends=["TestMultipleFASTA::test_success"])
+    def test_base_count(self, multiple_fasta_output):
+        output_statistics = multiple_fasta_output[1]
+        base_count = output_statistics.long_read_info.total_num_bases
+        assert base_count == 186794132
+
+    @pytest.mark.dependency(depends=["TestMultipleFASTA::test_success"])
+    def test_read_count(self, multiple_fasta_output):
+        output_statistics = multiple_fasta_output[1]
+        read_count = output_statistics.long_read_info.total_num_reads
+        assert read_count == 201
+
+    @pytest.mark.dependency(depends=["TestMultipleFASTA::test_success"])
+    def test_n50(self, multiple_fasta_output):
+        output_statistics = multiple_fasta_output[1]
+        n50_read_length = output_statistics.long_read_info.n50_read_length
+        assert n50_read_length == 15495669
