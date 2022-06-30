@@ -20,7 +20,7 @@ def fasta_output():
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
-    if os.path.samefile(os.getcwd(), local_dir):
+    if os.getcwd() == local_dir:
         input_file = os.path.join(local_dir, "SampleData/fasta_trim1.fa") # Local path
     else:
         input_file = os.path.abspath(str("SampleData/fasta_trim1.fa"))  # Remote path
