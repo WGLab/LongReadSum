@@ -261,10 +261,22 @@ class TestBAM:
         assert base_count == 340189
 
     @pytest.mark.dependency(depends=["TestBAM::test_success"])
+    def test_mapped_base_count(self, bam_output):
+        output_statistics = bam_output[1]
+        mapped_base_count = output_statistics.num_matched_bases
+        assert mapped_base_count == 304323
+
+    @pytest.mark.dependency(depends=["TestBAM::test_success"])
     def test_read_count(self, bam_output):
         output_statistics = bam_output[1]
         read_count = output_statistics.long_read_info.total_num_reads
         assert read_count == 50
+
+    @pytest.mark.dependency(depends=["TestBAM::test_success"])
+    def test_mapped_read_count(self, bam_output):
+        output_statistics = bam_output[1]
+        mapped_read_count = output_statistics.num_primary_alignment
+        assert mapped_read_count == 50
 
     @pytest.mark.dependency(depends=["TestBAM::test_success"])
     def test_n50(self, bam_output):
@@ -291,10 +303,22 @@ class TestUnmappedBAM:
         assert base_count == 1297818
 
     @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
+    def test_mapped_base_count(self, unmapped_bam_output):
+        output_statistics = unmapped_bam_output[1]
+        mapped_base_count = output_statistics.num_matched_bases
+        assert mapped_base_count == 0
+
+    @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
     def test_read_count(self, unmapped_bam_output):
         output_statistics = unmapped_bam_output[1]
         read_count = output_statistics.long_read_info.total_num_reads
         assert read_count == 95
+
+    @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
+    def test_mapped_read_count(self, unmapped_bam_output):
+        output_statistics = unmapped_bam_output[1]
+        mapped_read_count = output_statistics.num_primary_alignment
+        assert mapped_read_count == 0
 
     @pytest.mark.dependency(depends=["TestUnmappedBAM::test_success"])
     def test_n50(self, unmapped_bam_output):
