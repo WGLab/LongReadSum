@@ -69,6 +69,34 @@ def multiple_fasta_output():
 
 
 @pytest.fixture(scope='class')
+def fastq_output():
+    """
+    Run the FASTQ module.
+    """
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("fq_")
+
+    # Check if running remotely
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        input_file = os.path.join(local_dir, "SampleData/guppy.fastq") # Local path
+    else:
+        input_file = os.path.abspath(str("SampleData/guppy.fastq"))  # Remote path
+
+    # Add input files
+    default_parameters.add_input_file(input_file)
+
+    # Run the FASTA statistics module
+    output = lrst.Output_FQ()
+    exit_code = lrst.callFASTQModule(default_parameters, output)
+
+    yield [exit_code, output]
+
+
+@pytest.fixture(scope='class')
 def bam_output():
     """
     Run the BAM module.
@@ -183,6 +211,36 @@ class TestMultipleFASTA:
         output_statistics = multiple_fasta_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 15495669
+
+
+class TestFASTQ:
+    """
+    Unit tests for FASTQ inputs.
+    """
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, fastq_output):
+        exit_code = fastq_output[0]
+        assert exit_code == 0
+
+    # Unit tests
+    @pytest.mark.dependency(depends=["TestFASTQ::test_success"])
+    def test_base_count(self, fastq_output):
+        output_statistics = fastq_output[1]
+        base_count = output_statistics.long_read_info.total_num_bases
+        assert base_count == 340189
+
+    @pytest.mark.dependency(depends=["TestFASTQ::test_success"])
+    def test_read_count(self, fastq_output):
+        output_statistics = fastq_output[1]
+        read_count = output_statistics.long_read_info.total_num_reads
+        assert read_count == 50
+
+    @pytest.mark.dependency(depends=["TestFASTQ::test_success"])
+    def test_n50(self, fastq_output):
+        output_statistics = fastq_output[1]
+        n50_read_length = output_statistics.long_read_info.n50_read_length
+        assert n50_read_length == 8731
 
 
 class TestBAM:

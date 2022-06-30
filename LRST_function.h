@@ -4,7 +4,7 @@
 
 int callBAMModule( Input_Para& _input_data, Output_BAM& py_output_bam );
 
-int generate_statistic_from_fq( Input_Para& _input_data, Output_FQ& py_output_fq );
+int callFASTQModule( Input_Para& _input_data, Output_FQ& py_output_fq );
 
 int callFASTAModule(Input_Para& _input_data, Output_FA& py_output_fa);
 
