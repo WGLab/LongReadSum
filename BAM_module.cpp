@@ -12,9 +12,7 @@ BAM_Thread_data::BAM_Thread_data(Input_Para& ref_input_op, int p_thread_id, int 
    m_input_op = ref_input_op;
 }
 
-BAM_Thread_data::~BAM_Thread_data(){ 
-   ; 
-   //std::cout<<" ~BAM_Thread_data " << _thread_id <<std::endl<<std::flush;
+BAM_Thread_data::~BAM_Thread_data(){
 }
 
 size_t BAM_Module::batch_size_of_record=3000;  // Number of records for each thread
@@ -25,50 +23,43 @@ size_t BAM_Module::read_i_bam = 0;
 BAM_Module::BAM_Module(Input_Para& _m_input){
    m_input_op = _m_input;
 
-   has_error = 0;
+   exit_code = 0;
    read_i_bam = 0;
 
    _bam_reader_ptr = NULL;   
    if ( read_i_bam >= _m_input.num_input_files ){
-      std::cout<<"Error!!! No input BAM are find. #input_files="<< _m_input.num_input_files <<std::endl;
-      has_error |= 1;
-      return;
-   }
-   
-    _bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam].c_str() );
-   //_bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam] );
-   if (!_bam_reader_ptr->check_bam_status()){
-       std::cout<< "Error!!! Cannot open bam file="<< _m_input.input_files[read_i_bam] <<std::endl;
-       has_error |= 2;
-   }else{
-       std::cout<< "INFO: Open bam file="<< _m_input.input_files[read_i_bam] <<" " << read_i_bam<<"/"<<_m_input.num_input_files <<std::endl;
-       _bam_reader_ptr->bamReadOp.set_w_supplementary(true);
-       _bam_reader_ptr->bamReadOp.set_w_secondary(true);
-       _bam_reader_ptr->bamReadOp.set_min_read_len(1);
-       _bam_reader_ptr->bamReadOp.set_w_qry_seq(true);
-       _bam_reader_ptr->bamReadOp.set_w_unmap(true);
-       _bam_reader_ptr->bamReadOp.set_w_qry_qual(true);
-       _bam_reader_ptr->bamReadOp.set_w_map_detail(false);
-       read_i_bam = 1;
+      std::cerr << "No input BAM are find. #input_files="<< _m_input.num_input_files <<std::endl;
+      exit_code = 2;
+   } else {
+        _bam_reader_ptr = new BamReader( _m_input.input_files[read_i_bam].c_str() );
+       if (!_bam_reader_ptr->check_bam_status()){
+           std::cerr << "Cannot open bam file="<< _m_input.input_files[read_i_bam] <<std::endl;
+           exit_code = 3;
+       }else{
+           std::cout << "INFO: Open bam file="<< _m_input.input_files[read_i_bam] <<" " << read_i_bam<<"/"<<_m_input.num_input_files <<std::endl;
+           _bam_reader_ptr->bamReadOp.set_w_supplementary(true);
+           _bam_reader_ptr->bamReadOp.set_w_secondary(true);
+           _bam_reader_ptr->bamReadOp.set_min_read_len(1);
+           _bam_reader_ptr->bamReadOp.set_w_qry_seq(true);
+           _bam_reader_ptr->bamReadOp.set_w_unmap(true);
+           _bam_reader_ptr->bamReadOp.set_w_qry_qual(true);
+           _bam_reader_ptr->bamReadOp.set_w_map_detail(false);
+           read_i_bam = 1;
+       }
    }
 }
 
 BAM_Module::~BAM_Module(){
-   //std::cout<<" ~BAM_Module begin" <<std::endl<<std::flush;
    if (_bam_reader_ptr!=NULL){
        delete _bam_reader_ptr; 
    }
    _bam_reader_ptr = NULL;
-   //std::cout<<" ~BAM_Module end" <<std::endl<<std::flush;
 }
 
-/*
-Output_BAM BAM_Module::bam_st(){
-   Output_BAM t_output_bam_info;*/
-int BAM_Module::bam_st( Output_BAM& t_output_bam_info){  
+int BAM_Module::calculateStatistics( Output_BAM& t_output_bam_info){
    auto relapse_start_time = std::chrono::high_resolution_clock::now();
 
-   if (has_error==0){
+   if (exit_code==0){
        m_threads.reserve(m_input_op.threads+3);
 
       t_output_bam_info.unmapped_long_read_info.resize();
@@ -101,35 +92,27 @@ int BAM_Module::bam_st( Output_BAM& t_output_bam_info){
          std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
       }
      
-      // std::cout<<" del "<<std::endl<<std::flush;
       for (_i_t=0; _i_t<m_input_op.threads; _i_t++){
-         // std::cout<<" del >"<< _i_t <<std::endl<<std::flush;
          delete thread_data_vector[_i_t];
-         // std::cout<<" del <"<< _i_t <<std::endl<<std::flush;
       }
-      // std::cout<<" del2 "<<std::endl<<std::flush;
       delete [] thread_data_vector;
+
+      // Compile statistics
+       t_output_bam_info.num_reads_with_secondary_alignment = secondary_alignment.size();
+       t_output_bam_info.num_reads_with_supplementary_alignment = supplementary_alignment.size();
+       for ( std::map<std::string, bool>::iterator sec_it=secondary_alignment.begin(),sup_it=supplementary_alignment.begin(); (sec_it!=secondary_alignment.end()) && ( sup_it!=supplementary_alignment.end()); ){
+          if ( *sec_it < *sup_it ){ ++sec_it; }
+          else if ( *sec_it > *sup_it ){ ++sup_it; }
+          else{ t_output_bam_info.num_reads_with_both_secondary_supplementary_alignment += 1; ++sec_it; ++sup_it; }
+       }
+       t_output_bam_info.global_sum();
+
+       auto relapse_end_time = std::chrono::high_resolution_clock::now();
+       std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
    }
+   std::cout<<"<Statistics on BAM>: "<< (exit_code==0?"Completed successfully":"Failed") <<std::endl;
 
-   // std::cout<<" summ. "<<std::endl<<std::flush;
-   t_output_bam_info.num_reads_with_secondary_alignment = secondary_alignment.size();
-   t_output_bam_info.num_reads_with_supplementary_alignment = supplementary_alignment.size();
-   // std::cout<<" summ. 2 "<<std::endl<<std::flush;
-   for ( std::map<std::string, bool>::iterator sec_it=secondary_alignment.begin(),sup_it=supplementary_alignment.begin(); (sec_it!=secondary_alignment.end()) && ( sup_it!=supplementary_alignment.end()); ){
-      if ( *sec_it < *sup_it ){ ++sec_it; }
-      else if ( *sec_it > *sup_it ){ ++sup_it; }
-      else{ t_output_bam_info.num_reads_with_both_secondary_supplementary_alignment += 1; ++sec_it; ++sup_it; }
-   }
-   // std::cout<<" summ. G"<<std::endl<<std::flush;
-   t_output_bam_info.global_sum();
- 
-   auto relapse_end_time = std::chrono::high_resolution_clock::now();
-   std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
-
-   std::cout<<"<Statistics on BAM>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
-
-   //return t_output_bam_info;
-   return has_error;
+   return exit_code;
 }
 
 // Calculate statistics computations on a thread for the next N set of records from the BAM file
@@ -140,15 +123,12 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
     uint64_t _t_a, _t_c, _t_g, _t_tu;
     double _t_gc_per;
     while (true){
-        //auto start_time = std::chrono::high_resolution_clock::now();
-
         ref_thread_data.br_list.clear();
         myMutex_readBam.lock();
 
         // Read the record into the thread pointer
         ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
         if (ref_thread_data.br_list.size() == 0 && !(read_i_bam < ref_input_op.num_input_files) ){
-            // std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." << read_i_bam <<"/"<< ref_input_op.num_input_files <<std::endl;
             myMutex_readBam.unlock();
             break;
         }
@@ -156,7 +136,6 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
             if ( read_i_bam < ref_input_op.num_input_files ){ 
                std::cout<< "INFO: Open bam file="<< ref_input_op.input_files[read_i_bam] <<std::endl;
                ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam].c_str() );
-               //ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam] );
                if ( ref_thread_data.br_list.size() == 0 ){
                   ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
                }
@@ -173,14 +152,10 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         ref_thread_data.t_output_bam_.unmapped_long_read_info.resize();
         ref_thread_data.t_output_bam_.mapped_long_read_info.resize();
         ref_thread_data.t_output_bam_.long_read_info.resize();
-        //std::cout<<" " << ref_thread_data.br_list.size()<<" Reads." <<std::endl;
         for(br_it=ref_thread_data.br_list.begin(); br_it!=ref_thread_data.br_list.end(); br_it++){
-           // std::cout<< br_it->qry_seq_len <<" " << br_it->qry_seq.length() << " " << br_it->qry_name << " " << int(br_it->map_flag) << std::endl <<std::flush;
            Basic_Seq_Statistics* _seq_st = NULL;
            Basic_Seq_Quality_Statistics* _seq_qual_st = NULL;
            if ( (br_it->map_flag)& BAM_FUNMAP ) { 
-               // ref_thread_data.t_output_bam_.unmapped_long_read_info.total_num_reads += 1;
-               // ref_thread_data.t_output_bam_.unmapped_long_read_info.total_num_bases += br_it->qry_seq_len;
                _seq_st = &( ref_thread_data.t_output_bam_.unmapped_long_read_info);
                _seq_qual_st = &(ref_thread_data.t_output_bam_.unmapped_seq_quality_info);
            }else if ( (br_it->map_flag)& BAM_FSUPPLEMENTARY ) { 
@@ -191,8 +166,6 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                ref_thread_data.t_secondary_alignment[ br_it->qry_name ] = true; 
            } else {
                ref_thread_data.t_output_bam_.num_primary_alignment += 1;
-               // ref_thread_data.t_output_bam_.mapped_long_read_info.total_num_reads += 1;
-               // ref_thread_data.t_output_bam_.mapped_long_read_info.total_num_bases += br_it->qry_seq_len;
                _seq_st = &( ref_thread_data.t_output_bam_.mapped_long_read_info);
                _seq_qual_st = &(ref_thread_data.t_output_bam_.mapped_seq_quality_info);
            }
@@ -260,7 +233,6 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
               for(size_t _ci=0; _ci<br_it->cigar_type.size(); _ci++){
                   switch (br_it->cigar_type[_ci]){
                      case BAM_CEQUAL:
-                          // ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci];
                      case BAM_CMATCH: // M
                           match_this_read += br_it->cigar_len[_ci];
                           ref_thread_data.t_output_bam_.num_matched_bases += br_it->cigar_len[_ci];

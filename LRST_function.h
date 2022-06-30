@@ -2,7 +2,7 @@
 #include "CXX_to_python_class.h"
 
 
-int generate_statistic_from_bam( Input_Para& _input_data, Output_BAM& py_output_bam );
+int callBAMModule( Input_Para& _input_data, Output_BAM& py_output_bam );
 
 int generate_statistic_from_fq( Input_Para& _input_data, Output_FQ& py_output_fq );
 

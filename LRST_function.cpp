@@ -5,11 +5,11 @@
 #include "FASTQ_module.h"
 #include "FASTA_module.h"
 
-int generate_statistic_from_bam(Input_Para &_input_data, Output_BAM &py_output_bam)
+int callBAMModule(Input_Para &_input_data, Output_BAM &py_output_bam)
 {
-   BAM_Module _bam_mod(_input_data);
-   _bam_mod.bam_st(py_output_bam);
-   return 0;
+   BAM_Module _bam_module(_input_data);
+   int exit_code = _bam_module.calculateStatistics(py_output_bam);
+   return exit_code;
 }
 
 int generate_statistic_from_fq(Input_Para &_input_data, Output_FQ &py_output_fq)
@@ -20,8 +20,7 @@ int generate_statistic_from_fq(Input_Para &_input_data, Output_FQ &py_output_fq)
 
 int callFASTAModule(Input_Para& _input_data, Output_FA &py_output_fa)
 {
-    int exit_code;
-    exit_code = qc_fasta_files(_input_data, py_output_fa);
+    int exit_code = qc_fasta_files(_input_data, py_output_fa);
     return exit_code;
 }
 
