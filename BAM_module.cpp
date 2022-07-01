@@ -3,6 +3,8 @@ BAM_module.cpp:
 Class for generating BAM file statistics. Records are accessed using multi-threading.
 */
 
+#include <iostream>
+
 #include "BAM_module.h"
 #include "ComFunction.h"
 

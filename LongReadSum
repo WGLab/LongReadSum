@@ -55,7 +55,8 @@ def get_common_param(margs, para_dict):
         if not (margs.input == None or margs.input == ""):
             para_dict["input_files"].append(margs.input)
         if not (margs.inputs == None or margs.inputs == ""):
-            para_dict["input_files"].extend(margs.inputs.split(','))
+            file_list = [file_str.strip() for file_str in margs.inputs.split(',')]
+            para_dict["input_files"].extend(file_list)
         if not (margs.inputPattern == None or margs.inputPattern == ""):
             pat_split = margs.inputPattern.split("*")
             para_dict["input_files"].extend(
@@ -63,9 +64,9 @@ def get_common_param(margs, para_dict):
         if len(para_dict["input_files"]) == 0:
             this_error_str += "No input file(s) can be found. \n"
         else:
-            for _af in para_dict["input_files"]:
-                if not os.path.isfile(_af):
-                    this_error_str += "Cannot find "+_af+". \n"
+            for input_filepath in para_dict["input_files"]:
+                if not os.path.isfile(input_filepath):
+                    this_error_str += "Cannot find the input file: " + input_filepath + "\n"
 
     if (margs.outputfolder == None or margs.outputfolder == ""):
         this_error_str += "No output file is provided. \n"
@@ -135,7 +136,7 @@ def fq_module(margs):
             input_para.add_input_file(str(_ipf))
 
         fq_output = lrst.Output_FQ()
-        lrst.generate_statistic_from_fq(input_para, fq_output)
+        lrst.callFASTQModule(input_para, fq_output)
         import plot_for_FQ
         plot_for_FQ.fq_plot(fq_output, para_dict)
         import generate_html
@@ -191,7 +192,7 @@ def fa_module(margs):
             input_para.add_input_file(str(_ipf))
 
         fa_output = lrst.Output_FA()
-        lrst.generate_statistic_from_fa(input_para, fa_output)
+        lrst.callFASTAModule(input_para, fa_output)
         import plot_for_FA
         plot_for_FA.fa_plot(fa_output, para_dict)
         import generate_html
@@ -232,7 +233,7 @@ def bam_module(margs):
             input_para.add_input_file(str(_ipf))
 
         bam_output = lrst.Output_BAM()
-        lrst.generate_statistic_from_bam(input_para, bam_output)
+        lrst.callBAMModule(input_para, bam_output)
         import plot_for_BAM
         plot_for_BAM.bam_plot(bam_output, para_dict)
         import generate_html
