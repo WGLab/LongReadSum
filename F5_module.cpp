@@ -170,8 +170,24 @@ F5_Module::F5_Module(Input_Para& input_parameters){
     }else{
         file_index ++;
         std::cout<< "INFO: Open FAST5 file = "<< first_filepath <<" " << file_index<<"/"<<_input_parameters.num_input_files <<std::endl;
-        std::string firstline;
-        std::getline( *input_file_stream, firstline );
+
+        // Determine the columns in this file (tab-delimited)
+        std::vector<std::string> column_names;
+        std::string column_line;
+        std::getline( *input_file_stream, column_line );
+        std::istringstream column_stream(column_line);
+        std::string column_name;
+        while (std::getline( column_stream, column_name, '\t' )) {
+            column_names.push_back(column_name);
+        }
+
+        // Print the column names
+        std::cout << "\n=====\nColumn names: " << std::endl;
+        for (std::string i: column_names)
+        {
+            std::cout << i << std::endl;
+        }
+        std::cout << "\n=====\n" << std::endl;
     }
 }
 
