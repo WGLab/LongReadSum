@@ -24,9 +24,10 @@ int callFASTAModule(Input_Para& _input_data, Output_FA &py_output_fa)
     return exit_code;
 }
 
-int generate_statistic_from_f5(Input_Para &_input_data, Output_F5 &py_output_f5)
+int callFAST5Module(Input_Para &_input_data, Output_F5 &py_output_f5)
 {
-   F5_Module _F5_mod(_input_data);
-   _F5_mod.F5_st(py_output_f5);  // TODO: Seg fault error
-   return 0;
+    // Initialize the FAST5 module with parameters
+    F5_Module _F5_mod(_input_data);
+    int exit_code = _F5_mod.F5_st(py_output_f5);
+    return exit_code;
 }

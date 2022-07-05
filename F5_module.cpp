@@ -172,23 +172,47 @@ F5_Module::F5_Module(Input_Para& input_parameters){
         std::cout<< "INFO: Open FAST5 file = "<< first_filepath <<" " << file_index<<"/"<<_input_parameters.num_input_files <<std::endl;
 
         // Determine the columns in this file (tab-delimited)
-        std::vector<std::string> column_names;
         std::string column_line;
         std::getline( *input_file_stream, column_line );
         std::istringstream column_stream(column_line);
         std::string column_name;
+        std::vector<std::string> parsed_column_names;
         while (std::getline( column_stream, column_name, '\t' )) {
-            column_names.push_back(column_name);
+            parsed_column_names.push_back(column_name);
         }
 
-        // Print the column names
-        std::cout << "\n=====\nColumn names: " << std::endl;
-        for (std::string i: column_names)
+        // Ensure that we found the columns we need for statistics: passes_filtering, sequence_length_template, mean_qscore_template
+        if (requiredHeadersFound(parsed_column_names))
         {
-            std::cout << i << std::endl;
+            // Update the column names
+            column_names = parsed_column_names;
+
+            // Print the column names
+            std::cout << "\n=====\nColumn names: " << std::endl;
+            for (std::string i: column_names)
+            {
+                std::cout << i << std::endl;
+            }
+            std::cout << "=====\n" << std::endl;
+        } else {
+            has_error = 4;
         }
-        std::cout << "\n=====\n" << std::endl;
     }
+}
+
+bool F5_Module::requiredHeadersFound(std::vector<std::string> header_vector) {
+    // Ensure that we have the headers we need for statistics: passes_filtering, sequence_length_template, mean_qscore_template
+    bool headers_found = true;
+    std::vector<std::string> required_headers = { "passes_filtering", "sequence_length_template", "mean_qscore_template" };
+    for (std::string required_header: required_headers)
+    {
+        if (std::find(header_vector.begin(), header_vector.end(), required_header) == header_vector.end())
+        {
+          headers_found = false;
+          std::cerr << "Required header '" << required_header << "' not found." << std::endl;
+        }
+    }
+    return headers_found;
 }
 
 F5_Module::~F5_Module(){
@@ -242,7 +266,7 @@ int F5_Module::F5_st( Output_F5& t_output_F5_info){
    auto relapse_end_time = std::chrono::high_resolution_clock::now();
    std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
 
-   std::cout<<"<Statistics on F5>: "<< (has_error==0?"successfully":"Failed") <<"."<<std::endl;
+   std::cout<<"FAST5 Module "<< (has_error==0?"completed successfully":"failed") << std::endl;
  
    return has_error;
 }
@@ -285,7 +309,8 @@ void F5_Module::F5_do_thread(std::ifstream* file_stream, Input_Para& ref_input_o
         }
         myMutex_readF5.unlock();
         if (read_ss_size == 0 ) { continue; }
- 
+
+        // Columns used for statistics: passes_filtering, sequence_length_template, mean_qscore_template
         ref_thread_data.t_output_F5_.reset();
         ref_thread_data.t_output_F5_.f5_long_read_info.long_read_info.resize();
         ref_thread_data.t_output_F5_.f5_passed_long_read_info.long_read_info.resize();

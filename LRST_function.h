@@ -8,4 +8,4 @@ int callFASTQModule( Input_Para& _input_data, Output_FQ& py_output_fq );
 
 int callFASTAModule(Input_Para& _input_data, Output_FA& py_output_fa);
 
-int generate_statistic_from_f5( Input_Para& _input_data, Output_F5& py_output_f5 );
+int callFAST5Module( Input_Para& _input_data, Output_F5& py_output_f5 );

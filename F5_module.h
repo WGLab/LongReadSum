@@ -4,6 +4,7 @@
 #include "CXX_to_python_class.h"
 #include "Python_to_CXX_class.h"
 
+#include <string>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -59,30 +60,35 @@ private:
 // Main class for FAST5 file statistics generation
 class F5_Module{
 private:
-      static size_t file_index;  // Tracks the current file index being analyzed
+    static size_t file_index;  // Tracks the current file index being analyzed
+
+    // Methods
+    // Ensure that the required headers are present
+    bool requiredHeadersFound(std::vector<std::string> header_vector);
 
 public:
-      static std::mutex myMutex_readF5;
-      static std::mutex myMutex_output;
-      static size_t batch_size_of_record;
+    std::vector<std::string> column_names;  // Column names for the current sequencing_summary.txt file
+    static std::mutex myMutex_readF5;
+    static std::mutex myMutex_output;
+    static size_t batch_size_of_record;
 
-      Input_Para _input_parameters;
+    Input_Para _input_parameters;
 
-      /// need correct
-      std::ifstream *input_file_stream;  // Stream for the input text file
-      std::vector<std::thread> m_threads;
-
-
-   int has_error;
+    std::ifstream *input_file_stream;  // Stream for the input text file
+    std::vector<std::thread> m_threads;
 
 
-   static void F5_do_thread(std::ifstream* file_stream, Input_Para& ref_input_op, int thread_id, F5_Thread_data& ref_thread_data, Output_F5& ref_output);
+    int has_error;
 
-   // Function for generating statistics
-   int F5_st( Output_F5& t_output_F5_info);
+    // Methods
+    // Assign threads
+    static void F5_do_thread(std::ifstream* file_stream, Input_Para& ref_input_op, int thread_id, F5_Thread_data& ref_thread_data, Output_F5& ref_output);
 
-   F5_Module(Input_Para& _m_input);
-   ~F5_Module();
+    // Generate statistics
+    int F5_st( Output_F5& t_output_F5_info);
+
+    F5_Module(Input_Para& _m_input);
+    ~F5_Module();
 };
 
 
