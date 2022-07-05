@@ -5,6 +5,7 @@ Class for calling FAST5 statistics modules.
 */
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <algorithm>
 
@@ -17,7 +18,7 @@ std::mutex F5_Module::myMutex_readF5;
 std::mutex F5_Module::myMutex_output;
 size_t F5_Module::file_index = 0;
 
-F5_Thread_data::F5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size=1000){
+F5_Thread_data::F5_Thread_data(Input_Para& ref_input_op, std::map<std::string, int> header_columns, int p_thread_id, int p_batch_size=1000){
    _batch_size = p_batch_size;
    _thread_id = p_thread_id;
    _input_parameters = ref_input_op;
@@ -25,124 +26,63 @@ F5_Thread_data::F5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_
    for (int _i_=0; _i_<p_batch_size+1; _i_++){
       stored_records.push_back( F5_SS_Record() );
    }
+   _header_columns = header_columns;
 }
 
 F5_Thread_data::~F5_Thread_data(){ 
 }
 
-size_t F5_Thread_data::read_ss_record(std::ifstream* file_stream){
+std::map<std::string, int> F5_Thread_data::getHeaderColumns()
+{
+    return _header_columns;
+}
+
+size_t F5_Thread_data::read_ss_record(std::ifstream* file_stream, std::map<std::string, int> header_columns){
     std::cout << "Type 1." << std::endl;
     thread_index = 0;  // Index where this thread's data will be stored
     while( std::getline( *file_stream, current_line )) {
-        std::istringstream current_line_str( current_line );
+        std::istringstream column_stream( current_line );
 
-        // Read variables from the record line
+        // Read each column value from the record line
+        std::string column_value;
+        std::vector<std::string> column_values;
+        while (std::getline( column_stream, column_value, '\t' )) {
+            column_values.push_back(column_value);
+        }
+
+        // Store the required values from the record
         F5_SS_Record record_data;
-        current_line_str >> record_data.filename;
-        std::cout << "Stored: " << record_data.filename << std::endl;
-//        try {
-//            current_line_str >> record_data.filename;
-//            current_line_str >> record_data.read_id;
-//            current_line_str >> record_data.run_id;
-//            current_line_str >> record_data.channel;
-//            current_line_str >> record_data.start_time;
-//            current_line_str >> record_data.duration;
-//            current_line_str >> record_data.num_events;
-//            current_line_str >> record_data.passes_filtering;
-//            current_line_str >> record_data.template_start;
-//            current_line_str >> record_data.num_events_template;
-//            current_line_str >> record_data.template_duration;
-//            current_line_str >> record_data.num_called_template;
-//            current_line_str >> record_data.sequence_length_template;
-//            current_line_str >> record_data.mean_qscore_template;
-//            current_line_str >> record_data.strand_score_template;
-//            current_line_str >> record_data.calibration_strand_genome_template;
-//            current_line_str >> record_data.calibration_strand_identity_template;
-//            current_line_str >> record_data.calibration_strand_accuracy_template;
-//            current_line_str >> record_data.calibration_strand_speed_bps_template;
-//
-//            // Store the record
-//            stored_records[thread_index] = record_data;
-//        } catch (const std::exception& e) {
-//            std::cerr << e.what();
-//        }
 
+        // passes_filtering
+        std::string passes_filtering_str = column_values[header_columns.at("passes_filtering")];
 
+        // Make lowercase
+        std::transform(passes_filtering_str.begin(), passes_filtering_str.end(), passes_filtering_str.begin(), [](unsigned char c){ return std::tolower(c); });
 
-//       if (!(current_line_str >> record_data[thread_index].filename >> record_data[thread_index].read_id
-//                 >> record_data[thread_index].run_id >> record_data[thread_index].channel
-//                 >> record_data[thread_index].start_time >> record_data[thread_index].duration
-//                 >> record_data[thread_index].num_events >> record_data[thread_index].passes_filtering
-//                 >> record_data[thread_index].template_start >> record_data[thread_index].num_events_template
-//                 >> record_data[thread_index].template_duration >> record_data[thread_index].num_called_template
-//                 >> record_data[thread_index].sequence_length_template >> record_data[thread_index].mean_qscore_template >> record_data[thread_index].strand_score_template
-//                 >> record_data[thread_index].calibration_strand_genome_template >> record_data[thread_index].calibration_strand_identity_template
-//                 >> record_data[thread_index].calibration_strand_accuracy_template >> record_data[thread_index].calibration_strand_speed_bps_template)) {
-//             std::cerr<<"Error! for <"<<current_line<<">"<<std::endl;
-//             break;
-//       }
+        // Convert to boolean
+        bool passes_filtering;
+        std::istringstream(passes_filtering_str) >>  std::boolalpha >> passes_filtering;
+        record_data.passes_filtering = passes_filtering;
 
-       thread_index++;
-       if ( thread_index >= _batch_size){ break; }
-    }
+        // sequence_length_template
+        std::stringstream sstream(column_values[header_columns.at("sequence_length_template")]);
+        size_t sequence_length_template;
+        sstream >> sequence_length_template;
+        record_data.sequence_length_template = sequence_length_template;
 
-    return thread_index;
-}
-size_t F5_Thread_data::read_ss_record_2(std::ifstream* file_stream){
-    std::cout << "Type 2." << std::endl;
-    thread_index = 0;
-    std::string fq_file;
-    int muxv;
-    float median_template, mad_template;
-    while( std::getline( *file_stream, current_line )) {
-       std::istringstream current_line_str( current_line );
-       F5_SS_Record _t_f5_ss_record;
-       if (!(current_line_str >> fq_file >> stored_records[thread_index].filename >> stored_records[thread_index].read_id
-                 >> stored_records[thread_index].run_id >> stored_records[thread_index].channel >> muxv
-                 >> stored_records[thread_index].start_time >> stored_records[thread_index].duration
-                 >> stored_records[thread_index].num_events >> stored_records[thread_index].passes_filtering
-                 >> stored_records[thread_index].template_start >> stored_records[thread_index].num_events_template
-                 >> stored_records[thread_index].template_duration
-                 >> stored_records[thread_index].sequence_length_template
-                 >> stored_records[thread_index].mean_qscore_template >> stored_records[thread_index].strand_score_template
-                 >> median_template >> mad_template)) {
-             // TODO: Make the warning below more informative, here it prints out the whole read record  w/o info about the line parsing error.
-             std::cerr<<"Error! for <"<<current_line<<">"<<std::endl;
-             break;
-       }
+        // mean_qscore_template
+        float mean_qscore_template;
+        mean_qscore_template = std::stof(column_values[header_columns.at("mean_qscore_template")]);
+        record_data.mean_qscore_template = mean_qscore_template;
 
-       thread_index++;
-       if ( thread_index >= _batch_size){ break; }
-    }
+        // Store the records
+        stored_records[thread_index].passes_filtering = passes_filtering;
+        stored_records[thread_index].sequence_length_template = sequence_length_template;
+        stored_records[thread_index].mean_qscore_template = mean_qscore_template;
 
-    return thread_index;
-}
-size_t F5_Thread_data::read_ss_record_3(std::ifstream* file_stream){
-    std::cout << "Type 3." << std::endl;
-    thread_index = 0;
-    std::string fq_file;
-    int muxv;
-    int batch_id;
-    float median_template, mad_template;
-    while( std::getline( *file_stream, current_line )) {
-       std::istringstream current_line_str( current_line );
-       F5_SS_Record _t_f5_ss_record;
-       // TODO: How many of these stored variables are used for generating statistics?
-       if (!(current_line_str >> fq_file >> stored_records[thread_index].filename >> stored_records[thread_index].read_id
-                 >> stored_records[thread_index].run_id >> batch_id >> stored_records[thread_index].channel >> muxv
-                 >> stored_records[thread_index].start_time >> stored_records[thread_index].duration
-                 >> stored_records[thread_index].num_events >> stored_records[thread_index].passes_filtering
-                 >> stored_records[thread_index].template_start >> stored_records[thread_index].num_events_template
-                 >> stored_records[thread_index].template_duration
-                 >> stored_records[thread_index].sequence_length_template
-                 >> stored_records[thread_index].mean_qscore_template >> stored_records[thread_index].strand_score_template
-                 >> median_template >> mad_template)) {
-             std::cout<<"Error! for <"<<current_line<<">"<<std::endl;
-             break;
-       }
-
-       thread_index++;
-       if ( thread_index >= _batch_size){ break; }
+        // Update the thread index
+        thread_index++;
+        if ( thread_index >= _batch_size){ break; }
     }
 
     return thread_index;
@@ -171,46 +111,63 @@ F5_Module::F5_Module(Input_Para& input_parameters){
         file_index ++;
         std::cout<< "INFO: Open FAST5 file = "<< first_filepath <<" " << file_index<<"/"<<_input_parameters.num_input_files <<std::endl;
 
-        // Determine the columns in this file (tab-delimited)
+        // Ensure that we have the columns we need for statistics
         std::string column_line;
         std::getline( *input_file_stream, column_line );
-        std::istringstream column_stream(column_line);
-        std::string column_name;
-        std::vector<std::string> parsed_column_names;
-        while (std::getline( column_stream, column_name, '\t' )) {
-            parsed_column_names.push_back(column_name);
-        }
-
-        // Ensure that we found the columns we need for statistics: passes_filtering, sequence_length_template, mean_qscore_template
-        if (requiredHeadersFound(parsed_column_names))
+        if (requiredHeadersFound(column_line))
         {
-            // Update the column names
-            column_names = parsed_column_names;
-
-            // Print the column names
-            std::cout << "\n=====\nColumn names: " << std::endl;
-            for (std::string i: column_names)
-            {
-                std::cout << i << std::endl;
-            }
-            std::cout << "=====\n" << std::endl;
+//            // Print the column names
+//            std::cout << "\n=====\nHeader names: " << std::endl;
+//            for (std::string i: header_names)
+//            {
+//                std::cout << i << std::endl;
+//            }
+//            std::cout << "=====\n" << std::endl;
         } else {
             has_error = 4;
         }
     }
 }
 
-bool F5_Module::requiredHeadersFound(std::vector<std::string> header_vector) {
+bool F5_Module::requiredHeadersFound(std::string header_string) {
     // Ensure that we have the headers we need for statistics: passes_filtering, sequence_length_template, mean_qscore_template
-    bool headers_found = true;
     std::vector<std::string> required_headers = { "passes_filtering", "sequence_length_template", "mean_qscore_template" };
-    for (std::string required_header: required_headers)
-    {
-        if (std::find(header_vector.begin(), header_vector.end(), required_header) == header_vector.end())
+    std::istringstream header_stream(header_string);
+    std::string header_name;
+    int current_column = 0;
+    while (std::getline( header_stream, header_name, '\t' )) {
+        header_names.push_back(header_name);
+
+        // Check if this column contains a required header
+        std::vector<std::string>::iterator header_it;
+        for (header_it = required_headers.begin(); header_it != required_headers.end();)
         {
-          headers_found = false;
-          std::cerr << "Required header '" << required_header << "' not found." << std::endl;
+            if (*header_it == header_name)
+            {
+                // Store the header column for later use in parsing records
+                _header_columns[header_name] = current_column;
+
+                // Remove the header from the search vector
+                required_headers.erase(header_it);
+
+            } else {
+                ++header_it;
+            }
         }
+        current_column++;
+    }
+
+    // Store the total column count
+    column_count = current_column;
+
+    // Return true if all required headers were found
+    bool headers_found = false;
+    if (required_headers.empty()) {
+        headers_found = true;
+    } else {
+        // Print the missing headers
+        for (std::string missing_header: required_headers)
+            std::cerr << "Required header '" << missing_header << "' not found." << std::endl;
     }
     return headers_found;
 }
@@ -237,7 +194,7 @@ int F5_Module::F5_st( Output_F5& t_output_F5_info){
       try{
          for (_i_t=0; _i_t<_input_parameters.threads; _i_t++){
              std::cout<<"INFO: generate threads "<<_i_t<<std::endl<<std::flush;
-             thread_data_vector[_i_t] = new F5_Thread_data(_input_parameters, _i_t, F5_Module::batch_size_of_record);
+             thread_data_vector[_i_t] = new F5_Thread_data(_input_parameters, _header_columns, _i_t, F5_Module::batch_size_of_record);
              std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
              m_threads.push_back(std::thread((F5_Module::F5_do_thread), input_file_stream, std::ref(_input_parameters), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_F5_info) ));
          }
@@ -273,23 +230,10 @@ int F5_Module::F5_st( Output_F5& t_output_F5_info){
 
 void F5_Module::F5_do_thread(std::ifstream* file_stream, Input_Para& ref_input_op, int thread_id, F5_Thread_data& ref_thread_data, Output_F5& ref_output ){
     size_t read_ss_size, read_ss_i;
-
-    // Determine the format of the FAST5 file
-    int64_t format_type = ((ref_input_op.other_flags) & 15);
     while (true){
         myMutex_readF5.lock();
-
-        std::cout << "Format type: " << std::to_string(format_type) << std::endl;
-        if ( format_type ==1 ){
-           read_ss_size = ref_thread_data.read_ss_record(file_stream);
-        }else if ( format_type ==2 ){
-           read_ss_size = ref_thread_data.read_ss_record_2(file_stream);
-        }else if ( format_type ==3 ){
-           read_ss_size = ref_thread_data.read_ss_record_3(file_stream);
-        }else{
-            std::cerr << "No records read." << std::endl;
-            read_ss_size = 0;
-        }
+        std::map<std::string, int> header_column_data = ref_thread_data.getHeaderColumns();
+        read_ss_size = ref_thread_data.read_ss_record(file_stream, header_column_data);
 
         if (read_ss_size == 0 && !(file_index < ref_input_op.num_input_files) ){
             myMutex_readF5.unlock();
@@ -317,23 +261,23 @@ void F5_Module::F5_do_thread(std::ifstream* file_stream, Input_Para& ref_input_o
         ref_thread_data.t_output_F5_.f5_failed_long_read_info.long_read_info.resize();
         for(read_ss_i=0; read_ss_i<read_ss_size; read_ss_i++){
            Basic_F5_Statistics* _f5_st = NULL;
-           std::transform( ref_thread_data.stored_records[read_ss_i].passes_filtering.begin(),
-                           ref_thread_data.stored_records[read_ss_i].passes_filtering.end(),
-                           ref_thread_data.stored_records[read_ss_i].passes_filtering.begin(), [](unsigned char c) -> unsigned char { return std::tolower(c); } );
-           if ( ref_thread_data.stored_records[read_ss_i].passes_filtering.compare("true")==0){
+           bool passes_filtering_value = ref_thread_data.stored_records[read_ss_i].passes_filtering;
+           if ( passes_filtering_value == true) {
                _f5_st = &(ref_thread_data.t_output_F5_.f5_passed_long_read_info);
-           }else{
-               _f5_st = &(ref_thread_data.t_output_F5_.f5_failed_long_read_info);
+           } else {
+                _f5_st = &(ref_thread_data.t_output_F5_.f5_failed_long_read_info);
            }
            _f5_st->long_read_info.total_num_reads++;
-           _f5_st->long_read_info.total_num_bases += ref_thread_data.stored_records[read_ss_i].sequence_length_template;
+           size_t sequence_base_count = ref_thread_data.stored_records[read_ss_i].sequence_length_template;
+           _f5_st->long_read_info.total_num_bases += sequence_base_count;
+
            if ( _f5_st->long_read_info.longest_read_length < ref_thread_data.stored_records[read_ss_i].sequence_length_template){
                _f5_st->long_read_info.longest_read_length = ref_thread_data.stored_records[read_ss_i].sequence_length_template;
            }
            _f5_st->long_read_info.read_length_count[ ref_thread_data.stored_records[read_ss_i].sequence_length_template<MAX_READ_LENGTH?ref_thread_data.stored_records[read_ss_i].sequence_length_template:(MAX_READ_LENGTH-1) ] += 1;
-           
+
            _f5_st->seq_quality_info.read_quality_distribution[ int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template ) ] += 1;
-           if ( _f5_st->seq_quality_info.min_read_quality == MoneDefault || 
+           if ( _f5_st->seq_quality_info.min_read_quality == MoneDefault ||
                _f5_st->seq_quality_info.min_read_quality>int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template ) ){
               _f5_st->seq_quality_info.min_read_quality = int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template );
            }

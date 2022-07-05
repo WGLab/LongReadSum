@@ -18,22 +18,9 @@ public:
       std::string filename;
       std::string read_id;
       std::string run_id;
-      int channel;
-      float start_time;
-      float duration;
-      int num_events;
-      std::string passes_filtering;
-      float template_start;
-      size_t num_events_template;
-      float template_duration;
-      size_t num_called_template;
+      bool passes_filtering;
       size_t sequence_length_template;
       float mean_qscore_template;
-      float strand_score_template;
-      std::string calibration_strand_genome_template;
-      float calibration_strand_identity_template;
-      float calibration_strand_accuracy_template;
-      float calibration_strand_speed_bps_template;
 };
 
 class F5_Thread_data {
@@ -45,15 +32,15 @@ private:
       int _batch_size;
       Input_Para _input_parameters;
       std::vector<F5_SS_Record> stored_records;
+      std::map<std::string, int> _header_columns;
 
       Output_F5 t_output_F5_;
       std::string current_line;  // Current line being read from the file
 
-      size_t read_ss_record(std::ifstream* file_stream);
-      size_t read_ss_record_2(std::ifstream* file_stream);
-      size_t read_ss_record_3(std::ifstream* file_stream);
+      size_t read_ss_record(std::ifstream* file_stream, std::map<std::string, int> header_columns);
+      std::map<std::string, int> getHeaderColumns();
 
-      F5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size);
+      F5_Thread_data(Input_Para& ref_input_op, std::map<std::string, int> header_columns, int p_thread_id, int p_batch_size);
       ~F5_Thread_data();
 };
 
@@ -61,13 +48,15 @@ private:
 class F5_Module{
 private:
     static size_t file_index;  // Tracks the current file index being analyzed
+    int column_count = 0;
+    std::map<std::string, int> _header_columns;  // Column indices for our headers used
 
     // Methods
     // Ensure that the required headers are present
-    bool requiredHeadersFound(std::vector<std::string> header_vector);
+    bool requiredHeadersFound(std::string header_string);
 
 public:
-    std::vector<std::string> column_names;  // Column names for the current sequencing_summary.txt file
+    std::vector<std::string> header_names;  // Header names for the current sequencing_summary.txt file
     static std::mutex myMutex_readF5;
     static std::mutex myMutex_output;
     static size_t batch_size_of_record;
