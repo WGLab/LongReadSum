@@ -42,4 +42,4 @@ jobs:
       shell: bash --login {0}
       run: |
         mkdir output  # Unit test output folder
-        pytest
+        python -m pytest
