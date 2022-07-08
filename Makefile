@@ -3,6 +3,9 @@ SRC_DIR := $(CURDIR)/src/longreadsum
 LIB_DIR := $(CURDIR)/lib
 
 all:
+	# Create the output directory
+	mkdir -p $(LIB_DIR)
+
     # Generate the SWIG python <-> C++ wrappers (Both ways)
     # The Python wrapper is stored in the main directory, while the C++ wrapper code is stored in /src
 	swig -c++ -python -outdir $(LIB_DIR) -I$(INCL_DIR) -o $(SRC_DIR)/lrst_wrap.cxx $(SRC_DIR)/lrst.i
