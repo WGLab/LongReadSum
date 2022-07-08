@@ -41,4 +41,4 @@ jobs:
       shell: bash --login {0}
       run: |
         mkdir output  # Output folder for tests
-        pytest
+        python -m pytest

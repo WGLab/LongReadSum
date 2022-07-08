@@ -16,12 +16,14 @@ for file in os.listdir(project_dir):
         src_filepath = os.path.join(project_dir, file)
         project_src_files.append(src_filepath)
 
+# Set up the extension
+include_dir = 'include/longreadsum'
 lrst_mod = Extension("_lrst",
                      sources=project_src_files,
                      language='c++',
                      extra_compile_args=['-std=c++14'],
                      libraries=["rt", "pthread", "z", "dl", "m", "hts"],
-                     include_dirs=[project_dir])
+                     include_dirs=[include_dir])
 
 setup(name = "lrst",
       version = '0.1',
