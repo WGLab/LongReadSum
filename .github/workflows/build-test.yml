@@ -40,5 +40,6 @@ jobs:
     - name: Run tests
       shell: bash --login {0}
       run: |
-        mkdir output  # Output folder for tests
+        mkdir lib  # SWIG output folder
+        mkdir output  # Unit test output folder 
         python -m pytest
