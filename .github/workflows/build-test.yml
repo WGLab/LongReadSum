@@ -35,11 +35,12 @@ jobs:
 
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
-      run: make
+      run: |
+        mkdir lib  # SWIG output folder
+        make
 
     - name: Run tests
       shell: bash --login {0}
       run: |
-        mkdir lib  # SWIG output folder
-        mkdir output  # Unit test output folder 
+        mkdir output  # Unit test output folder
         python -m pytest
