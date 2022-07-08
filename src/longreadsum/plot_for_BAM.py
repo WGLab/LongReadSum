@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from textwrap import wrap
 import numpy as np
 
-import lrst;
+from lib import lrst
 from utils import *
 
 def plot_alignment_numbers(data, path):

@@ -120,7 +120,7 @@ def fq_module(margs):
         para_dict["out_prefix"] += "fq_";
 
         # Import the SWIG Python wrapper for our C++ module
-        import lrst
+        from lib import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
@@ -178,7 +178,7 @@ def fa_module(margs):
 
         # TODO: Multiple calls to the Python-wrapped C++ module are made (the lrst calls), but only a single
         #  module call to the filetype-specific function should be needed. Could improve performance
-        import lrst
+        from lib import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
@@ -222,7 +222,7 @@ def bam_module(margs):
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "bam_";
-        import lrst
+        from lib import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
@@ -264,7 +264,7 @@ def f5_module(margs):
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "f5_";
-        import lrst
+        from lib import lrst
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]

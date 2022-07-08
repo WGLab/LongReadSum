@@ -3,9 +3,13 @@ test_statistics.py:
 Test expected values for output statistics using sample input files (FASTA, FAST5, FASTQ, BAM).
 """
 import os
-import lrst
 import pytest
+from lib import lrst
 
+
+# def test_me():
+#     print("Here is a test")
+#     assert True
 
 # Fixtures for module outputs
 @pytest.fixture(scope='class')
