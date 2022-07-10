@@ -458,10 +458,7 @@ void Output_BAM::global_sum(){
    */
 }
 
-//// function for Output_SeqTxt
-//
-//
-//
+// Data structures for sequencing_summary.txt
 Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
    /*read_length_list = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -537,7 +534,43 @@ void Output_SeqTxt::global_sum(){
    failed_long_read_info.global_sum();
 }
 
+// Data structures for FAST5
+FAST5_Statistics::FAST5_Statistics(){
+}
 
+FAST5_Statistics::~FAST5_Statistics(){
+}
 
+void FAST5_Statistics::reset(){
+   long_read_info.reset();
+   seq_quality_info.reset();
+}
 
+void FAST5_Statistics::add(FAST5_Statistics& t_output_FAST5){
+   long_read_info.add( t_output_FAST5.long_read_info );
+   seq_quality_info.add( t_output_FAST5.seq_quality_info );
+}
 
+void FAST5_Statistics::global_sum(){
+   long_read_info.global_sum();
+   seq_quality_info.global_sum();
+}
+
+void Output_FAST5::reset(){
+   all_long_read_info.reset();
+   passed_long_read_info.reset();
+   failed_long_read_info.reset();
+}
+
+void Output_FAST5::add(Output_FAST5& t_output_FAST5){
+   all_long_read_info.add(t_output_FAST5.passed_long_read_info);
+   all_long_read_info.add(t_output_FAST5.failed_long_read_info);
+   passed_long_read_info.add(t_output_FAST5.passed_long_read_info);
+   failed_long_read_info.add(t_output_FAST5.failed_long_read_info);
+}
+
+void Output_FAST5::global_sum(){
+   all_long_read_info.global_sum();
+   passed_long_read_info.global_sum();
+   failed_long_read_info.global_sum();
+}

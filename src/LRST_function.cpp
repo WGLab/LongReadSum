@@ -4,7 +4,7 @@
 #include "SeqTxt_module.h"
 #include "FASTQ_module.h"
 #include "FASTA_module.h"
-#include "HDF5_module.h"
+#include "FAST5_module.h"
 
 int callBAMModule(Input_Para &_input_data, Output_BAM &py_output_bam)
 {

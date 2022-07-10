@@ -9,7 +9,7 @@ Class for calling FAST5 statistics modules.
 #include <string>
 #include <algorithm>
 
-#include "HDF5_module.h"
+#include "FAST5_module.h"
 #include "ComFunction.h"
 #include "H5Cpp.h"
 using namespace H5;

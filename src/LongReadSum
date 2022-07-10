@@ -152,8 +152,7 @@ def fq_module(margs):
 
 def fa_module(margs):
     """
-    Run the *.FA filetype module.
-    Input:
+    Run the FASTA filetype module.
     """
     para_dict = {}
     errorStr = lrst_global.originalError
@@ -208,6 +207,9 @@ def fa_module(margs):
 
 
 def bam_module(margs):
+    """
+    Run the BAM filetype module.
+    """
     para_dict = {}
     errorStr = lrst_global.originalError
     errorStr += get_common_param(margs, para_dict)
@@ -247,8 +249,10 @@ def bam_module(margs):
 
             print("Call BAM-module done!")
 
-
 def seqtxt_module(margs):
+    """
+    Run the sequencing_summary.txt filetype module.
+    """
     para_dict = {}
     errorStr = lrst_global.originalError
     errorStr += get_common_param(margs, para_dict)
@@ -260,12 +264,6 @@ def seqtxt_module(margs):
         parser.parse_args(['seqtxt', '--help'])
         sys.exit(1004)
     else:
-        # Test start
-        print("Running HDF5 example...")
-        lrst.runExample()
-        print("Example complete.")
-        # Test end
-
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "seqtxt_";
         input_para = lrst.Input_Para()
@@ -303,22 +301,74 @@ def seqtxt_module(margs):
                 f5_html_gen.generate_st_html()
             print("Done.")
 
+def fast5_module(margs):
+    """
+    Run the FAST5 filetype module.
+    """
+    para_dict = {}
+    errorStr = lrst_global.originalError
+    errorStr += get_common_param(margs, para_dict)
 
+    if not errorStr == lrst_global.originalError:
+        print(errorStr)
+        print("#############################################\n")
+        # parser.print_help()
+        parser.parse_args(['fast5', '--help'])
+        sys.exit(1004)
+    else:
+        # # Test start
+        # print("Running HDF5 example...")
+        # lrst.runExample()
+        # print("Example complete.")
+        # # Test end
+
+        logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "fast5_"
+        input_para = lrst.Input_Para()
+        input_para.threads = para_dict["threads"]
+        input_para.rdm_seed = para_dict["random_seed"]
+        input_para.downsample_percentage = para_dict["downsample_percentage"]
+
+        # TODO: 'seq' flag is 1 by default, which in the argument description states that only the summary text will be
+        #  output (no HTML). But below it is used to indicate static vs. dynamic output HTML
+        input_para.other_flags = margs.seq  # Default = 1
+        input_para.other_flags = (input_para.other_flags << 4)
+        input_para.other_flags += (1 if para_dict["detail"]>0 else 0)
+        input_para.other_flags = (input_para.other_flags << 4)
+        input_para.other_flags += int(margs.sum_type)
+
+        input_para.output_folder = str(para_dict["output_folder"])
+        input_para.out_prefix = str(para_dict["out_prefix"])
+
+        for _ipf in para_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        fast5_output = lrst.Output_FAST5()
+        # exit_code = lrst.callFAST5Module(input_para, fast5_output)
+        # if exit_code == 0:
+        #     print("Generating output files...")
+        #     import plot_for_FAST5
+        #     plot_for_FAST5.plot(fast5_output, para_dict)
+        #     import generate_html
+        #     for static in [True, False]:
+        #         if margs.seq==0:
+        #             f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "QC for FAST5", para_dict], static=static);
+        #         else:
+        #             f5_html_gen = generate_html.ST_HTML_Generator(
+        #                [["basic_st", "read_length_st","read_length_hist", "basic_info"], "QC for FAST5", para_dict], static=static)
+        #         f5_html_gen.generate_st_html()
+        #     print("Done.")
+
+# Set up the argument parser
 parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",
                                  epilog="For example, \n \
                                          \t%(prog)s fq: with fq or fastq input\n\
                                          \t%(prog)s fa: with fa or fasta input\n\
                                          \t%(prog)s bam: with bam input\n\
                                          \t%(prog)s seqtxt: with sequencing_summary.txt input\n\
+                                         \t%(prog)s fast5: with FAST5 inputs\n\
                                          ",
                                  formatter_class=RawTextHelpFormatter)
-
-
-##############################################################################
-#
-# Different functional modules starting from here.
-#
-##############################################################################
 
 # The subparser will determine our filetype-specific modules
 subparsers = parser.add_subparsers()
@@ -384,6 +434,7 @@ bam_parsers = subparsers.add_parser('bam',
                                     formatter_class=RawTextHelpFormatter)
 bam_parsers.set_defaults(func=bam_module)
 
+# Parser for sequencing_summary.txt
 seqtxt_parsers = subparsers.add_parser('seqtxt',
                                        parents=[parent_parser],
                                        help="Show data analysis for sequencing_summary.txt files",
@@ -394,9 +445,19 @@ seqtxt_parsers = subparsers.add_parser('seqtxt',
 seqtxt_parsers.add_argument("-S", "--seq", type=int, default=1,
                             help="sequencing_summary.txt only? Default: 1(yes).")
 seqtxt_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
-                            help="Different fields in Sequence_summary.txt. Default: 1.")
+                            help="Different fields in sequencing_summary.txt. Default: 1.")
 
 seqtxt_parsers.set_defaults(func=seqtxt_module)
+
+# Parser for FAST5
+fast5_parser = subparsers.add_parser('fast5',
+                                    parents=[parent_parser],
+                                    help="Show data analysis for FAST5 files",
+                                    description="For example, \n \
+                                                 \t%(prog)s  \n \
+                                                ",
+                                    formatter_class=RawTextHelpFormatter)
+fast5_parser.set_defaults(func=fast5_module)
 
 if sys.version_info[0] < 2:
     print(lrst_global.prg_name +

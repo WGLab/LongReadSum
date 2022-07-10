@@ -9,24 +9,18 @@ Define the C++ bindings from our Python modules
 #include <string>
 #include <vector>
 
-//#include <stdint.h>
-//#include <cstddef>
-
-//                        ,  ,
 #define MAX_READ_LENGTH 10485760
 #define MAX_MAP_QUALITY 256
 #define MAX_BASE_QUALITY 256
 #define MAX_READ_QUALITY 256
 #define MAX_SIGNAL_VALUE 5000
-
 #define PERCENTAGE_ARRAY_SIZE 101
-
 #define ZeroDefault 0
 #define MoneDefault -1
 
 
 /*
-Output_FQ: Base class which contains error output.
+Output_Info: Base class which contains error output.
 */
 class Output_Info
 {
@@ -78,6 +72,7 @@ public:
    ~Basic_Seq_Statistics();
 };
 
+// Data structures for FASTA
 class Output_FA : public Output_Info
 {
 public:
@@ -111,7 +106,7 @@ public:
    ~Basic_Seq_Quality_Statistics();
 };
 
-
+// Data structures for FASTQ
 class Output_FQ : public Output_FA
 {
 public:
@@ -119,6 +114,7 @@ public:
 };
 
 
+// Data structures for BAM
 class Output_BAM : public Output_FQ
 {
 public:
@@ -163,6 +159,8 @@ public:
    ~Output_BAM();
 };
 
+
+// Data structures for sequencing_summary.txt
 class Basic_SeqTxt_Statistics
 {
 public:
@@ -200,6 +198,34 @@ public:
 
    void reset();
    void add(Output_SeqTxt &t_output_SeqTxt);
+   void global_sum();
+};
+
+
+// Data structures for FAST5
+class FAST5_Statistics
+{
+public:
+   Basic_Seq_Statistics long_read_info;
+   Basic_Seq_Quality_Statistics seq_quality_info;
+
+   void reset();
+   void add(FAST5_Statistics &t_output_FAST5);
+   void global_sum();
+
+   FAST5_Statistics();
+   ~FAST5_Statistics();
+};
+
+class Output_FAST5 : public Output_Info
+{
+public:
+   FAST5_Statistics all_long_read_info;
+   FAST5_Statistics passed_long_read_info;
+   FAST5_Statistics failed_long_read_info;
+
+   void reset();
+   void add(Output_FAST5 &t_output_FAST5);
    void global_sum();
 };
 

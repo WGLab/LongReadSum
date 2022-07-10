@@ -12,7 +12,7 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 #include "Python_to_CXX_class.h"
 #include "CXX_to_python_class.h"
 #include "LRST_function.h"
-#include "HDF5_module.h"
+#include "FAST5_module.h"
 %}
 
 int runExample(void);
