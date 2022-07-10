@@ -1,7 +1,7 @@
 #include <iostream>
 #include "LRST_function.h"
 #include "BAM_module.h"
-#include "F5_module.h"
+#include "SeqTxt_module.h"
 #include "FASTQ_module.h"
 #include "FASTA_module.h"
 #include "HDF5_module.h"
@@ -25,10 +25,10 @@ int callFASTAModule(Input_Para& _input_data, Output_FA &py_output_fa)
     return exit_code;
 }
 
-int callFAST5Module(Input_Para &_input_data, Output_F5 &py_output_f5)
+int callSeqTxtModule(Input_Para &_input_data, Output_SeqTxt &py_output_SeqTxt)
 {
     // Initialize the FAST5 module with parameters
-    F5_Module _F5_mod(_input_data);
-    int exit_code = _F5_mod.F5_st(py_output_f5);
+    SeqTxt_Module stm(_input_data);
+    int exit_code = stm.generateStatistics(py_output_SeqTxt);
     return exit_code;
 }

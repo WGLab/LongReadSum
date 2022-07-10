@@ -6,6 +6,6 @@ int callBAMModule( Input_Para& _input_data, Output_BAM& py_output_bam );
 
 int callFASTQModule( Input_Para& _input_data, Output_FQ& py_output_fq );
 
-int callFASTAModule(Input_Para& _input_data, Output_FA& py_output_fa);
+int callFASTAModule( Input_Para& _input_data, Output_FA& py_output_fa );
 
-int callFAST5Module( Input_Para& _input_data, Output_F5& py_output_f5 );
+int callSeqTxtModule( Input_Para& _input_data, Output_SeqTxt& py_output_seqtxt );

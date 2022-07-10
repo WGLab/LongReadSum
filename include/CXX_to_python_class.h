@@ -163,7 +163,7 @@ public:
    ~Output_BAM();
 };
 
-class Basic_F5_Statistics
+class Basic_SeqTxt_Statistics
 {
 public:
    Basic_Seq_Statistics long_read_info;
@@ -184,22 +184,22 @@ public:
    // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
 
    void reset();
-   void add(Basic_F5_Statistics &t_output_bf5);
+   void add(Basic_SeqTxt_Statistics &t_output_bSeqTxt);
    void global_sum();
 
-   Basic_F5_Statistics();
-   ~Basic_F5_Statistics();
+   Basic_SeqTxt_Statistics();
+   ~Basic_SeqTxt_Statistics();
 };
 
-class Output_F5 : public Output_Info
+class Output_SeqTxt : public Output_Info
 {
 public:
-   Basic_F5_Statistics f5_long_read_info;
-   Basic_F5_Statistics f5_passed_long_read_info;
-   Basic_F5_Statistics f5_failed_long_read_info;
+   Basic_SeqTxt_Statistics all_long_read_info;
+   Basic_SeqTxt_Statistics passed_long_read_info;
+   Basic_SeqTxt_Statistics failed_long_read_info;
 
    void reset();
-   void add(Output_F5 &t_output_f5);
+   void add(Output_SeqTxt &t_output_SeqTxt);
    void global_sum();
 };
 

@@ -458,11 +458,11 @@ void Output_BAM::global_sum(){
    */
 }
 
-//// function for Output_F5
+//// function for Output_SeqTxt
 //
 //
 //
-Basic_F5_Statistics::Basic_F5_Statistics(){
+Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
    /*read_length_list = new int64_t[MAX_READ_LENGTH];
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_list[ _i_ ] = ZeroDefault;
@@ -473,11 +473,11 @@ Basic_F5_Statistics::Basic_F5_Statistics(){
    }
 }
 
-Basic_F5_Statistics::~Basic_F5_Statistics(){
+Basic_SeqTxt_Statistics::~Basic_SeqTxt_Statistics(){
    // delete [] read_length_list;
 }
 
-void Basic_F5_Statistics::reset(){
+void Basic_SeqTxt_Statistics::reset(){
    long_read_info.reset();
    seq_quality_info.reset();
 
@@ -488,53 +488,53 @@ void Basic_F5_Statistics::reset(){
    max_signal = MoneDefault;
 }
 
-void Basic_F5_Statistics::add(Basic_F5_Statistics& t_output_bf5){
+void Basic_SeqTxt_Statistics::add(Basic_SeqTxt_Statistics& t_output_bSeqTxt){
    //std::cout<<"seq"<<std::endl;
-   long_read_info.add( t_output_bf5.long_read_info );
+   long_read_info.add( t_output_bSeqTxt.long_read_info );
    //std::cout<<"qual"<<std::endl;
-   seq_quality_info.add( t_output_bf5.seq_quality_info );
+   seq_quality_info.add( t_output_bSeqTxt.seq_quality_info );
    //std::cout<<"signal"<<std::endl;
    for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
-      signal_range[ _i_ ] += t_output_bf5.signal_range[ _i_ ];
+      signal_range[ _i_ ] += t_output_bSeqTxt.signal_range[ _i_ ];
    }
-   if ( min_signal==MoneDefault || min_signal > t_output_bf5.min_signal ) {
-      min_signal = t_output_bf5.min_signal;
+   if ( min_signal==MoneDefault || min_signal > t_output_bSeqTxt.min_signal ) {
+      min_signal = t_output_bSeqTxt.min_signal;
    }
-   if ( max_signal < t_output_bf5.max_signal ){
-       max_signal = t_output_bf5.max_signal;
+   if ( max_signal < t_output_bSeqTxt.max_signal ){
+       max_signal = t_output_bSeqTxt.max_signal;
    }
 }
 
-void Basic_F5_Statistics::global_sum(){
+void Basic_SeqTxt_Statistics::global_sum(){
    long_read_info.global_sum();
-   seq_quality_info.global_sum();  
- 
+   seq_quality_info.global_sum();
+
    if ( min_signal==MoneDefault){ min_signal = ZeroDefault; }
    if ( max_signal==MoneDefault){ max_signal = ZeroDefault; }
 }
 
-void Output_F5::reset(){
-   f5_long_read_info.reset();
-   f5_passed_long_read_info.reset();
-   f5_failed_long_read_info.reset();
+void Output_SeqTxt::reset(){
+   all_long_read_info.reset();
+   passed_long_read_info.reset();
+   failed_long_read_info.reset();
 }
 
-void Output_F5::add(Output_F5& t_output_f5){
+void Output_SeqTxt::add(Output_SeqTxt& t_output_SeqTxt){
    //std::cout<<"long- passed"<<std::endl;
-   f5_long_read_info.add(t_output_f5.f5_passed_long_read_info);
+   all_long_read_info.add(t_output_SeqTxt.passed_long_read_info);
    //std::cout<<"long- failed"<<std::endl;
-   f5_long_read_info.add(t_output_f5.f5_failed_long_read_info);
+   all_long_read_info.add(t_output_SeqTxt.failed_long_read_info);
 
    //std::cout<<"passed"<<std::endl;
-   f5_passed_long_read_info.add(t_output_f5.f5_passed_long_read_info);
+   passed_long_read_info.add(t_output_SeqTxt.passed_long_read_info);
    //std::cout<<"failed"<<std::endl;
-   f5_failed_long_read_info.add(t_output_f5.f5_failed_long_read_info);
+   failed_long_read_info.add(t_output_SeqTxt.failed_long_read_info);
 }
 
-void Output_F5::global_sum(){
-   f5_long_read_info.global_sum();
-   f5_passed_long_read_info.global_sum();
-   f5_failed_long_read_info.global_sum();
+void Output_SeqTxt::global_sum(){
+   all_long_read_info.global_sum();
+   passed_long_read_info.global_sum();
+   failed_long_read_info.global_sum();
 }
 
 
