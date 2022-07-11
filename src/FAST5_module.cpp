@@ -14,12 +14,6 @@ Class for calling FAST5 statistics modules.
 #include "H5Cpp.h"
 using namespace H5;
 
-const H5std_string FILE_NAME("/home/perdomoj/github/LongReadSum/output/SimpleCompound.h5");
-const H5std_string DATASET_NAME("dset");
-const int          NX   = 4; // dataset dimensions
-const int          NY   = 6;
-const int          RANK = 2;
-
 
 size_t FAST5_Module::batch_size_of_record=3000;
 std::mutex FAST5_Module::myMutex_readFAST5;
@@ -65,28 +59,47 @@ FAST5_Module::FAST5_Module(Input_Para& input_parameters){
     }
 
     // Check if the first file exists
-    const char * first_filepath = _input_parameters.input_files[file_index].c_str();
-    std::ifstream *input_file_stream = new std::ifstream(first_filepath);
-    if (!(input_file_stream->is_open())){
-        std::cerr<< "Cannot open FAST5 file: "<< first_filepath <<std::endl;
-        has_error |= 2;
-    }else{
-        // Close the file
-        input_file_stream->close();
-        input_file_stream->clear();
+    const char * first_filepath_str = _input_parameters.input_files[file_index].c_str();
+    H5std_string first_filepath(first_filepath_str);
+    try {
+        // Refs:
+        // https://raw.githubusercontent.com/HDFGroup/hdf5/develop/c++/examples/h5tutr_subset.cpp
+        // https://portal.hdfgroup.org/display/HDF5/Examples+from+Learning+the+Basics
+
+        // Create the H5 object
+        H5File file(first_filepath, H5F_ACC_TRUNC);
+        this->input_fast5 = file;  // Update the class member
+        std::cout << "File access test complete." << std::endl;
 
         // Set the current active filepath
         input_filepath = first_filepath;
         file_index ++;
         std::cout<< "Opened FAST5 file: "<< first_filepath <<" " << file_index<<"/"<<_input_parameters.num_input_files <<std::endl;
     }
+
+    // catch failure caused by the H5File operations
+    catch (FileIException &error) {
+        error.printErrorStack();
+        has_error = 2;
+    }
+
+    // catch failure caused by the DataSet operations
+    catch (DataSetIException &error) {
+        error.printErrorStack();
+        has_error = 2;
+    }
+
+    // catch failure caused by the DataSpace operations
+    catch (DataSpaceIException &error) {
+        error.printErrorStack();
+        has_error = 2;
+    }
+    has_error = 0;
 }
 
 FAST5_Module::~FAST5_Module(){
-//   if (input_file_stream!=NULL){
-//       delete input_file_stream;
-//   }
-//   input_file_stream = NULL;
+    // Close the file
+    input_fast5.close();
 }
 
 int FAST5_Module::generateStatistics( Output_FAST5& output_data){

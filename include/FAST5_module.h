@@ -1,9 +1,6 @@
 #ifndef HDF5_MODULE_H_
 #define HDF5_MODULE_H_
 
-#include "CXX_to_python_class.h"
-#include "Python_to_CXX_class.h"
-
 #include <string>
 #include <fstream>
 #include <sstream>
@@ -11,7 +8,11 @@
 
 #include <thread>
 #include <mutex>
-#include <map>
+
+#include "CXX_to_python_class.h"
+#include "Python_to_CXX_class.h"
+#include "H5Cpp.h"
+using namespace H5;
 
 
 class FAST5_Record{
@@ -36,7 +37,6 @@ private:
         Output_FAST5 output_data;
         size_t readRecord(std::ifstream* file_stream);
 
-
         FAST5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size);
         ~FAST5_Thread_data();
 };
@@ -46,6 +46,7 @@ class FAST5_Module{
     private:
         static size_t file_index;  // Tracks the current file index being analyzed
     public:
+        H5File input_fast5;  // HDF5 file object
         int has_error;  // Error code
         static std::mutex myMutex_readFAST5;
         static std::mutex myMutex_output;
