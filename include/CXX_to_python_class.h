@@ -182,7 +182,7 @@ public:
    // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
 
    void reset();
-   void add(Basic_SeqTxt_Statistics &t_output_bSeqTxt);
+   void add(Basic_SeqTxt_Statistics &output_data);
    void global_sum();
 
    Basic_SeqTxt_Statistics();
@@ -197,7 +197,7 @@ public:
    Basic_SeqTxt_Statistics failed_long_read_info;
 
    void reset();
-   void add(Output_SeqTxt &t_output_SeqTxt);
+   void add(Output_SeqTxt &output_data);
    void global_sum();
 };
 
@@ -210,7 +210,7 @@ public:
    Basic_Seq_Quality_Statistics seq_quality_info;
 
    void reset();
-   void add(FAST5_Statistics &t_output_FAST5);
+   void add(FAST5_Statistics &output_data);
    void global_sum();
 
    FAST5_Statistics();
@@ -225,7 +225,7 @@ public:
    FAST5_Statistics failed_long_read_info;
 
    void reset();
-   void add(Output_FAST5 &t_output_FAST5);
+   void add(Output_FAST5 &output_data);
    void global_sum();
 };
 
