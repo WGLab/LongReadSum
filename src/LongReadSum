@@ -316,27 +316,12 @@ def fast5_module(margs):
         parser.parse_args(['fast5', '--help'])
         sys.exit(1004)
     else:
-        # # Test start
-        # print("Running HDF5 example...")
-        # lrst.runExample()
-        # print("Example complete.")
-        # # Test end
-
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "fast5_"
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
         input_para.downsample_percentage = para_dict["downsample_percentage"]
-
-        # TODO: 'seq' flag is 1 by default, which in the argument description states that only the summary text will be
-        #  output (no HTML). But below it is used to indicate static vs. dynamic output HTML
-        input_para.other_flags = margs.seq  # Default = 1
-        input_para.other_flags = (input_para.other_flags << 4)
-        input_para.other_flags += (1 if para_dict["detail"]>0 else 0)
-        input_para.other_flags = (input_para.other_flags << 4)
-        input_para.other_flags += int(margs.sum_type)
-
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
 
@@ -344,20 +329,20 @@ def fast5_module(margs):
             input_para.add_input_file(str(_ipf))
 
         fast5_output = lrst.Output_FAST5()
-        # exit_code = lrst.callFAST5Module(input_para, fast5_output)
-        # if exit_code == 0:
-        #     print("Generating output files...")
-        #     import plot_for_FAST5
-        #     plot_for_FAST5.plot(fast5_output, para_dict)
-        #     import generate_html
-        #     for static in [True, False]:
-        #         if margs.seq==0:
-        #             f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "QC for FAST5", para_dict], static=static);
-        #         else:
-        #             f5_html_gen = generate_html.ST_HTML_Generator(
-        #                [["basic_st", "read_length_st","read_length_hist", "basic_info"], "QC for FAST5", para_dict], static=static)
-        #         f5_html_gen.generate_st_html()
-        #     print("Done.")
+        exit_code = lrst.callFAST5Module(input_para, fast5_output)
+        if exit_code == 0:
+            print("Generating output files...")
+            import plot_for_FAST5
+            plot_for_FAST5.plot(fast5_output, para_dict)
+            import generate_html
+            for static in [True, False]:
+                if margs.seq==0:
+                    f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "QC for FAST5", para_dict], static=static);
+                else:
+                    f5_html_gen = generate_html.ST_HTML_Generator(
+                       [["basic_st", "read_length_st","read_length_hist", "basic_info"], "QC for FAST5", para_dict], static=static)
+                f5_html_gen.generate_st_html()
+            print("Done.")
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",

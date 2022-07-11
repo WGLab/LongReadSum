@@ -37,6 +37,7 @@ int callFAST5Module(Input_Para &_input_data, Output_FAST5 &py_output_FAST5)
 {
     // Initialize the FAST5 module with parameters
     FAST5_Module f5m(_input_data);
-    int exit_code = f5m.generateStatistics(py_output_FAST5);
+//    int exit_code = f5m.generateStatistics(py_output_FAST5);
+    int exit_code = 1;
     return exit_code;
 }

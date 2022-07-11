@@ -13,9 +13,8 @@
 #include <mutex>
 #include <map>
 
-int runExample(void);
 
-class FAST5_SS_Record{
+class FAST5_Record{
     public:
         std::string filename;
         std::string read_id;
@@ -33,13 +32,9 @@ private:
         int _thread_id;
         int _batch_size;
         Input_Para _input_parameters;
-        std::vector<FAST5_SS_Record> stored_records;
-        std::map<std::string, int> _header_columns;
-
+        std::vector<FAST5_Record> stored_records;
         Output_FAST5 output_data;
-        std::string current_line;  // Current line being read from the file
-
-        size_t read_ss_record(std::ifstream* file_stream);
+        size_t readRecord(std::ifstream* file_stream);
 
 
         FAST5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size);
@@ -51,21 +46,17 @@ class FAST5_Module{
     private:
         static size_t file_index;  // Tracks the current file index being analyzed
     public:
+        int has_error;  // Error code
         static std::mutex myMutex_readFAST5;
         static std::mutex myMutex_output;
         static size_t batch_size_of_record;
-
         Input_Para _input_parameters;
-
-        std::ifstream *input_file_stream;  // Stream for the input text file
-        std::vector<std::thread> m_threads;
-
-
-        int has_error;
+        std::string input_filepath;  // The current input file
+        std::vector<std::thread> all_threads;
 
         // Methods
         // Assign threads
-        static void createThread(std::ifstream* file_stream, Input_Para& ref_input_op, int thread_id, FAST5_Thread_data& ref_thread_data, Output_FAST5& ref_output);
+        static void createThread(std::string input_filepath, Input_Para& ref_input_op, int thread_id, FAST5_Thread_data& ref_thread_data, Output_FAST5& ref_output);
 
         // Generate statistics
         int generateStatistics( Output_FAST5& output_datainfo);
