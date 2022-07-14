@@ -8,15 +8,15 @@
 
 int callBAMModule(Input_Para &_input_data, Output_BAM &py_output_bam)
 {
-   BAM_Module _bam_module(_input_data);
-   int exit_code = _bam_module.calculateStatistics(py_output_bam);
-   return exit_code;
+    BAM_Module _bam_module(_input_data);
+    int exit_code = _bam_module.calculateStatistics(py_output_bam);
+    return exit_code;
 }
 
 int callFASTQModule(Input_Para &_input_data, Output_FQ &py_output_fq)
 {
-   int exit_code = qc_fastq_files(_input_data, py_output_fq);
-   return exit_code;
+    int exit_code = qc_fastq_files(_input_data, py_output_fq);
+    return exit_code;
 }
 
 int callFASTAModule(Input_Para& _input_data, Output_FA &py_output_fa)
@@ -35,9 +35,6 @@ int callSeqTxtModule(Input_Para &_input_data, Output_SeqTxt &py_output_SeqTxt)
 
 int callFAST5Module(Input_Para &_input_data, Output_FAST5 &py_output_FAST5)
 {
-    // Initialize the FAST5 module with parameters
-    FAST5_Module f5m(_input_data);
-//    int exit_code = f5m.generateStatistics(py_output_FAST5);
-    int exit_code = 1;
+    int exit_code = generateQC(_input_data, py_output_FAST5);
     return exit_code;
 }

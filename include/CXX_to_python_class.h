@@ -203,30 +203,10 @@ public:
 
 
 // Data structures for FAST5
-class FAST5_Statistics
+class Output_FAST5 : public Output_FA
 {
 public:
-   Basic_Seq_Statistics long_read_info;
    Basic_Seq_Quality_Statistics seq_quality_info;
-
-   void reset();
-   void add(FAST5_Statistics &output_data);
-   void global_sum();
-
-   FAST5_Statistics();
-   ~FAST5_Statistics();
-};
-
-class Output_FAST5 : public Output_Info
-{
-public:
-   FAST5_Statistics all_long_read_info;
-   FAST5_Statistics passed_long_read_info;
-   FAST5_Statistics failed_long_read_info;
-
-   void reset();
-   void add(Output_FAST5 &output_data);
-   void global_sum();
 };
 
 #endif

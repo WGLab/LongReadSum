@@ -12,7 +12,6 @@ Output_Info::Output_Info(){
 //
 //
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
-   //read_length_count = new int64_t[MAX_READ_LENGTH];
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = ZeroDefault;
@@ -21,13 +20,9 @@ Basic_Seq_Statistics::Basic_Seq_Statistics(){
    for(int _i_=0; _i_< 10 ; _i_++){
       nx_read_length[ _i_ ] = ZeroDefault;
    }
-   //nx_read_length[9] = ZeroDefault;
 }
 
 Basic_Seq_Statistics::~Basic_Seq_Statistics(){
-   //std::cout<<" ~Basic_Seq_Statistics begin" <<std::endl<<std::flush;
-   //delete [] read_length_count;
-   //std::cout<<" ~Basic_Seq_Statistics end" <<std::endl<<std::flush;
 }
 
 void Basic_Seq_Statistics::resize(){
@@ -98,24 +93,12 @@ void Basic_Seq_Statistics::reset(){
 }
 
 void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
-   //std::cout<<"read_length_count"<<std::endl;
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] += t_seq_st.read_length_count[ _i_ ];
    }
-   //std::cout<<"read_gc_content_count"<<std::endl;
    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
       read_gc_content_count[ _i_ ] += t_seq_st.read_gc_content_count[ _i_ ];
    }
-   //std::cout<<"read_gc_content_count"<<std::endl;
-   /*for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = t_seq_st. ;
-   }
-   n50_read_length = t_seq_st. ;
-   n95_read_length = t_seq_st. ;
-   n05_read_length = t_seq_st. ;
-   mean_read_length = t_seq_st. ;
-   median_read_length = t_seq_st. ;*/
-
    total_num_reads += t_seq_st.total_num_reads ;
    total_num_bases += t_seq_st.total_num_bases ;
 
@@ -128,7 +111,6 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
    total_g_cnt += t_seq_st.total_g_cnt ;
    total_tu_cnt += t_seq_st.total_tu_cnt ;
    total_n_cnt += t_seq_st.total_n_cnt ;
-   //gc_cnt = t_seq_st. ;
 }
 
 void Basic_Seq_Statistics::global_sum(){
@@ -156,21 +138,8 @@ void Basic_Seq_Statistics::global_sum(){
          base_perc = double( t_base )/total_num_bases;
          start_perct = int(base_perc*10+0.5);
          for (int _t_sp=start_perct; _t_sp<start_perct+1&&_t_sp<10; _t_sp++){
-            /*if ( nx_read_length[ _t_sp ]==ZeroDefault && base_perc>=_t_sp/double(10) ){
-               nx_read_length[ _t_sp ] = _i_;
-            }*/
-            //if ( base_perc<(_t_sp+1)/double(10) ){ nx_read_length[ _t_sp ] = _i_; }
             if ( int(base_perc*1000)<(_t_sp)*100 ){ nx_read_length[ _t_sp ] = _i_; }
-            /*if ( base_perc>0.45 && base_perc<0.55){
-                std::cout<<"Test: "<< (base_perc<0.5) <<" "<< (base_perc<(_t_sp+1)/double(10))<< " " << base_perc <<"<"<< ((_t_sp+1)/double(10)) <<" " << _i_<<std::endl;
-            }*/
          }
-         //if ( base_perc<0.05){ n05_read_length = _i_; }
-         //if ( base_perc<0.5){ n50_read_length = _i_; }
-         /*if ( base_perc<0.5 && base_perc>=(4+1)/double(10) ){
-             std::cout<<"Test: "<< base_perc << (4+1)/double(10) <<" "<< _i_<<std::endl;
-         }*/
-         //if ( base_perc<0.95){ n95_read_length = _i_; }
          if ( int(base_perc*1000)<50){ n05_read_length = _i_; }
          if ( int(base_perc*1000)<500){ n50_read_length = _i_; }
          if ( int(base_perc*1000)<950){ n95_read_length = _i_; }
@@ -186,9 +155,6 @@ void Basic_Seq_Statistics::global_sum(){
 //
 //
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
-   //pos_quality_distribution = new int[MAX_READ_LENGTH];
-   //pos_quality_distribution_dev = new double[MAX_READ_LENGTH];
-   //pos_quality_distribution_count = new int64_t[MAX_READ_LENGTH];
    pos_quality_distribution.resize(MAX_READ_LENGTH);
    pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
    pos_quality_distribution_count.resize(MAX_READ_LENGTH);
@@ -209,17 +175,9 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
 }
 
 Basic_Seq_Quality_Statistics::~Basic_Seq_Quality_Statistics(){
-   //std::cout<<" ~Basic_Seq_Quality_Statistics begin" <<std::endl<<std::flush;
-   //delete [] pos_quality_distribution;
-   //delete [] pos_quality_distribution_dev;
-   //delete [] pos_quality_distribution_count;
-   //std::cout<<" ~Basic_Seq_Quality_Statistics end" <<std::endl<<std::flush;
 }
 
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Quality_Statistics& _bsqs){
-   //pos_quality_distribution = new int[MAX_READ_LENGTH];
-   //pos_quality_distribution_dev = new double[MAX_READ_LENGTH];
-   //pos_quality_distribution_count = new int64_t[MAX_READ_LENGTH];
     pos_quality_distribution.resize(MAX_READ_LENGTH);
    pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
    pos_quality_distribution_count.resize(MAX_READ_LENGTH);
@@ -413,49 +371,6 @@ void Output_BAM::global_sum(){
    
    if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
    if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
-  
-  /* 
-   std::cout<<"for test"<<std::endl;
-   std::cout<<"num_primary_alignment: "<< num_primary_alignment<<std::endl;
-   std::cout<<"num_secondary_alignment: "<< num_secondary_alignment <<std::endl;
-   std::cout<<"num_supplementary_alignment: "<< num_supplementary_alignment <<std::endl;
-   std::cout<<"num_reads_with_secondary_alignment: "<< num_reads_with_secondary_alignment <<std::endl;
-   std::cout<<"num_reads_with_supplementary_alignment: "<< num_reads_with_supplementary_alignment <<std::endl;
-   std::cout<<"num_reads_with_both_secondary_supplementary_alignment: "<< num_reads_with_both_secondary_supplementary_alignment <<std::endl;
-   std::cout<<"forward_alignment: "<< forward_alignment <<std::endl;
-   std::cout<<"reverse_alignment: "<< reverse_alignment <<std::endl;
-   std::cout<<"min_map_quality-max_map_quality: "<< min_map_quality << "-" << max_map_quality <<std::endl;
-   std::cout<<"num_matched_bases: "<< num_matched_bases <<std::endl;
-   std::cout<<"num_mismatched_bases: "<< num_mismatched_bases <<std::endl;
-   std::cout<<"num_ins_bases: "<< num_ins_bases <<std::endl;
-   std::cout<<"num_del_bases: "<< num_del_bases <<std::endl;
-   std::cout<<"num_clip_bases: "<< num_clip_bases <<std::endl;
-
-   std::cout<<"total_num_reads: "<< mapped_long_read_info.total_num_reads <<std::endl;
-   std::cout<<"total_num_bases: "<< mapped_long_read_info.total_num_bases <<std::endl;
-   std::cout<<"longest_read_length: "<< mapped_long_read_info.longest_read_length <<std::endl;
-   std::cout<<"total_a/c/g/t_cnt: "<< mapped_long_read_info.total_a_cnt << "/" <<mapped_long_read_info.total_c_cnt << "/" <<mapped_long_read_info.total_g_cnt  << "/" <<mapped_long_read_info.total_tu_cnt  << "/" <<mapped_long_read_info.total_n_cnt   <<std::endl;
-   std::cout<<"gc_cnt : "<< mapped_long_read_info.gc_cnt  <<std::endl;
-   std::cout<<"n50_read_length: "<< mapped_long_read_info.n50_read_length <<std::endl;
-   std::cout<<"n50_read_length: "<< mapped_long_read_info.nx_read_length[0]<<"/"<< mapped_long_read_info.nx_read_length[3]<<"/"<<mapped_long_read_info.nx_read_length[4]<<"/"<<mapped_long_read_info.nx_read_length[5]<<"/"<<mapped_long_read_info.nx_read_length[6]<<"/"<<mapped_long_read_info.nx_read_length[9] <<std::endl;
-   std::cout<<"mean_read_length: "<< mapped_long_read_info.mean_read_length <<std::endl;
-
-   std::cout<<"total_num_reads: "<< unmapped_long_read_info.total_num_reads <<std::endl;
-   std::cout<<"total_num_bases: "<< unmapped_long_read_info.total_num_bases <<std::endl;
-   std::cout<<"longest_read_length: "<< unmapped_long_read_info.longest_read_length <<std::endl;
-   std::cout<<"n50_read_length: "<< unmapped_long_read_info.n50_read_length <<std::endl;
-   std::cout<<"n50_read_length: "<< unmapped_long_read_info.nx_read_length[0]<<"/"<<unmapped_long_read_info.nx_read_length[3]<<"/"<<unmapped_long_read_info.nx_read_length[4]<<"/"<<unmapped_long_read_info.nx_read_length[5]<<"/"<<unmapped_long_read_info.nx_read_length[6]<<"/"<<unmapped_long_read_info.nx_read_length[9] <<std::endl;
-   std::cout<<"mean_read_length: "<< unmapped_long_read_info.mean_read_length <<std::endl;
-   
-   std::cout<<"total_num_reads: "<< long_read_info.total_num_reads <<std::endl;
-   std::cout<<"total_num_bases: "<< long_read_info.total_num_bases <<std::endl;
-   std::cout<<"longest_read_length: "<< long_read_info.longest_read_length <<std::endl;
-   std::cout<<"total_a/c/g/t_cnt: "<< long_read_info.total_a_cnt << "/" <<long_read_info.total_c_cnt << "/" <<long_read_info.total_g_cnt  << "/" <<long_read_info.total_tu_cnt  << "/" <<long_read_info.total_n_cnt   <<std::endl;
-   std::cout<<"gc_cnt : "<< long_read_info.gc_cnt  <<std::endl;
-   std::cout<<"n50_read_length: "<< long_read_info.n50_read_length <<std::endl;
-   std::cout<<"n50_read_length: "<< long_read_info.nx_read_length[0]<<"/"<< long_read_info.nx_read_length[3]<<"/"<<long_read_info.nx_read_length[4]<<"/"<<long_read_info.nx_read_length[5]<<"/"<<long_read_info.nx_read_length[6] <<"/"<<long_read_info.nx_read_length[9] <<std::endl;
-   std::cout<<"mean_read_length: "<< long_read_info.mean_read_length <<std::endl;
-   */
 }
 
 // Data structures for sequencing_summary.txt
@@ -529,47 +444,6 @@ void Output_SeqTxt::add(Output_SeqTxt& t_output_SeqTxt){
 }
 
 void Output_SeqTxt::global_sum(){
-   all_long_read_info.global_sum();
-   passed_long_read_info.global_sum();
-   failed_long_read_info.global_sum();
-}
-
-// Data structures for FAST5
-FAST5_Statistics::FAST5_Statistics(){
-}
-
-FAST5_Statistics::~FAST5_Statistics(){
-}
-
-void FAST5_Statistics::reset(){
-   long_read_info.reset();
-   seq_quality_info.reset();
-}
-
-void FAST5_Statistics::add(FAST5_Statistics& t_output_FAST5){
-   long_read_info.add( t_output_FAST5.long_read_info );
-   seq_quality_info.add( t_output_FAST5.seq_quality_info );
-}
-
-void FAST5_Statistics::global_sum(){
-   long_read_info.global_sum();
-   seq_quality_info.global_sum();
-}
-
-void Output_FAST5::reset(){
-   all_long_read_info.reset();
-   passed_long_read_info.reset();
-   failed_long_read_info.reset();
-}
-
-void Output_FAST5::add(Output_FAST5& t_output_FAST5){
-   all_long_read_info.add(t_output_FAST5.passed_long_read_info);
-   all_long_read_info.add(t_output_FAST5.failed_long_read_info);
-   passed_long_read_info.add(t_output_FAST5.passed_long_read_info);
-   failed_long_read_info.add(t_output_FAST5.failed_long_read_info);
-}
-
-void Output_FAST5::global_sum(){
    all_long_read_info.global_sum();
    passed_long_read_info.global_sum();
    failed_long_read_info.global_sum();

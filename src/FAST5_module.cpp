@@ -6,210 +6,308 @@ Class for calling FAST5 statistics modules.
 
 #include <iostream>
 #include <sstream>
-#include <string>
-#include <algorithm>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <zlib.h>
+#include <ctype.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <iostream>
 
 #include "FAST5_module.h"
 #include "ComFunction.h"
 #include "H5Cpp.h"
 using namespace H5;
 
+static int calculateFileQC(const char *input_file, char quality_value_offset, Output_FAST5 &output_data, FILE *read_details_fp)
+{
+    int exit_code = 0;
+    gzFile input_fp;
+    char *read_seq;
+    char *raw_read_qual;
+    char *read_name;
+    char baseq;
+    int read_len;
+    double read_gc_cnt;
+    double read_mean_base_qual;
 
-size_t FAST5_Module::batch_size_of_record=3000;
-std::mutex FAST5_Module::myMutex_readFAST5;
-std::mutex FAST5_Module::myMutex_output;
-size_t FAST5_Module::file_index = 0;
-
-FAST5_Thread_data::FAST5_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size=1000){
-   _batch_size = p_batch_size;
-   _thread_id = p_thread_id;
-   _input_parameters = ref_input_op;
-   stored_records.reserve(p_batch_size+1);
-   for (int _i_=0; _i_<p_batch_size+1; _i_++){
-      stored_records.push_back( FAST5_Record() );
-   }
-}
-
-FAST5_Thread_data::~FAST5_Thread_data(){
-}
-
-size_t FAST5_Thread_data::readRecord(std::ifstream* file_stream){
-    thread_index = 0;  // Index where this thread's data will be stored
-//    while( std::getline( *file_stream, current_line )) {
-//        std::istringstream column_stream( current_line );
-//
-//        // Read each column value from the record line
-//        std::string column_value;
-//        std::vector<std::string> column_values;
-//    }
-
-    return thread_index;
-}
-
-// FAST5_module Constructor
-FAST5_Module::FAST5_Module(Input_Para& input_parameters){
-    _input_parameters = input_parameters;
-    has_error = 0;
-    file_index = 0;
-
-    if (file_index >= _input_parameters.num_input_files){
-        std::cerr << "Input file list error." << std::endl;
-        has_error |= 1;
-        return;
-    }
-
-    // Check if the first file exists
-    const char * first_filepath_str = _input_parameters.input_files[file_index].c_str();
-    H5std_string first_filepath(first_filepath_str);
-    try {
-        // Refs:
-        // https://raw.githubusercontent.com/HDFGroup/hdf5/develop/c++/examples/h5tutr_subset.cpp
-        // https://portal.hdfgroup.org/display/HDF5/Examples+from+Learning+the+Basics
-
-        // Create the H5 object
-        H5File file(first_filepath, H5F_ACC_TRUNC);
-        this->input_fast5 = file;  // Update the class member
-        std::cout << "File access test complete." << std::endl;
-
-        // Set the current active filepath
-        input_filepath = first_filepath;
-        file_index ++;
-        std::cout<< "Opened FAST5 file: "<< first_filepath <<" " << file_index<<"/"<<_input_parameters.num_input_files <<std::endl;
-    }
-
-    // catch failure caused by the H5File operations
-    catch (FileIException &error) {
-        error.printErrorStack();
-        has_error = 2;
-    }
-
-    // catch failure caused by the DataSet operations
-    catch (DataSetIException &error) {
-        error.printErrorStack();
-        has_error = 2;
-    }
-
-    // catch failure caused by the DataSpace operations
-    catch (DataSpaceIException &error) {
-        error.printErrorStack();
-        has_error = 2;
-    }
-    has_error = 0;
-}
-
-FAST5_Module::~FAST5_Module(){
-    // Close the file
-    input_fast5.close();
-}
-
-int FAST5_Module::generateStatistics( Output_FAST5& output_data){
-   auto relapse_start_time = std::chrono::high_resolution_clock::now();
-
-   output_data.all_long_read_info.long_read_info.resize();
-   output_data.passed_long_read_info.long_read_info.resize();
-   output_data.failed_long_read_info.long_read_info.resize();
-
-   if (has_error==0){
-       all_threads.reserve(_input_parameters.threads+3);
-
-      int _i_t=0;
-      FAST5_Thread_data** thread_data_vector = new FAST5_Thread_data*[_input_parameters.threads];
-      try{
-         for (_i_t=0; _i_t<_input_parameters.threads; _i_t++){
-             std::cout<<"INFO: generate threads "<<_i_t<<std::endl<<std::flush;
-             thread_data_vector[_i_t] = new FAST5_Thread_data(_input_parameters, _i_t, FAST5_Module::batch_size_of_record);
-             std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
-             all_threads.push_back(std::thread((FAST5_Module::createThread), input_filepath, std::ref(_input_parameters), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(output_data) ));
-         }
-
-         std::cout<<"INFO: join threads"<<std::endl<<std::flush;
-         for (_i_t=0; _i_t<_input_parameters.threads; _i_t++){
-             std::cout<<"INFO: join threads "<<_i_t<<std::endl<<std::flush;
-             all_threads[_i_t].join();
-         }
-      }catch(const std::runtime_error& re){
-         std::cerr << "Runtime error: " << re.what() << std::endl;
-      }catch(const std::exception& ex){
-         std::cerr << "Error occurred: " << ex.what() << std::endl;
-      }catch(...){
-         std::cerr << "Unknown failure occurred. Possible memory corruption" << std::endl;
-      }
-     
-      for (_i_t=0; _i_t<_input_parameters.threads; _i_t++){
-         delete thread_data_vector[_i_t];
-      }
-      delete [] thread_data_vector;
-   }
-
-   output_data.global_sum();
- 
-   auto relapse_end_time = std::chrono::high_resolution_clock::now();
-   std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
-
-   std::cout<<"FAST5 Module "<< (has_error==0?"completed successfully":"failed") << std::endl;
- 
-   return has_error;
-}
-
-void FAST5_Module::createThread(std::string input_filepath, Input_Para& ref_input_op, int thread_id, FAST5_Thread_data& ref_thread_data, Output_FAST5& ref_output ){
-    size_t read_ss_size, read_ss_i;
-//    while (true){
-//        myMutex_readFAST5.lock();
-//        read_ss_size = ref_thread_data.readRecord(file_stream);
-//
-//        if (read_ss_size == 0 && !(file_index < ref_input_op.num_input_files) ){
-//            myMutex_readFAST5.unlock();
-//            break;
-//        }
-//        if ( read_ss_size < batch_size_of_record ){
-//            if ( file_index < ref_input_op.num_input_files ){
-//               std::cout<< "INFO: Open FAST5 file="<< ref_input_op.input_files[file_index] <<std::endl;
-//               file_stream->close();
-//               file_stream->clear();
-//
-//               file_stream->open( ref_input_op.input_files[file_index].c_str() );
-//               std::string firstline;
-//               std::getline( *file_stream, firstline );
-//               file_index++;
+    Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
+    Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
+    input_fp = gzopen(input_file, "r");
+    if (!input_fp)
+    {
+        std::cerr << "Failed to open file for reading: " << input_file << std::endl;
+        exit_code = 3;
+    } else {
+        // TODO: Read the FAST5 file here
+//        seq = kseq_init(input_fp);
+//        while ((read_len = kseq_read(seq)) >= 0)
+//        {
+//            if (read_len == 0) {continue;}
+//            read_name = seq->name.s;
+//            read_seq = seq->seq.s;
+//            raw_read_qual = seq->qual.s;
+//            if ((uint64_t)read_len > long_read_info.longest_read_length)
+//            {
+//                long_read_info.longest_read_length = read_len;
 //            }
+//            long_read_info.total_num_reads += 1;
+//            long_read_info.total_num_bases += read_len;
+//            if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
+//                long_read_info.read_length_count[read_len] += 1;
+//            } else {
+//                long_read_info.read_length_count.resize(read_len + 1000, 0);
+//                long_read_info.read_length_count[read_len] += 1;
+//            }
+//            read_gc_cnt = 0;
+//            read_mean_base_qual = 0;
+//            for (int i = 0; i < read_len; i++)
+//            {
+//                if (read_seq[i] == 'A' || read_seq[i] == 'a')
+//                {
+//                    long_read_info.total_a_cnt += 1;
+//                }
+//                else if (read_seq[i] == 'G' || read_seq[i] == 'g')
+//                {
+//                    long_read_info.total_g_cnt += 1;
+//                    read_gc_cnt += 1;
+//                }
+//                else if (read_seq[i] == 'C' || read_seq[i] == 'c')
+//                {
+//                    long_read_info.total_c_cnt += 1;
+//                    read_gc_cnt += 1;
+//                }
+//                else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
+//                {
+//                    long_read_info.total_tu_cnt += 1;
+//                }
+//                baseq = raw_read_qual[i] - quality_value_offset;
+//                seq_quality_info.base_quality_distribution[baseq] += 1;
+//                read_mean_base_qual += baseq;
+//            }
+//            read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
+//            long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+//            read_mean_base_qual /= (double) read_len;
+//            seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
+//            fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, read_len, read_gc_cnt, read_mean_base_qual);
 //        }
-//        myMutex_readFAST5.unlock();
-//        if (read_ss_size == 0 ) { continue; }
-//
-//        // Columns used for statistics: passes_filtering, sequence_length_template, mean_qscore_template
-//        ref_thread_data.output_data.reset();
-//        ref_thread_data.output_data.all_long_read_info.long_read_info.resize();
-//        ref_thread_data.output_data.passed_long_read_info.long_read_info.resize();
-//        ref_thread_data.output_data.failed_long_read_info.long_read_info.resize();
-//        for(read_ss_i=0; read_ss_i<read_ss_size; read_ss_i++){
-//           FAST5_Statistics* output_statistics = NULL;
-//           bool passes_filtering_value = ref_thread_data.stored_records[read_ss_i].passes_filtering;
-//           if ( passes_filtering_value == true) {
-//               output_statistics = &(ref_thread_data.output_data.passed_long_read_info);
-//           } else {
-//                output_statistics = &(ref_thread_data.output_data.failed_long_read_info);
-//           }
-//           output_statistics->long_read_info.total_num_reads++;
-//           size_t sequence_base_count = ref_thread_data.stored_records[read_ss_i].sequence_length_template;
-//           output_statistics->long_read_info.total_num_bases += sequence_base_count;
-//
-//           if ( output_statistics->long_read_info.longest_read_length < ref_thread_data.stored_records[read_ss_i].sequence_length_template){
-//               output_statistics->long_read_info.longest_read_length = ref_thread_data.stored_records[read_ss_i].sequence_length_template;
-//           }
-//           output_statistics->long_read_info.read_length_count[ ref_thread_data.stored_records[read_ss_i].sequence_length_template<MAX_READ_LENGTH?ref_thread_data.stored_records[read_ss_i].sequence_length_template:(MAX_READ_LENGTH-1) ] += 1;
-//
-//           output_statistics->seq_quality_info.read_quality_distribution[ int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template ) ] += 1;
-//           if ( output_statistics->seq_quality_info.min_read_quality == MoneDefault ||
-//               output_statistics->seq_quality_info.min_read_quality>int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template ) ){
-//              output_statistics->seq_quality_info.min_read_quality = int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template );
-//           }
-//           if ( output_statistics->seq_quality_info.max_read_quality < int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template) ){
-//              output_statistics->seq_quality_info.max_read_quality = int( ref_thread_data.stored_records[read_ss_i].mean_qscore_template);
-//           }
-//        }
-//
-//        myMutex_output.lock();
-//        ref_output.add( ref_thread_data.output_data );
-//        myMutex_output.unlock();
-//    }
+//        kseq_destroy(seq);
+    }
+    gzclose(input_fp);
+    return exit_code;
+}
+
+static uint8_t predict_base_quality_offset(Input_Para &_input_data)
+{
+    const char * input_file;
+    gzFile input_fp;
+//    kseq_t *seq;
+    char *raw_read_qual;
+    int read_len;
+    char quality_value_offset = 0;
+    int max_num_reads;
+    int num_processed_reads;
+
+    if (_input_data.num_input_files == 0)
+    {
+        std::cerr << "No input files provided.\n" << std::endl;
+    } else {
+        max_num_reads = 100000;
+        num_processed_reads = 0;
+        for (size_t i = 0; i < _input_data.num_input_files; i++)
+        {
+            if (quality_value_offset){break;}
+            input_file = _input_data.input_files[i].c_str();
+            input_fp = gzopen(input_file, "r");
+            if (!input_fp)
+            {
+                std::cerr <<  "Failed to open file for reading: %s" << input_file << std::endl;
+            } else {
+                // TODO: Read the FAST5 file here
+//                seq = kseq_init(input_fp);
+//                while ((read_len = kseq_read(seq)) >= 0)
+//                {
+//                    if (quality_value_offset) {break;}
+//                    if (read_len == 0) {continue;}
+//                    raw_read_qual = seq->qual.s;
+//                    for (int j = 0; j < read_len; j++)
+//                    {
+//                        if (raw_read_qual[j] < 64) {
+//                            quality_value_offset = 33;
+//                            break;
+//                        }
+//                    }
+//                    num_processed_reads++;
+//                    if (num_processed_reads > max_num_reads){
+//                        quality_value_offset = 64;
+//                        break;
+//                    }
+//                }
+//                kseq_destroy(seq);
+            }
+            gzclose(input_fp);
+        }
+    }
+
+    if (quality_value_offset == 0){
+        quality_value_offset = 64;
+    }
+    std::cout << "NOTICE: predicted FAST5 base quality offset is " << quality_value_offset << std::endl;
+
+    return quality_value_offset;
+}
+
+int generateQC(Input_Para &_input_data, Output_FAST5 &output_data)
+{
+    int exit_code = 0;
+    const char *input_file = NULL;
+    char quality_value_offset;
+    std::string read_details_file, read_summary_file;
+    FILE *read_details_fp, *read_summary_fp;
+
+    read_details_file = _input_data.output_folder + "/FAST5_details.txt";
+    read_summary_file = _input_data.output_folder + "/FAST5_summary.txt";
+
+    output_data.long_read_info.total_num_reads = ZeroDefault; // total number of long reads
+    output_data.long_read_info.total_num_bases = ZeroDefault; // total number of bases
+
+    output_data.long_read_info.longest_read_length = ZeroDefault; // the length of longest reads
+    output_data.long_read_info.n50_read_length = MoneDefault;     // N50
+    output_data.long_read_info.n95_read_length = MoneDefault;     // N95
+    output_data.long_read_info.n05_read_length = MoneDefault;     // N05;
+    output_data.long_read_info.mean_read_length = MoneDefault;    // mean of read length
+
+    output_data.long_read_info.NXX_read_length.clear();
+    output_data.long_read_info.median_read_length = MoneDefault; // median of read length
+
+    output_data.long_read_info.total_a_cnt = ZeroDefault;  // A content
+    output_data.long_read_info.total_c_cnt = ZeroDefault;  // C content
+    output_data.long_read_info.total_g_cnt = ZeroDefault;  // G content
+    output_data.long_read_info.total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
+    output_data.long_read_info.total_n_cnt = ZeroDefault;  // N content
+    output_data.long_read_info.gc_cnt = ZeroDefault;       // GC ratio
+
+    //int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
+
+    output_data.long_read_info.read_gc_content_count.clear();
+    output_data.long_read_info.read_length_count.clear();
+    output_data.seq_quality_info.base_quality_distribution.clear();
+    output_data.seq_quality_info.read_average_base_quality_distribution.clear();
+
+    output_data.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
+    // read_length_count[x] is the number of reads that length is equal to x. MAX_READ_LENGTH is a initial max value, the vector can expand if thre are reads longer than MAX_READ_LENGTH.
+
+    output_data.long_read_info.read_gc_content_count.resize(101, 0);
+    // read_gc_content_count[x], x is a integer in the range of [0, 101). read_gc_content_count[x] means number of reads that average GC is x%.
+
+    output_data.long_read_info.NXX_read_length.resize(101, 0);
+    // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
+
+    output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
+    // base_quality_distribution[x] means number of bases that quality = x.
+
+    output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
+    // base_quality_distribution[x] means number of reads that average base quality = x.
+
+    if (_input_data.user_defined_fastq_base_qual_offset > 0) {
+        quality_value_offset = _input_data.user_defined_fastq_base_qual_offset;
+    } else {
+        quality_value_offset = predict_base_quality_offset(_input_data);
+    }
+
+    read_details_fp = fopen(read_details_file.c_str(), "w");
+    if (NULL == read_details_fp)
+    {
+        std::cerr << "Failed to write output file: " << read_details_file << std::endl;
+        exit_code = 3;
+    } else {
+        fprintf(read_details_fp, "#read_name\tlength\tGC\taverage_baseq_quality\n");
+
+        for (size_t i = 0; i < _input_data.num_input_files; i++)
+        {
+            input_file = _input_data.input_files[i].c_str();
+            calculateFileQC(input_file, quality_value_offset, output_data, read_details_fp);
+        }
+        fclose(read_details_fp);
+
+        double g_c = output_data.long_read_info.total_g_cnt + output_data.long_read_info.total_c_cnt;
+        double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
+        if (a_tu_g_c != (double)output_data.long_read_info.total_num_bases)
+        {
+            std::cerr << "Total number of bases is not consistent." << std::endl;
+            exit_code = 4;
+        } else {
+            output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
+
+            int percent = 1;
+            int64_t num_bases_sum = 0;
+            int64_t num_reads_sum = 0;
+            output_data.long_read_info.median_read_length = -1;
+            for (int read_len = output_data.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
+            {
+                num_reads_sum += output_data.long_read_info.read_length_count[read_len];
+                num_bases_sum += output_data.long_read_info.read_length_count[read_len] * read_len;
+                if (num_reads_sum * 2 > output_data.long_read_info.total_num_reads && output_data.long_read_info.median_read_length < 0)
+                {
+                    output_data.long_read_info.median_read_length = read_len;
+                }
+                if (num_bases_sum * 100 > output_data.long_read_info.total_num_bases * percent)
+                {
+                    output_data.long_read_info.NXX_read_length[percent] = read_len;
+                    percent += 1;
+                    if (percent > 100)
+                    {
+                        break;
+                    }
+                }
+            }
+
+            output_data.long_read_info.n50_read_length = output_data.long_read_info.NXX_read_length[50];
+            output_data.long_read_info.n95_read_length = output_data.long_read_info.NXX_read_length[95];
+            output_data.long_read_info.n05_read_length = output_data.long_read_info.NXX_read_length[5];
+            output_data.long_read_info.mean_read_length = (double)output_data.long_read_info.total_num_bases / (double)output_data.long_read_info.total_num_reads;
+
+            read_summary_fp = fopen(read_summary_file.c_str(), "w");
+            fprintf(read_summary_fp, "total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
+            fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
+            fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
+            fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+            fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
+            fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
+            fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
+            fprintf(read_summary_fp, "\n\n");
+            for (int percent = 5; percent < 100; percent += 5)
+            {
+                fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, output_data.long_read_info.NXX_read_length[percent]);
+            }
+
+            fprintf(read_summary_fp, "\n\n");
+
+            fprintf(read_summary_fp, "GC content\tnumber of reads\n");
+            for (int gc_ratio = 0; gc_ratio < 100; gc_ratio++)
+            {
+                fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
+            }
+
+
+            fprintf(read_summary_fp, "\n\n");
+            fprintf(read_summary_fp, "base quality\tnumber of bases\n");
+            for (int baseq = 0; baseq <= 60; baseq++)
+            {
+                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+            }
+
+            fprintf(read_summary_fp, "\n\n");
+            fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
+            for (int baseq = 0; baseq <= 60; baseq++)
+            {
+                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
+            }
+            fclose(read_summary_fp);
+        }
+    }
+
+    return exit_code;
 }

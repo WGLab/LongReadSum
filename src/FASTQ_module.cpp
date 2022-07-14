@@ -6,6 +6,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iostream>
+
+// "Seqtk is a fast and lightweight tool for processing sequences in the FASTA or FASTQ format":
+// https://github.com/lh3/seqtk
+#include "kseq.h"
 #include "kseq.h"
 #include "FASTQ_module.h"
 
