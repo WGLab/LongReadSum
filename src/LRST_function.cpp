@@ -35,6 +35,6 @@ int callSeqTxtModule(Input_Para &_input_data, Output_SeqTxt &py_output_SeqTxt)
 
 int callFAST5Module(Input_Para &_input_data, Output_FAST5 &py_output_FAST5)
 {
-    int exit_code = generateQC(_input_data, py_output_FAST5);
+    int exit_code = generateQCForFAST5(_input_data, py_output_FAST5);
     return exit_code;
 }

@@ -3,14 +3,14 @@ plot_for_FQ.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
-import lrst_global
 import os, itertools
 import matplotlib.pyplot as plt
 from textwrap import wrap
 import numpy as np
 
+from src import lrst_global
+from src.utils import *
 from lib import lrst
-from utils import *
 
 
 def generate_bs( fq_output, para_dict ):

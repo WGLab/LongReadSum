@@ -138,9 +138,9 @@ def fq_module(margs):
         fq_output = lrst.Output_FQ()
         exit_code = lrst.callFASTQModule(input_para, fq_output)
         if exit_code == 0:
-            import plot_for_FQ
+            from src import plot_for_FQ
             plot_for_FQ.fq_plot(fq_output, para_dict)
-            import generate_html
+            from src import generate_html
 
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
@@ -289,9 +289,9 @@ def seqtxt_module(margs):
         exit_code = lrst.callSeqTxtModule(input_para, seqtxt_output)
         if exit_code == 0:
             print("Generating output files...")
-            import plot_for_SeqTxt
+            from src import plot_for_SeqTxt
             plot_for_SeqTxt.plot(seqtxt_output, para_dict)
-            import generate_html
+            from src import generate_html
             for static in [True, False]:
                 if margs.seq==0:
                     f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "QC for sequencing_summary.txt", para_dict], static=static);
@@ -344,117 +344,118 @@ def fast5_module(margs):
                 f5_html_gen.generate_st_html()
             print("Done.")
 
-# Set up the argument parser
-parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",
-                                 epilog="For example, \n \
-                                         \t%(prog)s fq: with fq or fastq input\n\
-                                         \t%(prog)s fa: with fa or fasta input\n\
-                                         \t%(prog)s bam: with bam input\n\
-                                         \t%(prog)s seqtxt: with sequencing_summary.txt input\n\
-                                         \t%(prog)s fast5: with FAST5 inputs\n\
-                                         ",
-                                 formatter_class=RawTextHelpFormatter)
+def main():
+    # Set up the argument parser
+    parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",
+                                     epilog="For example, \n \
+                                             \t%(prog)s fq: with fq or fastq input\n\
+                                             \t%(prog)s fa: with fa or fasta input\n\
+                                             \t%(prog)s bam: with bam input\n\
+                                             \t%(prog)s seqtxt: with sequencing_summary.txt input\n\
+                                             \t%(prog)s fast5: with FAST5 inputs\n\
+                                             ",
+                                     formatter_class=RawTextHelpFormatter)
 
-# The subparser will determine our filetype-specific modules
-subparsers = parser.add_subparsers()
+    # The subparser will determine our filetype-specific modules
+    subparsers = parser.add_subparsers()
 
-# The parent parser contains parameters common to all modules (input/output file, etc.)
-parent_parser = argparse.ArgumentParser(add_help=False)
+    # The parent parser contains parameters common to all modules (input/output file, etc.)
+    parent_parser = argparse.ArgumentParser(add_help=False)
 
-common_grp_param = parent_parser.add_argument_group(
-    "Common parameters for %(prog)s")
-#common_grp_param.add_argument("-h", "--help", default="", help="Show this help documents");
-input_files_group = common_grp_param.add_mutually_exclusive_group()
-input_files_group.add_argument(
-    "-i", "--input", type=str, default=None, help="The input file for the analysis")
-input_files_group.add_argument(
-    "-I", "--inputs", type=str, default=None, help="The input files for the analysis. Files are separated by ','.")
-input_files_group.add_argument(
-    "-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *. The format is \"patter*n\" where \" is required. ")
-input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
-                               help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
+    common_grp_param = parent_parser.add_argument_group(
+        "Common parameters for %(prog)s")
+    #common_grp_param.add_argument("-h", "--help", default="", help="Show this help documents");
+    input_files_group = common_grp_param.add_mutually_exclusive_group()
+    input_files_group.add_argument(
+        "-i", "--input", type=str, default=None, help="The input file for the analysis")
+    input_files_group.add_argument(
+        "-I", "--inputs", type=str, default=None, help="The input files for the analysis. Files are separated by ','.")
+    input_files_group.add_argument(
+        "-P", "--inputPattern", type=str, default=None, help="The pattern of input files with *. The format is \"patter*n\" where \" is required. ")
+    input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
+                                   help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
 
-common_grp_param.add_argument(
-    "-g", "--log", type=str, default="log_output.log", help="Log file")
-common_grp_param.add_argument("-G", "--Log_level", type=int, default=lrst_global.LOG_ERROR,
-                              help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
+    common_grp_param.add_argument(
+        "-g", "--log", type=str, default="log_output.log", help="Log file")
+    common_grp_param.add_argument("-G", "--Log_level", type=int, default=lrst_global.LOG_ERROR,
+                                  help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
 
-common_grp_param.add_argument("-o", "--outputfolder", type=str,
-                              default="output_"+lrst_global.prg_name, help="The output folder.")
-common_grp_param.add_argument("-t", "--thread", type=int,
-                              default=1, help="The number of threads used. Default: 1.")
-common_grp_param.add_argument("-Q", "--outprefix", type=str,
-                              default="st_", help="The prefix of output. Default: `st_`.")
-common_grp_param.add_argument(
-    "-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
-common_grp_param.add_argument("-d", "--detail", type=int, default=0, help="Will output detail in files? Default: 0(no).")
+    common_grp_param.add_argument("-o", "--outputfolder", type=str,
+                                  default="output_"+lrst_global.prg_name, help="The output folder.")
+    common_grp_param.add_argument("-t", "--thread", type=int,
+                                  default=1, help="The number of threads used. Default: 1.")
+    common_grp_param.add_argument("-Q", "--outprefix", type=str,
+                                  default="st_", help="The prefix of output. Default: `st_`.")
+    common_grp_param.add_argument(
+        "-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
+    common_grp_param.add_argument("-d", "--detail", type=int, default=0, help="Will output detail in files? Default: 0(no).")
 
-fq_parsers = subparsers.add_parser('fq',
-                                   parents=[parent_parser],
-                                   help="Show data analysis for fq files",
-                                   description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                   formatter_class=RawTextHelpFormatter)
-fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
-                        help="User defined quality offset for bases in fq. Default: -1.")
-fq_parsers.set_defaults(func=fq_module)
-
-
-fa_parsers = subparsers.add_parser('fa',
-                                   parents=[parent_parser],
-                                   help="Show data analysis for fa files",
-                                   description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                   formatter_class=RawTextHelpFormatter)
-fa_parsers.set_defaults(func=fa_module)
-
-bam_parsers = subparsers.add_parser('bam',
-                                    parents=[parent_parser],
-                                    help="Show data analysis for bam files",
-                                    description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                    formatter_class=RawTextHelpFormatter)
-bam_parsers.set_defaults(func=bam_module)
-
-# Parser for sequencing_summary.txt
-seqtxt_parsers = subparsers.add_parser('seqtxt',
+    fq_parsers = subparsers.add_parser('fq',
                                        parents=[parent_parser],
-                                       help="Show data analysis for sequencing_summary.txt files",
+                                       help="Show data analysis for fq files",
                                        description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
+                                                     \t%(prog)s  \n \
+                                                    ",
                                        formatter_class=RawTextHelpFormatter)
-seqtxt_parsers.add_argument("-S", "--seq", type=int, default=1,
-                            help="sequencing_summary.txt only? Default: 1(yes).")
-seqtxt_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
-                            help="Different fields in sequencing_summary.txt. Default: 1.")
+    fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
+                            help="User defined quality offset for bases in fq. Default: -1.")
+    fq_parsers.set_defaults(func=fq_module)
 
-seqtxt_parsers.set_defaults(func=seqtxt_module)
 
-# Parser for FAST5
-fast5_parser = subparsers.add_parser('fast5',
-                                    parents=[parent_parser],
-                                    help="Show data analysis for FAST5 files",
-                                    description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                    formatter_class=RawTextHelpFormatter)
-fast5_parser.set_defaults(func=fast5_module)
+    fa_parsers = subparsers.add_parser('fa',
+                                       parents=[parent_parser],
+                                       help="Show data analysis for fa files",
+                                       description="For example, \n \
+                                                     \t%(prog)s  \n \
+                                                    ",
+                                       formatter_class=RawTextHelpFormatter)
+    fa_parsers.set_defaults(func=fa_module)
 
-if sys.version_info[0] < 2:
-    print(lrst_global.prg_name +
-          " could not be run with lower version than python 2.7.")
-else:
-    if sys.version_info[1] < 6:
-        print(lrst_global.prg_name+" could be run with python 2.7.")
+    bam_parsers = subparsers.add_parser('bam',
+                                        parents=[parent_parser],
+                                        help="Show data analysis for bam files",
+                                        description="For example, \n \
+                                                     \t%(prog)s  \n \
+                                                    ",
+                                        formatter_class=RawTextHelpFormatter)
+    bam_parsers.set_defaults(func=bam_module)
+
+    # Parser for sequencing_summary.txt
+    seqtxt_parsers = subparsers.add_parser('seqtxt',
+                                           parents=[parent_parser],
+                                           help="Show data analysis for sequencing_summary.txt files",
+                                           description="For example, \n \
+                                                     \t%(prog)s  \n \
+                                                    ",
+                                           formatter_class=RawTextHelpFormatter)
+    seqtxt_parsers.add_argument("-S", "--seq", type=int, default=1,
+                                help="sequencing_summary.txt only? Default: 1(yes).")
+    seqtxt_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
+                                help="Different fields in sequencing_summary.txt. Default: 1.")
+
+    seqtxt_parsers.set_defaults(func=seqtxt_module)
+
+    # Parser for FAST5
+    fast5_parser = subparsers.add_parser('fast5',
+                                        parents=[parent_parser],
+                                        help="Show data analysis for FAST5 files",
+                                        description="For example, \n \
+                                                     \t%(prog)s  \n \
+                                                    ",
+                                        formatter_class=RawTextHelpFormatter)
+    fast5_parser.set_defaults(func=fast5_module)
+
+    if sys.version_info[0] < 2:
+        print(lrst_global.prg_name +
+              " could not be run with lower version than python 2.7.")
     else:
-        if len(sys.argv) < 2:
-            parser.print_help()
+        if sys.version_info[1] < 6:
+            print(lrst_global.prg_name+" could be run with python 2.7.")
         else:
-            args = parser.parse_args()
+            if len(sys.argv) < 2:
+                parser.print_help()
+            else:
+                args = parser.parse_args()
 
-            # Run the filetype-specific module
-            args.func(args)
+                # Run the filetype-specific module
+                args.func(args)
