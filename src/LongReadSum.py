@@ -1,10 +1,9 @@
 #!/usr/bin/env python
 """
-LongReadSum.py:
+LongReadSum.py.py:
 Parse arguments and run the filetype-specific module.
 """
 
-import lrst_global
 import os
 import sys
 import string
@@ -13,6 +12,7 @@ from glob import glob
 import argparse
 import logging
 from argparse import RawTextHelpFormatter
+from src import lrst_global
 from lib import lrst
 
 import faulthandler

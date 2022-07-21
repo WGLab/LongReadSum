@@ -3,6 +3,6 @@
 
 #include "LRST_function.h"
 
-int generateQC(Input_Para &_input_data, Output_FAST5 &output_data);
+int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data);
 
 #endif

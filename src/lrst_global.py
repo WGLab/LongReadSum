@@ -7,7 +7,7 @@ Set the log error code variables.
 
 import os
 
-prg_name = "LongReadSum"
+prg_name = "LongReadSum.py"
 originalError = '!!!Error: !!!!!! \n'
 
 LOG_ALL = 0;

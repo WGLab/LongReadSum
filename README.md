@@ -2,11 +2,9 @@
 
 [![build tests](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml/badge.svg)](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml)
 
-LongReadSum supports fq, fa, bam and fast5 inputs for quick generation of long-read data in a HTML format.
+LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
 
-# System requirements
-## Hardware requirements
-There is specific hardware requirements to use LongReadSum if you can successfully install all dependent packages.
+## System requirements
 
 ## Software requirements
 Please refer to `environment.yml` for detail. For your quick reference, LongReadSum needs
@@ -19,26 +17,35 @@ Please refer to `environment.yml` for detail. For your quick reference, LongRead
 ```
 
 # Installation
-It is easy to install the dependent packages of LongReadSum using `annoconda`. Thus, please install `annoconda` first, and then follow the commands below to install LongReadSum.
+First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
 
 ```
 git clone https://github.com/WGLab/LongReadSum
-cd LongReadSum
-conda env create -f environment.yml
+conda env create -f LongReadSum/environment.yml
 
-#if you change conda env name, please replace `lrst_py39`
-conda env config vars set -n lrst_py39 PATH=$PWD:$PATH
-source activate lrst_py39   
-
+export PATH=~/miniconda3/envs/lrst_py39/bin:$PATH
+conda activate lrst_py39
 make
-chmod +x LongReadSum
-```
 
-Then, you can run `LongReadSum`
+```
 
 
 # General Usage
-After installation, simply type `LongReadSum` will tell you the options.
+
+First, make sure you are in the `lrst_py39` conda environment, and that you have exported its location to `PATH` as described above.
+
+To test that you are using the correct Python interpreter, run:
+
+`which python`
+
+This should point to the environment's Python interpreter path:
+
+`~/miniconda3/bin/python`
+
+Then you can run LongReadSum using the following command:
+
+`python /path/to/LongReadSum`
+
 ```
 usage: LongReadSum [-h] {fq,fa,bam,f5} ...
 
@@ -49,7 +56,8 @@ positional arguments:
     fq            Show data analysis for fq files
     fa            Show data analysis for fa files
     bam           Show data analysis for bam files
-    f5            Show data analysis for f5 files
+    fast5         Show data analysis for FAST5 files
+    seqtxt        Show data analysis for sequencing_summary.txt files
 
 optional arguments:
   -h, --help      show this help message and exit
@@ -70,6 +78,3 @@ Please refer to the [LongReadSum issue pages](https://github.com/WGLab/LongReadS
 
 # Citing LongReadSum
 ***Please cite the publication below if you use our tool***
-
-
-
