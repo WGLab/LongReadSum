@@ -52,8 +52,8 @@ std::string getFastq(H5::H5File f5, std::string basecall_group)
 }
 
 
-// Calculate GC content for the file
-static int calculateFileGCContent(const char *input_file, char quality_value_offset, Output_FAST5 &output_data, FILE *read_details_fp)
+// Add base, read counts and GC content for the file to the output data structure
+static int addFileStatistics(const char *input_file, char quality_value_offset, Output_FAST5 &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
     gzFile input_fp;
@@ -67,16 +67,53 @@ static int calculateFileGCContent(const char *input_file, char quality_value_off
     int guanine_cytosine_count = 0;  // Count GC bases
     int total_base_count = 0;  // Count total number of bases
     int percent_gc_content;  // Final percent GC content
+    std::string basecall_group = "Basecall_1D_000";
 
+    // Access output QC and base quality QC structures
     Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
     Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
-    input_fp = gzopen(input_file, "r");
-    if (!input_fp)
-    {
-        std::cerr << "Failed to open file for reading: " << input_file << std::endl;
-        exit_code = 3;
-    } else {
-        // TODO: Read the FAST5 file here
+
+    // Run QC on the HDF5 file
+    try {
+        // Open the file
+        H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
+
+        // Access the sequence data
+        std::string fq = getFastq(f5, basecall_group);
+        std::cout << fq << std::endl;
+
+        // Update the total number of bases
+        int base_count = fq.length();
+        output_data.long_read_info.total_num_bases += base_count;
+
+        // TODO: Get the rest of these stats
+//        fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
+//        fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+//        fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
+//        fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
+//        fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
+
+        std::cout << "FASTQ Base count: " << base_count << std::endl;
+
+        // Update the total number of reads (1 per FAST5 file)
+        output_data.long_read_info.total_num_reads += 1;
+    } catch (FileIException &error) {
+        // If the dataset is missing, continue and ignore this file
+        if (error.getFuncName() == "H5File::openDataSet") {
+            std::cerr << "No FASTQ sequence dataset found for file: " << input_file << std::endl;
+        } else {
+            std::cerr << "Error accessing the FAST5 file: " << input_file << std::endl;
+            error.printErrorStack();
+            exit_code = 2;
+        }
+    };
+
+    //    input_fp = gzopen(input_file, "r");
+//    if (!input_fp)
+//    {
+//        std::cerr << "Failed to open file for reading: " << input_file << std::endl;
+//        exit_code = 3;
+//    } else {
         // Loop through each read
 
         // Get percent guanine (G) or cytosine (C) in the read
@@ -134,112 +171,11 @@ static int calculateFileGCContent(const char *input_file, char quality_value_off
 //            fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, read_len, read_gc_cnt, read_mean_base_qual);
 //        }
 //        kseq_destroy(seq);
-    }
-    gzclose(input_fp);
     return exit_code;
-}
-
-static uint8_t predict_base_quality_offset(Input_Para &_input_data)
-{
-    const char * input_file;
-    gzFile input_fp;
-    char *raw_read_qual;
-    int read_len;
-    char quality_value_offset = 0;
-    int max_num_reads;
-    int num_processed_reads;
-
-    if (_input_data.num_input_files == 0)
-    {
-        std::cerr << "No input files provided.\n" << std::endl;
-    } else {
-        max_num_reads = 100000;
-        num_processed_reads = 0;
-        for (size_t i = 0; i < _input_data.num_input_files; i++)
-        {
-            if (quality_value_offset){break;}
-            input_file = _input_data.input_files[i].c_str();
-            input_fp = gzopen(input_file, "r");
-            if (!input_fp)
-            {
-                std::cerr <<  "Failed to open file for reading: %s" << input_file << std::endl;
-            } else {
-                // TODO: Read the FAST5 file here
-//                seq = kseq_init(input_fp);
-//                while ((read_len = kseq_read(seq)) >= 0)
-//                {
-//                    if (quality_value_offset) {break;}
-//                    if (read_len == 0) {continue;}
-//                    raw_read_qual = seq->qual.s;
-//                    for (int j = 0; j < read_len; j++)
-//                    {
-//                        if (raw_read_qual[j] < 64) {
-//                            quality_value_offset = 33;
-//                            break;
-//                        }
-//                    }
-//                    num_processed_reads++;
-//                    if (num_processed_reads > max_num_reads){
-//                        quality_value_offset = 64;
-//                        break;
-//                    }
-//                }
-//                kseq_destroy(seq);
-            }
-            gzclose(input_fp);
-        }
-    }
-
-    if (quality_value_offset == 0){
-        quality_value_offset = 64;
-    }
-    std::cout << "NOTICE: predicted FAST5 base quality offset is " << quality_value_offset << std::endl;
-
-    return quality_value_offset;
 }
 
 int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
 {
-    // HDF5 section
-    //  ==================
-    const char* f5_path= "/home/ahsanm1/repos/new_deepmod/guppy_data/kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read110620_strand.fast5";
-    std::string basecall_group = "Basecall_1D_000";
-    H5::H5File f5 = H5::H5File(f5_path, H5F_ACC_RDONLY);
-
-
-    std::string fq = getFastq(f5, basecall_group);
-    std::cout << fq << std::endl;
-
-    H5::DataSet signal_ds = f5.openDataSet("/Raw/Reads/Read_110620/Signal");
-    H5::DataType mdatatype= signal_ds.getDataType();
-    H5::DataSpace dataspace  = signal_ds.getSpace();
-    hsize_t rank;
-    hsize_t dims[2];
-    rank = dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
-    std::cout<<"Datasize: "<<dims[0]<<std::endl; // this is the correct number of values
-    int16_t f5signals [MAX_F5SIGNAL_SIZE];
-    signal_ds.read(f5signals, mdatatype);
-
-    H5::DataSet mv_ds = f5.openDataSet("/Analyses/Basecall_1D_000/BaseCalled_template/Move");
-    H5::DataType mvdatatype= mv_ds.getDataType();
-    H5::DataSpace mvdataspace  = mv_ds.getSpace();
-    hsize_t mvrank;
-    hsize_t mvdims[2];
-
-    mvrank = mvdataspace.getSimpleExtentDims(mvdims, NULL); // rank = 1
-    std::cout<<"Datasize: "<<mvdims[0]<<std::endl; // this is the correct number of values
-
-    int8_t * f5move;
-    f5move = new int8_t[MAX_F5SIGNAL_SIZE];
-
-    mv_ds.read(f5move, mvdatatype, mvdataspace);
-
-    for(int i = 0; i < mvdims[0]; i++) {
-       std::cout<< *f5move <<" | ";
-        f5move++;
-    }
-    //  ==================
-
     int exit_code = 0;
     const char *input_file = NULL;
     char quality_value_offset;
@@ -299,19 +235,21 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
         //quality_value_offset = predict_base_quality_offset(_input_data);
     }
 
+    // Set up the output summary text file
     read_details_fp = fopen(read_details_file.c_str(), "w");
     if (NULL == read_details_fp)
     {
-        std::cerr << "Failed to write output file: " << read_details_file << std::endl;
+        std::cerr << "Failed to set up output file: " << read_details_file << std::endl;
         exit_code = 3;
     } else {
         fprintf(read_details_fp, "#read_name\tlength\tGC\taverage_baseq_quality\n");
 
-        // Loop through each input file and get the QC data
-        for (size_t i = 0; i < _input_data.num_input_files; i++)
+        // Loop through each input file and get the QC data across files
+        size_t file_count = _input_data.num_input_files;
+        for (size_t i = 0; i < file_count; i++)
         {
             input_file = _input_data.input_files[i].c_str();
-            exit_code = calculateFileGCContent(input_file, quality_value_offset, output_data, read_details_fp);
+            exit_code = addFileStatistics(input_file, quality_value_offset, output_data, read_details_fp);
         }
         fclose(read_details_fp);
 
