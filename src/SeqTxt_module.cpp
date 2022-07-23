@@ -223,7 +223,7 @@ int SeqTxt_Module::generateStatistics( Output_SeqTxt& t_output_SeqTxt_info){
    auto relapse_end_time = std::chrono::high_resolution_clock::now();
    std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
 
-   std::cout<<"sequencing_summary.txt Module "<< (has_error==0?"completed successfully":"failed") << std::endl;
+   std::cout<<"sequencing_summary.txt QC "<< (has_error==0?"generated":"failed") << std::endl;
  
    return has_error;
 }

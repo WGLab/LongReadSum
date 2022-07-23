@@ -1,4 +1,4 @@
-# LongReadSum: a fast and flexible tools for data statistics of long-read sequencing data 
+# LongReadSum: A fast and flexible QC tool for long read sequencing data
 
 [![build tests](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml/badge.svg)](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml)
 

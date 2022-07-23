@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-LongReadSum.py:
+cli.py:
 Parse arguments and run the filetype-specific module.
 """
 

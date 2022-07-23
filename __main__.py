@@ -1,9 +1,8 @@
-import os
-import sys
-import pytest
+"""
+__main__.py:
+Call the command-line interface.
+"""
 
-#from lib import lrst
-from src import LongReadSum
+from src import cli
 
-LongReadSum.main()
-print("Imports successful!")
+cli.main()
