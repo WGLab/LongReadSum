@@ -3,7 +3,8 @@ F5_module.cpp:
 Class for calling FAST5 statistics modules.
 
 */
-
+#include <algorithm>    // std::sort
+#include <numeric>      // std::accumulate
 #include <iostream>
 #include <sstream>
 
@@ -36,7 +37,7 @@ std::vector<std::string> splitString(const std::string& str)
 }
 
 
-std::string getFastq(H5::H5File f5, std::string basecall_group)
+std::vector<std::string> getFastq(H5::H5File f5, std::string basecall_group)
 {
         H5::DataSet   dataset    = f5.openDataSet("/Analyses/"+basecall_group+"/BaseCalled_template/Fastq");
         H5::DataType  datatype   = dataset.getDataType();
@@ -48,7 +49,7 @@ std::string getFastq(H5::H5File f5, std::string basecall_group)
         dataset.read(data, datatype);
         std::vector<std::string> tokens = splitString(data);
 
-    return tokens[1];
+    return tokens;
 }
 
 
@@ -56,17 +57,9 @@ std::string getFastq(H5::H5File f5, std::string basecall_group)
 static int addFileStatistics(const char *input_file, char quality_value_offset, Output_FAST5 &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
-    gzFile input_fp;
-    char *read_seq;
-    char *raw_read_qual;
-    char *read_name;
+    const char * read_name;
     char baseq;
-    int read_len;
-    double read_gc_cnt;
-    double read_mean_base_qual;
-    int guanine_cytosine_count = 0;  // Count GC bases
-    int total_base_count = 0;  // Count total number of bases
-    int percent_gc_content;  // Final percent GC content
+    double gc_content_pct;
     std::string basecall_group = "Basecall_1D_000";
 
     // Access output QC and base quality QC structures
@@ -78,22 +71,76 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
         // Open the file
         H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
 
+        // Get the FASTQ dataset
+        std::vector<std::string> fq = getFastq(f5, basecall_group);
+
+        // Access the read name
+        std::string header_str = fq[0];
+        std::istringstream iss_header( header_str );
+        std::string read_name_str;
+        std::getline( iss_header, read_name_str, ' ' );
+        read_name = read_name_str.c_str();
+        std::cout << "Read name: " << read_name << std::endl;
+
         // Access the sequence data
-        std::string fq = getFastq(f5, basecall_group);
-        std::cout << fq << std::endl;
+        std::string sequence_data_str = fq[1];
 
         // Update the total number of bases
-        int base_count = fq.length();
-        output_data.long_read_info.total_num_bases += base_count;
-
-        // TODO: Get the rest of these stats
-//        fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
-//        fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
-//        fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-//        fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
-//        fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
-
+        int base_count = sequence_data_str.length();
+        long_read_info.total_num_bases += base_count;
         std::cout << "FASTQ Base count: " << base_count << std::endl;
+
+        // Store the read length
+        long_read_info.read_lengths.push_back(base_count);
+
+        // Access base quality data
+        char value;
+        std::vector<int> base_quality_values;
+        std::string base_quality_str = fq[3];
+        std::istringstream iss( base_quality_str );
+        while (iss >> value) {
+            int base_quality_value = value - '!';  // '!' symbol represent 0-quality score
+            base_quality_values.push_back(base_quality_value);
+        }
+
+        // Update the base quality and GC content information
+        int gc_count = 0;
+        double read_mean_base_qual = 0;
+        char current_base;
+        for (int i = 0; i < base_count; i++)
+        {
+            current_base = sequence_data_str[i];
+            if (current_base == 'A' || current_base == 'a')
+            {
+                long_read_info.total_a_cnt += 1;
+            }
+            else if (current_base == 'G' || current_base == 'g')
+            {
+                long_read_info.total_g_cnt += 1;
+                gc_count += 1;
+            }
+            else if (current_base == 'C' || current_base == 'c')
+            {
+                long_read_info.total_c_cnt += 1;
+                gc_count += 1;
+            }
+            else if (current_base == 'T' || current_base == 't' || current_base == 'U' || current_base == 'u')
+            {
+                long_read_info.total_tu_cnt += 1;
+            }
+            baseq = base_quality_values[i];  // Get the base quality
+            seq_quality_info.base_quality_distribution[baseq] += 1;
+            read_mean_base_qual += baseq;
+        }
+
+        // Calculate percent guanine & cytosine
+        gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
+
+        // Look into this section
+        long_read_info.read_gc_content_count[(int)(gc_content_pct + 0.5)] += 1;
+        read_mean_base_qual /= (double) base_count;
+        seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
+        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);
 
         // Update the total number of reads (1 per FAST5 file)
         output_data.long_read_info.total_num_reads += 1;
@@ -108,69 +155,6 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
         }
     };
 
-    //    input_fp = gzopen(input_file, "r");
-//    if (!input_fp)
-//    {
-//        std::cerr << "Failed to open file for reading: " << input_file << std::endl;
-//        exit_code = 3;
-//    } else {
-        // Loop through each read
-
-        // Get percent guanine (G) or cytosine (C) in the read
-
-
-//        seq = kseq_init(input_fp);
-//        while ((read_len = kseq_read(seq)) >= 0)
-//        {
-//            if (read_len == 0) {continue;}
-//            read_name = seq->name.s;
-//            read_seq = seq->seq.s;
-//            raw_read_qual = seq->qual.s;
-//            if ((uint64_t)read_len > long_read_info.longest_read_length)
-//            {
-//                long_read_info.longest_read_length = read_len;
-//            }
-//            long_read_info.total_num_reads += 1;
-//            long_read_info.total_num_bases += read_len;
-//            if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
-//                long_read_info.read_length_count[read_len] += 1;
-//            } else {
-//                long_read_info.read_length_count.resize(read_len + 1000, 0);
-//                long_read_info.read_length_count[read_len] += 1;
-//            }
-//            read_gc_cnt = 0;
-//            read_mean_base_qual = 0;
-//            for (int i = 0; i < read_len; i++)
-//            {
-//                if (read_seq[i] == 'A' || read_seq[i] == 'a')
-//                {
-//                    long_read_info.total_a_cnt += 1;
-//                }
-//                else if (read_seq[i] == 'G' || read_seq[i] == 'g')
-//                {
-//                    long_read_info.total_g_cnt += 1;
-//                    read_gc_cnt += 1;
-//                }
-//                else if (read_seq[i] == 'C' || read_seq[i] == 'c')
-//                {
-//                    long_read_info.total_c_cnt += 1;
-//                    read_gc_cnt += 1;
-//                }
-//                else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
-//                {
-//                    long_read_info.total_tu_cnt += 1;
-//                }
-//                baseq = raw_read_qual[i] - quality_value_offset;
-//                seq_quality_info.base_quality_distribution[baseq] += 1;
-//                read_mean_base_qual += baseq;
-//            }
-//            read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
-//            long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-//            read_mean_base_qual /= (double) read_len;
-//            seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-//            fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, read_len, read_gc_cnt, read_mean_base_qual);
-//        }
-//        kseq_destroy(seq);
     return exit_code;
 }
 
@@ -198,11 +182,11 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     output_data.long_read_info.median_read_length = MoneDefault; // median of read length
 
     // TODO: Don't need the commented block below
-//    output_data.long_read_info.total_a_cnt = ZeroDefault;  // A content
-//    output_data.long_read_info.total_c_cnt = ZeroDefault;  // C content
-//    output_data.long_read_info.total_g_cnt = ZeroDefault;  // G content
-//    output_data.long_read_info.total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
-//    output_data.long_read_info.total_n_cnt = ZeroDefault;  // N content
+    output_data.long_read_info.total_a_cnt = ZeroDefault;  // A content
+    output_data.long_read_info.total_c_cnt = ZeroDefault;  // C content
+    output_data.long_read_info.total_g_cnt = ZeroDefault;  // G content
+    output_data.long_read_info.total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
+    output_data.long_read_info.total_n_cnt = ZeroDefault;  // N content
     output_data.long_read_info.gc_cnt = ZeroDefault;       // GC ratio
 
     //int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
@@ -227,14 +211,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
     // base_quality_distribution[x] means number of reads that average base quality = x.
 
-    if (_input_data.user_defined_fastq_base_qual_offset > 0) {
-        quality_value_offset = _input_data.user_defined_fastq_base_qual_offset;
-    } else {
-        // TODO: Implement below function for FAST5
-        ;
-        //quality_value_offset = predict_base_quality_offset(_input_data);
-    }
-
     // Set up the output summary text file
     read_details_fp = fopen(read_details_file.c_str(), "w");
     if (NULL == read_details_fp)
@@ -246,6 +222,8 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
 
         // Loop through each input file and get the QC data across files
         size_t file_count = _input_data.num_input_files;
+
+        //
         for (size_t i = 0; i < file_count; i++)
         {
             input_file = _input_data.input_files[i].c_str();
@@ -254,7 +232,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
         fclose(read_details_fp);
 
         // Check if the GC content was calculated successfully
-        if (exit_code != 0) {
+        if (exit_code == 0) {
 
             // Add the G + C bases
             double g_c = output_data.long_read_info.total_g_cnt + output_data.long_read_info.total_c_cnt;
@@ -263,7 +241,8 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
             double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
 
             // Check that our total base counts match what was stored (That our code works)
-            if (a_tu_g_c != (double)output_data.long_read_info.total_num_bases)
+            int total_num_bases = output_data.long_read_info.total_num_bases;
+            if (a_tu_g_c != (double)total_num_bases)
             {
                 std::cerr << "Total number of bases is not consistent." << std::endl;
                 exit_code = 4;
@@ -271,34 +250,49 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                 // Calculate GC-content
                 output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
-                int percent = 1;
-                int64_t num_bases_sum = 0;
-                int64_t num_reads_sum = 0;
-                output_data.long_read_info.median_read_length = -1;
-                for (int read_len = output_data.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
-                {
-                    num_reads_sum += output_data.long_read_info.read_length_count[read_len];
-                    num_bases_sum += output_data.long_read_info.read_length_count[read_len] * read_len;
-                    if (num_reads_sum * 2 > output_data.long_read_info.total_num_reads && output_data.long_read_info.median_read_length < 0)
-                    {
-                        output_data.long_read_info.median_read_length = read_len;
-                    }
-                    if (num_bases_sum * 100 > output_data.long_read_info.total_num_bases * percent)
-                    {
-                        output_data.long_read_info.NXX_read_length[percent] = read_len;
-                        percent += 1;
-                        if (percent > 100)
-                        {
-                            break;
-                        }
-                    }
-                }
+                // Sort the read lengths in descending order
+                std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
+                std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int>());
 
+                // Get the max read length
+                int max_read_length = *std::max_element(read_lengths.begin(), read_lengths.end());
+                output_data.long_read_info.longest_read_length = max_read_length;
+
+                // Get the median read length
+                int median_read_length = read_lengths[read_lengths.size() / 2];
+                output_data.long_read_info.median_read_length = median_read_length;
+
+                // Get the mean read length
+                float mean_read_length = (double)total_num_bases / (double)read_lengths.size();
+                output_data.long_read_info.mean_read_length = mean_read_length;
+
+//                // Get half the total base count
+//                double half_base_count = (double)total_num_bases / 2.0;
+//                std::cout << "Half base count = " << half_base_count << std::endl;
+
+                // Calculate N50 and other N-scores
+                for (int percent_value = 1; percent_value <= 100; percent_value++)
+                {
+                    // Get the base percentage threshold for this N-score
+                    double base_threshold = (double)total_num_bases * (percent_value / 100.0);
+
+                    // Calculate the NXX score
+                    double current_base_count = 0;
+                    int current_read_index = -1;
+                    while (current_base_count < base_threshold) {
+                        current_read_index ++;
+                        current_base_count += read_lengths[current_read_index];
+                    }
+                    int nxx_read_length = read_lengths[current_read_index];
+                    output_data.long_read_info.NXX_read_length[percent_value] = nxx_read_length;
+                }
+                // Set common score variables
                 output_data.long_read_info.n50_read_length = output_data.long_read_info.NXX_read_length[50];
                 output_data.long_read_info.n95_read_length = output_data.long_read_info.NXX_read_length[95];
                 output_data.long_read_info.n05_read_length = output_data.long_read_info.NXX_read_length[5];
-                output_data.long_read_info.mean_read_length = (double)output_data.long_read_info.total_num_bases / (double)output_data.long_read_info.total_num_reads;
 
+                // Create the summary file
+                std::cout << "Writing summary file: " << read_summary_file.c_str() << std::endl;
                 read_summary_fp = fopen(read_summary_file.c_str(), "w");
                 fprintf(read_summary_fp, "total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
                 fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);

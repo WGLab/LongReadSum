@@ -62,6 +62,9 @@ public:
 
    std::vector<int64_t> read_gc_content_count;
 
+   //
+   std::vector<int> read_lengths;  // Length of reads
+
    void reset();
    void add(Basic_Seq_Statistics &t_seq_st);
    void global_sum();
