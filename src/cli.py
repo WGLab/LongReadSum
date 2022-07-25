@@ -339,10 +339,10 @@ def fast5_module(margs):
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
                                  epilog="Example with single inputs:\n"
-                                        "\tpython %(prog)s bam -i path/to/input.bam\n"
+                                        "\tpython %(prog)s bam -i path/to/input.bam -o /output_directory/\n"
                                         "\nExample with multiple inputs:\n"
-                                        "\tpython %(prog)s bam -I \"path/to/input1.bam, path/to/input2.bam\"\n"
-                                        "\tpython %(prog)s bam -P \"path/to/*.bam\"\n",
+                                        "\tpython %(prog)s bam -I \"path/to/input1.bam, path/to/input2.bam\" -o /output_directory/\n"
+                                        "\tpython %(prog)s bam -P \"path/to/*.bam \" -o /output_directory/\n",
                                  formatter_class=RawTextHelpFormatter)
 
 # The subparser will determine our filetype-specific modules
@@ -353,7 +353,6 @@ parent_parser = argparse.ArgumentParser(add_help=False)
 
 common_grp_param = parent_parser.add_argument_group(
     "Common parameters for %(prog)s")
-# common_grp_param.add_argument("-h", "--help", default="", help="Show this help documents");
 input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
     "-i", "--input", type=str, default=None, help="Single input filepath")
@@ -387,7 +386,7 @@ fa_parsers = subparsers.add_parser('fa',
                                    parents=[parent_parser],
                                    help="FASTA file input",
                                    description="For example:\n"
-                                               "python %(prog)s -i input.fasta",
+                                               "python %(prog)s -i input.fasta -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
 fa_parsers.set_defaults(func=fa_module)
 
@@ -396,7 +395,7 @@ fq_parsers = subparsers.add_parser('fq',
                                    parents=[parent_parser],
                                    help="FASTQ file input",
                                    description="For example:\n"
-                                               "python %(prog)s -i input.fastq",
+                                               "python %(prog)s -i input.fastq -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
 fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
                         help="User defined quality offset for bases in fq. Default: -1.")
@@ -407,7 +406,7 @@ fast5_parser = subparsers.add_parser('f5',
                                      parents=[parent_parser],
                                      help="FAST5 file input",
                                      description="For example:\n"
-                                                 "python %(prog)s -i input.fast5",
+                                                 "python %(prog)s -i input.fast5 -o /output_directory/",
                                      formatter_class=RawTextHelpFormatter)
 fast5_parser.set_defaults(func=fast5_module)
 
@@ -416,7 +415,7 @@ seqtxt_parsers = subparsers.add_parser('seqtxt',
                                        parents=[parent_parser],
                                        help="sequencing_summary.txt input",
                                        description="For example:\n"
-                                                   "python %(prog)s -i sequencing_summary.txt",
+                                                   "python %(prog)s -i sequencing_summary.txt -o /output_directory/",
                                        formatter_class=RawTextHelpFormatter)
 seqtxt_parsers.add_argument("-S", "--seq", type=int, default=1,
                             help="sequencing_summary.txt only? Default: 1(yes).")
@@ -430,7 +429,7 @@ bam_parsers = subparsers.add_parser('bam',
                                     parents=[parent_parser],
                                     help="BAM file input",
                                     description="For example:\n"
-                                                "python %(prog)s -i input.bam",
+                                                "python %(prog)s -i input.bam -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
 bam_parsers.set_defaults(func=bam_module)
 

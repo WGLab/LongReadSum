@@ -46,6 +46,8 @@ Then you can run LongReadSum using the following command:
 
 `python /path/to/LongReadSum [arguments]`
 
+Specifying input files:
+
 ```
 usage: LongReadSum [-h] {fa,fq,f5,seqtxt,bam} ...
 
@@ -63,13 +65,12 @@ optional arguments:
   -h, --help            show this help message and exit
 
 Example with single inputs:
-	python LongReadSum bam -i path/to/input.bam
+	python LongReadSum bam -i path/to/input.bam -o /output_directory/
 
 Example with multiple inputs:
-	python LongReadSum bam -I "path/to/input1.bam, path/to/input2.bam"
-	python LongReadSum bam -P "path/to/*.bam"
+	python LongReadSum bam -I "path/to/input1.bam, path/to/input2.bam" -o /output_directory/
+	python LongReadSum bam -P "path/to/*.bam " -o /output_directory/
 ```
-
 
 # Revision history
 For release history, please visit [here](https://github.com/WGLab/LongReadSum/releases). 
