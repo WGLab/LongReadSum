@@ -80,7 +80,6 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
         std::string read_name_str;
         std::getline( iss_header, read_name_str, ' ' );
         read_name = read_name_str.c_str();
-        std::cout << "Read name: " << read_name << std::endl;
 
         // Access the sequence data
         std::string sequence_data_str = fq[1];
@@ -88,7 +87,6 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
         // Update the total number of bases
         int base_count = sequence_data_str.length();
         long_read_info.total_num_bases += base_count;
-        std::cout << "FASTQ Base count: " << base_count << std::endl;
 
         // Store the read length
         long_read_info.read_lengths.push_back(base_count);
