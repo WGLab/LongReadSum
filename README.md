@@ -69,7 +69,7 @@ Example with single inputs:
 
 Example with multiple inputs:
 	python LongReadSum bam -I "path/to/input1.bam, path/to/input2.bam" -o /output_directory/
-	python LongReadSum bam -P "path/to/*.bam " -o /output_directory/
+	python LongReadSum bam -P "path/to/*.bam" -o /output_directory/
 ```
 
 # Revision history
