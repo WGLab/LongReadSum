@@ -309,11 +309,11 @@ def fast5_module(margs):
         print(errorStr)
         print("#############################################\n")
         # parser.print_help()
-        parser.parse_args(['fast5', '--help'])
+        parser.parse_args(['f5', '--help'])
         sys.exit(1004)
     else:
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
-        para_dict["out_prefix"] += "fast5_"
+        para_dict["out_prefix"] += "f5_"
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
@@ -331,9 +331,11 @@ def fast5_module(margs):
             from src import plot_for_FAST5
             plot_for_FAST5.plot(fast5_output, para_dict)
             for static in [True, False]:
+                # fast5_html_obj = generate_html.ST_HTML_Generator(
+                #     [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"],
+                #      "QC for FAST5", para_dict], static=True)
                 fast5_html_obj = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"],
-                     "QC for FAST5", para_dict], static=True)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
                 fast5_html_obj.generate_st_html()
             print("Done.")
 
@@ -346,7 +348,7 @@ parser = argparse.ArgumentParser(description="Data analysis tools for long-read 
                                          \t%(prog)s fa: with fa or fasta input\n\
                                          \t%(prog)s bam: with bam input\n\
                                          \t%(prog)s seqtxt: with sequencing_summary.txt input\n\
-                                         \t%(prog)s fast5: with FAST5 inputs\n\
+                                         \t%(prog)s f5: with FAST5 inputs\n\
                                          ",
                                  formatter_class=RawTextHelpFormatter)
 
@@ -431,7 +433,7 @@ seqtxt_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1,
 seqtxt_parsers.set_defaults(func=seqtxt_module)
 
 # Parser for FAST5
-fast5_parser = subparsers.add_parser('fast5',
+fast5_parser = subparsers.add_parser('f5',
                                      parents=[parent_parser],
                                      help="Show data analysis for FAST5 files",
                                      description="For example, \n \

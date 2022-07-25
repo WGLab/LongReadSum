@@ -37,17 +37,18 @@ std::vector<std::string> splitString(const std::string& str)
 }
 
 
+// Read the FASTQ dataset from the file
 std::vector<std::string> getFastq(H5::H5File f5, std::string basecall_group)
 {
-        H5::DataSet   dataset    = f5.openDataSet("/Analyses/"+basecall_group+"/BaseCalled_template/Fastq");
-        H5::DataType  datatype   = dataset.getDataType();
+    // Attempt to access the FASTQ dataset
+    H5::DataSet dataset;
+    dataset = f5.openDataSet("/Analyses/"+basecall_group+"/BaseCalled_template/Fastq");
+    H5::DataType  datatype   = dataset.getDataType();
 
-        // allocate output
-        std::string data;
-
-        // read output
-        dataset.read(data, datatype);
-        std::vector<std::string> tokens = splitString(data);
+    // Read output
+    std::string data;
+    dataset.read(data, datatype);
+    std::vector<std::string> tokens = splitString(data);
 
     return tokens;
 }
@@ -67,6 +68,7 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
     Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
 
     // Run QC on the HDF5 file
+    H5::Exception::dontPrint();  // Disable error printing
     try {
         // Open the file
         H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
@@ -145,7 +147,7 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
     } catch (FileIException &error) {
         // If the dataset is missing, continue and ignore this file
         if (error.getFuncName() == "H5File::openDataSet") {
-            std::cerr << "No FASTQ sequence dataset found for file: " << input_file << std::endl;
+            std::cout << "No FASTQ sequence dataset found for file: " << input_file << std::endl;
         } else {
             std::cerr << "Error accessing the FAST5 file: " << input_file << std::endl;
             error.printErrorStack();
