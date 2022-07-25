@@ -247,19 +247,19 @@ class TestFAST5:
     def test_base_count(self, fast5_output):
         output_statistics = fast5_output[1]
         base_count = output_statistics.long_read_info.total_num_bases
-        assert base_count == 21531
+        assert base_count == 28581
 
     @pytest.mark.dependency(depends=["TestFAST5::test_success"])
     def test_read_count(self, fast5_output):
         output_statistics = fast5_output[1]
         read_count = output_statistics.long_read_info.total_num_reads
-        assert read_count == 4
+        assert read_count == 5
 
     @pytest.mark.dependency(depends=["TestFAST5::test_success"])
     def test_n50(self, fast5_output):
         output_statistics = fast5_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
-        assert n50_read_length == 10864
+        assert n50_read_length == 7050
 
 
 # BAM tests
