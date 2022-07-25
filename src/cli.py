@@ -6,8 +6,6 @@ Parse arguments and run the filetype-specific module.
 
 import os
 import sys
-import string
-import math
 from glob import glob
 import argparse
 import logging
@@ -269,7 +267,7 @@ def seqtxt_module(margs):
         input_para.downsample_percentage = para_dict["downsample_percentage"]
 
         # TODO: 'seq' flag is 1 by default, which in the argument description states that only the summary text will be
-        #  output (no HTML). But below it is used to indicate static vs. dynamic output HTML
+        #  output (no HTML).
         input_para.other_flags = margs.seq  # Default = 1
         input_para.other_flags = (input_para.other_flags << 4)
         input_para.other_flags += (1 if para_dict["detail"]>0 else 0)
@@ -331,9 +329,6 @@ def fast5_module(margs):
             from src import plot_for_FAST5
             plot_for_FAST5.plot(fast5_output, para_dict)
             for static in [True, False]:
-                # fast5_html_obj = generate_html.ST_HTML_Generator(
-                #     [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"],
-                #      "QC for FAST5", para_dict], static=True)
                 fast5_html_obj = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
                 fast5_html_obj.generate_st_html()

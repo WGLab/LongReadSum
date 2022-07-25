@@ -266,10 +266,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                 float mean_read_length = (double)total_num_bases / (double)read_lengths.size();
                 output_data.long_read_info.mean_read_length = mean_read_length;
 
-//                // Get half the total base count
-//                double half_base_count = (double)total_num_bases / 2.0;
-//                std::cout << "Half base count = " << half_base_count << std::endl;
-
                 // Calculate N50 and other N-scores
                 for (int percent_value = 1; percent_value <= 100; percent_value++)
                 {
