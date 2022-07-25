@@ -338,12 +338,10 @@ def fast5_module(margs):
 # =====
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",
-                                 epilog="For example, \n \
-                                         \t%(prog)s fq: with fq or fastq input\n\
-                                         \t%(prog)s fa: with fa or fasta input\n\
-                                         \t%(prog)s bam: with bam input\n\
-                                         \t%(prog)s seqtxt: with sequencing_summary.txt input\n\
-                                         \t%(prog)s f5: with FAST5 inputs\n\
+                                 epilog="For example, \n\
+                                         \tpython %(prog)s bam -i path/to/input.bam\n\
+                                         \tpython %(prog)s bam -I \"path/to/input1.bam, path/to/input2.bam\"\n\
+                                        \tpython %(prog)s bam -P \"path/to/*.bam\"\n\
                                          ",
                                  formatter_class=RawTextHelpFormatter)
 
@@ -358,12 +356,13 @@ common_grp_param = parent_parser.add_argument_group(
 # common_grp_param.add_argument("-h", "--help", default="", help="Show this help documents");
 input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
-    "-i", "--input", type=str, default=None, help="The input file for the analysis")
+    "-i", "--input", type=str, default=None, help="Single input filepath")
 input_files_group.add_argument(
-    "-I", "--inputs", type=str, default=None, help="The input files for the analysis. Files are separated by ','.")
+    "-I", "--inputs", type=str, default=None,
+    help="Multiple comma-separated input filepaths",)
 input_files_group.add_argument(
     "-P", "--inputPattern", type=str, default=None,
-    help="The pattern of input files with *. The format is \"patter*n\" where \" is required. ")
+    help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
                                help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
 
