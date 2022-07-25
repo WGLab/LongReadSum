@@ -34,7 +34,7 @@ make
 
 # General Usage
 
-First, make sure you are in the `lrst_py39` conda environment, and that you have exported its location to `PATH` as described above.
+First, make sure you have activated the `lrst_py39` conda environment.
 
 To test that you are using the correct Python interpreter, run:
 
@@ -42,7 +42,9 @@ To test that you are using the correct Python interpreter, run:
 
 This should point to the environment's Python interpreter path:
 
-`~/miniconda3/bin/python`
+`~/miniconda3/envs/lrst_py39/bin/python`
+
+If the path is incorrect, export its location to `PATH` as described above.
 
 Then you can run LongReadSum using the following command:
 
