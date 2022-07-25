@@ -1,12 +1,12 @@
-# LongReadSum: a fast and flexible tools for data statistics of long-read sequencing data 
+# LongReadSum: A fast and flexible QC tool for long read sequencing data
+
+![image](https://user-images.githubusercontent.com/14855676/180858677-bba1dda7-15a2-4ba0-8ff5-6c954d00ba85.png)
 
 [![build tests](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml/badge.svg)](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml)
 
-LongReadSum supports fq, fa, bam and fast5 inputs for quick generation of long-read data in a HTML format.
+LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
 
-# System requirements
-## Hardware requirements
-There is specific hardware requirements to use LongReadSum if you can successfully install all dependent packages.
+## System requirements
 
 ## Software requirements
 Please refer to `environment.yml` for detail. For your quick reference, LongReadSum needs
@@ -19,48 +19,60 @@ Please refer to `environment.yml` for detail. For your quick reference, LongRead
 ```
 
 # Installation
-It is easy to install the dependent packages of LongReadSum using `annoconda`. Thus, please install `annoconda` first, and then follow the commands below to install LongReadSum.
+First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
 
 ```
 git clone https://github.com/WGLab/LongReadSum
-cd LongReadSum
-conda env create -f environment.yml
+conda env create -f LongReadSum/environment.yml
 
-#if you change conda env name, please replace `lrst_py39`
-conda env config vars set -n lrst_py39 PATH=$PWD:$PATH
-source activate lrst_py39   
-
+export PATH=~/miniconda3/envs/lrst_py39/bin:$PATH
+conda activate lrst_py39
 make
-chmod +x LongReadSum
-```
 
-Then, you can run `LongReadSum`
+```
 
 
 # General Usage
-After installation, simply type `LongReadSum` will tell you the options.
-```
-usage: LongReadSum [-h] {fq,fa,bam,f5} ...
 
-Data analysis tools for long-read sequencing data
+First, make sure you are in the `lrst_py39` conda environment, and that you have exported its location to `PATH` as described above.
+
+To test that you are using the correct Python interpreter, run:
+
+`which python`
+
+This should point to the environment's Python interpreter path:
+
+`~/miniconda3/bin/python`
+
+Then you can run LongReadSum using the following command:
+
+`python /path/to/LongReadSum [arguments]`
+
+Specifying input files:
+
+```
+usage: LongReadSum [-h] {fa,fq,f5,seqtxt,bam} ...
+
+QC tools for long-read sequencing data
 
 positional arguments:
-  {fq,fa,bam,f5}
-    fq            Show data analysis for fq files
-    fa            Show data analysis for fa files
-    bam           Show data analysis for bam files
-    f5            Show data analysis for f5 files
+  {fa,fq,f5,seqtxt,bam}
+    fa                  FASTA file input
+    fq                  FASTQ file input
+    f5                  FAST5 file input
+    seqtxt              sequencing_summary.txt input
+    bam                 BAM file input
 
 optional arguments:
-  -h, --help      show this help message and exit
+  -h, --help            show this help message and exit
 
-For example,
-                                                LongReadSum fq: with fq or fastq input
-                                                LongReadSum fa: with fa or fasta input
-                                                LongReadSum bam: with bam input
-                                                LongReadSum f5: with fast5 input
+Example with single inputs:
+	python LongReadSum bam -i path/to/input.bam -o /output_directory/
+
+Example with multiple inputs:
+	python LongReadSum bam -I "path/to/input1.bam, path/to/input2.bam" -o /output_directory/
+	python LongReadSum bam -P "path/to/*.bam" -o /output_directory/
 ```
-
 
 # Revision history
 For release history, please visit [here](https://github.com/WGLab/LongReadSum/releases). 
@@ -70,6 +82,3 @@ Please refer to the [LongReadSum issue pages](https://github.com/WGLab/LongReadS
 
 # Citing LongReadSum
 ***Please cite the publication below if you use our tool***
-
-
-
