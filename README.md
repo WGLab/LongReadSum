@@ -1,5 +1,7 @@
 # LongReadSum: A fast and flexible QC tool for long read sequencing data
 
+![image](https://user-images.githubusercontent.com/14855676/180858677-bba1dda7-15a2-4ba0-8ff5-6c954d00ba85.png)
+
 [![build tests](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml/badge.svg)](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml)
 
 LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
