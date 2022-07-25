@@ -189,68 +189,77 @@ class TestFASTQ:
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 8731
 
-# # FAST5 tests
-# @pytest.fixture(scope='class')
-# def fast5_output():
-#     """
-#     Run the FAST5 module.
-#     """
-#     # Set parameters
-#     default_parameters = lrst.Input_Para()
-#     output_folder = os.path.abspath(str("output/"))
-#     default_parameters.output_folder = output_folder
-#     default_parameters.out_prefix = str("f5_")
-#
-#     # Check if running remotely
-#     file_dir = ''
-#     local_dir = os.path.expanduser('~/github/LongReadSum')
-#     if os.getcwd() == local_dir:
-#         file_dir = os.path.join(local_dir, "SampleData/") # Local path
-#     else:
-#         file_dir = os.path.abspath(str("SampleData/"))  # Remote path
-#
-#     # Get all FAST5 files
-#     input_files = []
-#     input_files.extend(glob.glob(file_dir + '*.fast5'))
-#
-#     # Add input files
-#     for input_file in input_files:
-#         default_parameters.add_input_file(input_file)
-#
-#     # Run the FAST5 statistics module
-#     output = lrst.Output_FAST5()
-#     exit_code = lrst.callFAST5Module(default_parameters, output)
-#
-#     yield [exit_code, output]
-#
-# class TestFAST5:
-#     """
-#     Tests for FAST5 inputs.
-#     """
-#     # Ensure the module ran successfully
-#     @pytest.mark.dependency()
-#     def test_success(self, fast5_output):
-#         exit_code = fast5_output[0]
-#         assert exit_code == 0
-#
-#     # Tests
-#     @pytest.mark.dependency(depends=["TestFAST5::test_success"])
-#     def test_base_count(self, fast5_output):
-#         output_statistics = fast5_output[1]
-#         base_count = output_statistics.long_read_info.total_num_bases
-#         assert base_count == 333139
-#
-#     @pytest.mark.dependency(depends=["TestFAST5::test_success"])
-#     def test_read_count(self, fast5_output):
-#         output_statistics = fast5_output[1]
-#         read_count = output_statistics.long_read_info.total_num_reads
-#         assert read_count == 49
-#
-#     @pytest.mark.dependency(depends=["TestFAST5::test_success"])
-#     def test_n50(self, fast5_output):
-#         output_statistics = fast5_output[1]
-#         n50_read_length = output_statistics.long_read_info.n50_read_length
-#         assert n50_read_length == 8733
+# FAST5 tests
+@pytest.fixture(scope='class')
+def fast5_output():
+    """
+    Run the FAST5 module.
+    """
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("f5_")
+
+    # Check if running remotely
+    file_dir = ''
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        file_dir = os.path.join(local_dir, "SampleData/") # Local path
+    else:
+        file_dir = os.path.abspath(str("SampleData/"))  # Remote path
+
+    # # Get all FAST5 files
+    # input_files = []
+    # input_files.extend(glob.glob(file_dir + '*.fast5'))
+
+    # Get the first 5 FAST5 files (Github Actions throws a seg.fault error if all 50 are used)
+    file_names = \
+    ["kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read101553_strand.fast5",
+     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read110620_strand.fast5",
+     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read152950_strand.fast5",
+     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch100_read6082_strand.fast5",
+     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read77163_strand.fast5"]
+
+    # Add input files
+    for file_name in file_names:
+        input_file = os.path.join(file_dir, file_name)
+        default_parameters.add_input_file(input_file)
+
+    # Run the FAST5 statistics module
+    output = lrst.Output_FAST5()
+    exit_code = lrst.callFAST5Module(default_parameters, output)
+
+    yield [exit_code, output]
+
+class TestFAST5:
+    """
+    Tests for FAST5 inputs.
+    """
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, fast5_output):
+        exit_code = fast5_output[0]
+        assert exit_code == 0
+
+    # Tests
+    @pytest.mark.dependency(depends=["TestFAST5::test_success"])
+    def test_base_count(self, fast5_output):
+        output_statistics = fast5_output[1]
+        base_count = output_statistics.long_read_info.total_num_bases
+        assert base_count == 21531
+
+    @pytest.mark.dependency(depends=["TestFAST5::test_success"])
+    def test_read_count(self, fast5_output):
+        output_statistics = fast5_output[1]
+        read_count = output_statistics.long_read_info.total_num_reads
+        assert read_count == 4
+
+    @pytest.mark.dependency(depends=["TestFAST5::test_success"])
+    def test_n50(self, fast5_output):
+        output_statistics = fast5_output[1]
+        n50_read_length = output_statistics.long_read_info.n50_read_length
+        assert n50_read_length == 10864
 
 
 # BAM tests
