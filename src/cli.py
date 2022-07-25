@@ -337,12 +337,12 @@ def fast5_module(margs):
 
 # =====
 # Set up the argument parser
-parser = argparse.ArgumentParser(description="Data analysis tools for long-read sequencing data",
-                                 epilog="For example, \n\
-                                         \tpython %(prog)s bam -i path/to/input.bam\n\
-                                         \tpython %(prog)s bam -I \"path/to/input1.bam, path/to/input2.bam\"\n\
-                                        \tpython %(prog)s bam -P \"path/to/*.bam\"\n\
-                                         ",
+parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
+                                 epilog="Example with single inputs:\n"
+                                        "\tpython %(prog)s bam -i path/to/input.bam\n"
+                                        "\nExample with multiple inputs:\n"
+                                        "\tpython %(prog)s bam -I \"path/to/input1.bam, path/to/input2.bam\"\n"
+                                        "\tpython %(prog)s bam -P \"path/to/*.bam\"\n",
                                  formatter_class=RawTextHelpFormatter)
 
 # The subparser will determine our filetype-specific modules
@@ -382,42 +382,41 @@ common_grp_param.add_argument(
 common_grp_param.add_argument("-d", "--detail", type=int, default=0,
                               help="Will output detail in files? Default: 0(no).")
 
+# FASTA inputs
+fa_parsers = subparsers.add_parser('fa',
+                                   parents=[parent_parser],
+                                   help="FASTA file input",
+                                   description="For example:\n"
+                                               "python %(prog)s -i input.fasta",
+                                   formatter_class=RawTextHelpFormatter)
+fa_parsers.set_defaults(func=fa_module)
+
+# FASTQ inputs
 fq_parsers = subparsers.add_parser('fq',
                                    parents=[parent_parser],
-                                   help="Show data analysis for fq files",
-                                   description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
+                                   help="FASTQ file input",
+                                   description="For example:\n"
+                                               "python %(prog)s -i input.fastq",
                                    formatter_class=RawTextHelpFormatter)
 fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
                         help="User defined quality offset for bases in fq. Default: -1.")
 fq_parsers.set_defaults(func=fq_module)
 
-fa_parsers = subparsers.add_parser('fa',
-                                   parents=[parent_parser],
-                                   help="Show data analysis for fa files",
-                                   description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                   formatter_class=RawTextHelpFormatter)
-fa_parsers.set_defaults(func=fa_module)
+# FAST5 inputs
+fast5_parser = subparsers.add_parser('f5',
+                                     parents=[parent_parser],
+                                     help="FAST5 file input",
+                                     description="For example:\n"
+                                                 "python %(prog)s -i input.fast5",
+                                     formatter_class=RawTextHelpFormatter)
+fast5_parser.set_defaults(func=fast5_module)
 
-bam_parsers = subparsers.add_parser('bam',
-                                    parents=[parent_parser],
-                                    help="Show data analysis for bam files",
-                                    description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                    formatter_class=RawTextHelpFormatter)
-bam_parsers.set_defaults(func=bam_module)
-
-# Parser for sequencing_summary.txt
+# sequencing_summary.txt inputs
 seqtxt_parsers = subparsers.add_parser('seqtxt',
                                        parents=[parent_parser],
-                                       help="Show data analysis for sequencing_summary.txt files",
-                                       description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
+                                       help="sequencing_summary.txt input",
+                                       description="For example:\n"
+                                                   "python %(prog)s -i sequencing_summary.txt",
                                        formatter_class=RawTextHelpFormatter)
 seqtxt_parsers.add_argument("-S", "--seq", type=int, default=1,
                             help="sequencing_summary.txt only? Default: 1(yes).")
@@ -426,15 +425,14 @@ seqtxt_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1,
 
 seqtxt_parsers.set_defaults(func=seqtxt_module)
 
-# Parser for FAST5
-fast5_parser = subparsers.add_parser('f5',
-                                     parents=[parent_parser],
-                                     help="Show data analysis for FAST5 files",
-                                     description="For example, \n \
-                                                 \t%(prog)s  \n \
-                                                ",
-                                     formatter_class=RawTextHelpFormatter)
-fast5_parser.set_defaults(func=fast5_module)
+# BAM inputs
+bam_parsers = subparsers.add_parser('bam',
+                                    parents=[parent_parser],
+                                    help="BAM file input",
+                                    description="For example:\n"
+                                                "python %(prog)s -i input.bam",
+                                    formatter_class=RawTextHelpFormatter)
+bam_parsers.set_defaults(func=bam_module)
 
 
 # =====

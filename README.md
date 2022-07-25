@@ -44,29 +44,30 @@ This should point to the environment's Python interpreter path:
 
 Then you can run LongReadSum using the following command:
 
-`python /path/to/LongReadSum`
+`python /path/to/LongReadSum [arguments]`
 
 ```
-usage: LongReadSum [-h] {fq,fa,bam,f5} ...
+usage: LongReadSum [-h] {fa,fq,f5,seqtxt,bam} ...
 
-Data analysis tools for long-read sequencing data
+QC tools for long-read sequencing data
 
 positional arguments:
-  {fq,fa,bam,f5}
-    fq            Show data analysis for fq files
-    fa            Show data analysis for fa files
-    bam           Show data analysis for bam files
-    fast5         Show data analysis for FAST5 files
-    seqtxt        Show data analysis for sequencing_summary.txt files
+  {fa,fq,f5,seqtxt,bam}
+    fa                  FASTA file input
+    fq                  FASTQ file input
+    f5                  FAST5 file input
+    seqtxt              sequencing_summary.txt input
+    bam                 BAM file input
 
 optional arguments:
-  -h, --help      show this help message and exit
+  -h, --help            show this help message and exit
 
-For example,
-                                                LongReadSum fq: with fq or fastq input
-                                                LongReadSum fa: with fa or fasta input
-                                                LongReadSum bam: with bam input
-                                                LongReadSum f5: with fast5 input
+Example with single inputs:
+	python LongReadSum bam -i path/to/input.bam
+
+Example with multiple inputs:
+	python LongReadSum bam -I "path/to/input1.bam, path/to/input2.bam"
+	python LongReadSum bam -P "path/to/*.bam"
 ```
 
 
