@@ -10,8 +10,8 @@ from src.utils import *
 def generate_bs( fa_output, para_dict ):
    lrst_global.plot_filenames["basic_st"] = {};
    lrst_global.plot_filenames["basic_st"]['file'] = ""
-   lrst_global.plot_filenames["basic_st"]['title'] = "Table of Statistics Summary"
-   lrst_global.plot_filenames["basic_st"]['description'] = "Basic Statistics for FA summary"
+   lrst_global.plot_filenames["basic_st"]['title'] = "Basic statistics"
+   lrst_global.plot_filenames["basic_st"]['description'] = "FASTA: Basic statistics"
 
    table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
    table_str += "\n<tbody>"

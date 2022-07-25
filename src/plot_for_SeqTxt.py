@@ -9,8 +9,8 @@ from src.utils import *
 def generate_bs( output_statistics, para_dict ):
    lrst_global.plot_filenames["basic_st"] = {};
    lrst_global.plot_filenames["basic_st"]['file'] = ""
-   lrst_global.plot_filenames["basic_st"]['title'] = "Table of Statistics Summary"
-   lrst_global.plot_filenames["basic_st"]['description'] = "Basic Statistics for F5 summary"
+   lrst_global.plot_filenames["basic_st"]['title'] = "Basic statistics"
+   lrst_global.plot_filenames["basic_st"]['description'] = "Sequencing Summary: Basic statistics"
    
    table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Passed</th><th>Failed</th><th>All</th></tr>\n</thead>"
    table_str += "\n<tbody>"
