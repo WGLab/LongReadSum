@@ -171,9 +171,6 @@ def fa_module(margs):
         # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
         para_dict["out_prefix"] += "fa_";
-
-        # TODO: Multiple calls to the Python-wrapped C++ module are made (the lrst calls), but only a single
-        #  module call to the filetype-specific function should be needed. Could improve performance
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
@@ -196,7 +193,7 @@ def fa_module(margs):
             # TODO: Unused 'static' variable results in redundant function call
             for static in [True, False]:
                 fa_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FA", para_dict], static=True)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FA", para_dict], static=static)
                 fa_html_gen.generate_st_html()
 
             print("Call FA-module done!")
