@@ -8,10 +8,11 @@ from src import lrst_global  # Contains our image filepaths
 
 class ST_HTML_Generator:
     def __init__(self, para_list, static=True):
-        self.image_key_list = para_list[0]  # List of statistics variables to look for
+        self.html_writer = None  # The HTML file object
+        self._qc_variables = para_list[0]  # List of QC variables to look for
 
         self.header_info = para_list[1]  # The webpage's title
-        self.input_para = para_list[2]  # List of the input parameters used for these statistics
+        self.input_para = para_list[2]  # List of the input parameters used for these QC
         self.static = static  # Static vs. dynamic webpage boolean
 
         if len(self.input_para["input_files"]) > 1:
@@ -20,18 +21,25 @@ class ST_HTML_Generator:
             self.more_input_files = False;
 
     def generate_header(self):
+        """
+        Generate the HTML/CSS header and layout, and write to the output file.
+        """
+        # Open the file
         if self.static:
             self.html_writer = open(
-                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "statistics.html", 'w')
+                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "QC.html", 'w')
         else:
             self.html_writer = open(
-                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "statistics_dynamic.html", 'w')
+                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "QC_dynamic.html", 'w')
+
+        # Write the header (webpage title)
         self.html_writer.write("<html>")
         self.html_writer.write("<head>")
         self.html_writer.write("<title>")
         self.html_writer.write(self.header_info)
         self.html_writer.write("</title>")
 
+        # Set up the HTML/CSS layout
         self.html_writer.write('''<style  type="text/css">
  @media screen {
   div.summary {
@@ -220,6 +228,7 @@ class ST_HTML_Generator:
   }
       </style>''')
 
+        # Finalize the sections
         self.html_writer.write("</head>")
         self.html_writer.write("<body>")
         self.html_writer.write('''<div class="header"> 
@@ -227,84 +236,98 @@ class ST_HTML_Generator:
          <div id="header_filename">
              <script> document.write(new Date().toLocaleDateString()); </script>
       '''.format(lrst_global.prg_name))
-        # for _af in self.input_para["input_files"]:
-        #   self.html_writer.write( "<br/>"+_af);
-        # self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
         self.html_writer.write('''       
          </div>
       </div>''')
 
     def generate_left(self):
+        """
+        Generate the left-side panel of links.
+        """
+        # Title
         self.html_writer.write('<div class="summary">');
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
-        _imki = 0
-        for _imk in self.image_key_list:
+        # Link to each QC section
+        current_variable_index = 0
+        for qc_variable_str in self._qc_variables:
             self.html_writer.write('<li>')
             self.html_writer.write(
-                '<a href="#lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['title'] + '</a>')
-            _imki += 1;
-            self.html_writer.write('</li>')
-        if True:  # self.more_input_files:
-            self.html_writer.write('<li>')
-            self.html_writer.write('<a href="#lrst' + str(_imki) + '">Input files</a>')
-            _imki += 1;
+                '<a href="#lrst' + str(current_variable_index) + '">' + lrst_global.plot_filenames[qc_variable_str]['title'] + '</a>')
+            current_variable_index += 1
             self.html_writer.write('</li>')
 
+        # Link to the input files section
+        self.html_writer.write('<li>')
+        self.html_writer.write('<a href="#lrst' + str(current_variable_index) + '">Input files</a>')
+        current_variable_index += 1
+
+        # Finalize the section
+        self.html_writer.write('</li>')
         self.html_writer.write("</ul>")
         self.html_writer.write('</div>')
 
     def generate_right(self):
+        """
+        Generate the right-side section of plots (dynamic or static).
+        """
+        # Write each QC plot
         self.html_writer.write('<div class="main">')
-        _imki = 0
-        for _imk in self.image_key_list:
+        current_variable_index = 0
+        for qc_variable_str in self._qc_variables:
             self.html_writer.write('<div class="module">')
             self.html_writer.write(
-                '<h2 id="lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['description'] + '</h2><p>')
-            # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'"
-            # alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+                '<h2 id="lrst' + str(current_variable_index) + '">' + lrst_global.plot_filenames[qc_variable_str]['description'] + '</h2><p>')
 
             # If dynamic, access the stored plot objects
-            if 'dynamic' in lrst_global.plot_filenames[_imk] and self.static == False:
-                self.html_writer.write(lrst_global.plot_filenames[_imk]['dynamic'])
+            if 'dynamic' in lrst_global.plot_filenames[qc_variable_str] and self.static == False:
+                self.html_writer.write(lrst_global.plot_filenames[qc_variable_str]['dynamic'])
 
             # If static:
             else:
-                # If statistics only, no plot images are needed and access the statistics detail text
-                if _imk == "basic_st":
+                # If QC only, no plot images are needed and access the QC detail text
+                if qc_variable_str == "basic_st":
                     self.html_writer.write(lrst_global.plot_filenames["basic_st"]['detail'])
                 # Access the stored plot images from their file locations
                 else:
                     m_image_file = open(
-                        self.input_para["output_folder"] + '/' + lrst_global.plot_filenames[_imk]['file'], 'rb');
+                        self.input_para["output_folder"] + '/' + lrst_global.plot_filenames[qc_variable_str]['file'], 'rb');
                     self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
-                        m_image_file.read()).decode('utf-8') + '" alt="' + lrst_global.plot_filenames[_imk][
+                        m_image_file.read()).decode('utf-8') + '" alt="' + lrst_global.plot_filenames[qc_variable_str][
                                                'description'] + '" width="800" height="600"/></p>')
                     m_image_file.close()
 
             self.html_writer.write('</div>')
 
-            _imki += 1
+            current_variable_index += 1
 
-        if True:  # self.more_input_files:  # TODO: Implement multi-file HTML generation?
-            self.html_writer.write('<div class="module">')
-            self.html_writer.write('<h2 id="lrst' + str(_imki) + '">The list of input files: ' + str(
-                len(self.input_para["input_files"])) + '</h2><p>')
-            for _af in self.input_para["input_files"]:
-                self.html_writer.write("<br/>" + _af)
-            self.html_writer.write('</p></div>')
-            _imki += 1
+        # Write the input files section
+        self.html_writer.write('<div class="module">')
+        self.html_writer.write('<h2 id="lrst' + str(current_variable_index) + '">The list of input files: ' + str(
+            len(self.input_para["input_files"])) + '</h2><p>')
+        for _af in self.input_para["input_files"]:
+            self.html_writer.write("<br/>" + _af)
+        self.html_writer.write('</p></div>')
+        current_variable_index += 1
 
+        # Finalize this section
         self.html_writer.write('</div>')
 
     def generate_end(self):
+        """
+        Write the HTML footer.
+        """
+        # Write the footer text
         self.html_writer.write(
             '<div class="footer"> Generated by <a href="https://github.com/WGLab/{}">{}</a> </div>'.format(
                 lrst_global.prg_name, lrst_global.prg_name))
 
+        # Finalize this section
         self.html_writer.write("</body>")
         self.html_writer.write("</html>")
+
+        # Close the file, HTML generation is complete
         self.html_writer.close()
 
     def generate_st_html(self):

@@ -4,9 +4,7 @@ Format image filenames based on the provided output folder parameter.
 Set the log error code variables.
 """
 
-
-import os
-
+# TODO: Move below section to CLI module
 prg_name = "LongReadSum"
 originalError = '!!!Error: !!!!!! \n'
 
@@ -18,6 +16,8 @@ LOG_ERROR = 4;
 LOG_FATAL = 5;
 LOG_OFF = 6;
 
+
+# TODO: Move below section to the HTML module
 default_image_path = 'img/'
 default_image_suf = '.png'
 
@@ -46,5 +46,3 @@ plot_filenames= {\
 # for fast5
 "nanopore_st": {'file':default_image_path+"nanopore_st"+default_image_suf, 'title':"ONT-Basecall", 'description':"The statistics of passed and failed reads"}\
 }
-
-
