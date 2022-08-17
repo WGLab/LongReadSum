@@ -5,8 +5,6 @@ Set the log error code variables.
 """
 
 
-import os
-
 prg_name = "LongReadSum"
 originalError = '!!!Error: !!!!!! \n'
 

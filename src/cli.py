@@ -170,17 +170,12 @@ def fa_module(margs):
     else:
         # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
-        para_dict["out_prefix"] += "fa_";
-
-        # TODO: Multiple calls to the Python-wrapped C++ module are made (the lrst calls), but only a single
-        #  module call to the filetype-specific function should be needed. Could improve performance
+        para_dict["out_prefix"] += "fa_"
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
         input_para.downsample_percentage = para_dict["downsample_percentage"]
-
         input_para.other_flags = 0
-
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
 
@@ -318,6 +313,7 @@ def fast5_module(margs):
         input_para.downsample_percentage = para_dict["downsample_percentage"]
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
+        input_para.other_flags = 0  # 0 for normal QC, 1 for signal statistics output
 
         for _ipf in para_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
@@ -333,6 +329,46 @@ def fast5_module(margs):
                     [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
                 fast5_html_obj.generate_st_html()
             print("Done.")
+
+def fast5_signal_module(margs):
+    """
+    Run the FAST5 filetype module with signal statistics output.
+    """
+    para_dict = {}
+    errorStr = lrst_global.originalError
+    errorStr += get_common_param(margs, para_dict)
+
+    if not errorStr == lrst_global.originalError:
+        print(errorStr)
+        print("#############################################\n")
+        # parser.print_help()
+        parser.parse_args(['f5s', '--help'])
+        sys.exit(1004)
+    else:
+        logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "f5s_"
+        input_para = lrst.Input_Para()
+        input_para.threads = para_dict["threads"]
+        input_para.rdm_seed = para_dict["random_seed"]
+        input_para.downsample_percentage = para_dict["downsample_percentage"]
+        input_para.output_folder = str(para_dict["output_folder"])
+        input_para.out_prefix = str(para_dict["out_prefix"])
+        input_para.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
+
+        for _ipf in para_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        fast5_output = lrst.Output_FAST5()
+        exit_code = lrst.callFAST5Module(input_para, fast5_output)
+        # if exit_code == 0:
+        #     print("Generating output files...")
+        #     from src import plot_for_FAST5
+        #     plot_for_FAST5.plot(fast5_output, para_dict)
+        #     for static in [True, False]:
+        #         fast5_html_obj = generate_html.ST_HTML_Generator(
+        #             [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
+        #         fast5_html_obj.generate_st_html()
+        #     print("Done.")
 
 
 # =====
@@ -409,6 +445,15 @@ fast5_parser = subparsers.add_parser('f5',
                                                  "python %(prog)s -i input.fast5 -o /output_directory/",
                                      formatter_class=RawTextHelpFormatter)
 fast5_parser.set_defaults(func=fast5_module)
+
+# FAST5 signal mode inputs
+fast5_signal_parser = subparsers.add_parser('f5s',
+                                     parents=[parent_parser],
+                                     help="FAST5 file input with signal statistics output",
+                                     description="For example:\n"
+                                                 "python %(prog)s -i input.fast5 -o /output_directory/",
+                                     formatter_class=RawTextHelpFormatter)
+fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
 # sequencing_summary.txt inputs
 seqtxt_parsers = subparsers.add_parser('seqtxt',
