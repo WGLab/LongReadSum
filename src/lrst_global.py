@@ -46,5 +46,3 @@ plot_filenames= {\
 # for fast5
 "nanopore_st": {'file':default_image_path+"nanopore_st"+default_image_suf, 'title':"ONT-Basecall", 'description':"The statistics of passed and failed reads"}\
 }
-
-

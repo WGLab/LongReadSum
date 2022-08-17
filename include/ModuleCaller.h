@@ -1,5 +1,5 @@
-#include "Python_to_CXX_class.h"
-#include "CXX_to_python_class.h"
+#include "InputStructure.h"
+#include "OutputStructures.h"
 
 int callBAMModule( Input_Para& _input_data, Output_BAM& py_output_bam );
 

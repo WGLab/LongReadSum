@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "CXX_to_python_class.h"
+#include "OutputStructures.h"
 
 Output_Info::Output_Info(){
    error_flag = 0;
@@ -8,9 +8,7 @@ Output_Info::Output_Info(){
 }
 
 
-//// function for Basic_Seq_Statistics
-//
-//
+// function for Basic_Seq_Statistics
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -34,8 +32,6 @@ void Basic_Seq_Statistics::resize(){
 
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_gc_content_count = _bss.read_gc_content_count;
-
-   //read_length_count = new int64_t[MAX_READ_LENGTH];
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = _bss.read_length_count[ _i_ ];
@@ -151,9 +147,7 @@ void Basic_Seq_Statistics::global_sum(){
    if ( median_read_length==MoneDefault){ median_read_length = ZeroDefault; }
 }
 
-//// function for Basic_Seq_Quality_Statistics
-//
-//
+// function for Basic_Seq_Quality_Statistics
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
    pos_quality_distribution.resize(MAX_READ_LENGTH);
    pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
@@ -265,8 +259,6 @@ void Basic_Seq_Quality_Statistics::global_sum(){
 }
 
 //// function for Output_BAM
-//
-//
 Output_BAM::Output_BAM(){
    map_quality_distribution.resize( MAX_MAP_QUALITY );
    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
@@ -279,7 +271,6 @@ Output_BAM::Output_BAM(){
 }
 
 Output_BAM::~Output_BAM(){
-   //std::cout<<" ~Output_BAM" <<std::endl<<std::flush;
 }
 
 void Output_BAM::reset(){
@@ -375,10 +366,6 @@ void Output_BAM::global_sum(){
 
 // Data structures for sequencing_summary.txt
 Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
-   /*read_length_list = new int64_t[MAX_READ_LENGTH];
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_list[ _i_ ] = ZeroDefault;
-   }*/
    signal_range.resize( MAX_SIGNAL_VALUE );
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] = ZeroDefault;
@@ -386,7 +373,6 @@ Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
 }
 
 Basic_SeqTxt_Statistics::~Basic_SeqTxt_Statistics(){
-   // delete [] read_length_list;
 }
 
 void Basic_SeqTxt_Statistics::reset(){
@@ -401,11 +387,8 @@ void Basic_SeqTxt_Statistics::reset(){
 }
 
 void Basic_SeqTxt_Statistics::add(Basic_SeqTxt_Statistics& t_output_bSeqTxt){
-   //std::cout<<"seq"<<std::endl;
    long_read_info.add( t_output_bSeqTxt.long_read_info );
-   //std::cout<<"qual"<<std::endl;
    seq_quality_info.add( t_output_bSeqTxt.seq_quality_info );
-   //std::cout<<"signal"<<std::endl;
    for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] += t_output_bSeqTxt.signal_range[ _i_ ];
    }
@@ -432,14 +415,9 @@ void Output_SeqTxt::reset(){
 }
 
 void Output_SeqTxt::add(Output_SeqTxt& t_output_SeqTxt){
-   //std::cout<<"long- passed"<<std::endl;
    all_long_read_info.add(t_output_SeqTxt.passed_long_read_info);
-   //std::cout<<"long- failed"<<std::endl;
    all_long_read_info.add(t_output_SeqTxt.failed_long_read_info);
-
-   //std::cout<<"passed"<<std::endl;
    passed_long_read_info.add(t_output_SeqTxt.passed_long_read_info);
-   //std::cout<<"failed"<<std::endl;
    failed_long_read_info.add(t_output_SeqTxt.failed_long_read_info);
 }
 

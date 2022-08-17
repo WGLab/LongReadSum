@@ -1,6 +1,6 @@
 #include <string>
 
-#include "Python_to_CXX_class.h"
+#include "InputStructure.h"
 
 Input_Para::Input_Para(){
     // Set default parameters

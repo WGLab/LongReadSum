@@ -1,13 +1,14 @@
 #ifndef BAM_MODULE_H_
 #define BAM_MODULE_H_
 
-#include "CXX_to_python_class.h"
-#include "Python_to_CXX_class.h"
-
 #include <thread>
 #include <mutex>
-#include "BamReader.h"
 #include <map>
+
+#include "InputStructure.h"
+#include "OutputStructures.h"
+#include "BamReader.h"
+
 
 class BAM_Thread_data {
    public:
