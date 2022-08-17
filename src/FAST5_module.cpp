@@ -158,6 +158,7 @@ static int addFileStatistics(const char *input_file, char quality_value_offset, 
     return exit_code;
 }
 
+// Generate QC data for either base calls or signal data
 int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
 {
     int exit_code = 0;
@@ -165,6 +166,10 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     char quality_value_offset;
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
+
+    // Determine which statistics (base or signal) to generate
+    bool signal_mode = (bool)_input_data.other_flags;
+    std::cout << "FAST5 mode: " << ( signal_mode == true? "Signal" : "Base" ) << " QC" << std::endl;
 
     read_details_file = _input_data.output_folder + "/FAST5_details.txt";
     read_summary_file = _input_data.output_folder + "/FAST5_summary.txt";
