@@ -107,6 +107,7 @@ public:
     double signal_std;
 
     Read_Signal(std::vector<int> read_signals);
+    void init();
 };
 
 

@@ -268,14 +268,17 @@ void Basic_Seq_Quality_Statistics::global_sum(){
 // Base class for storing a read's signal data
 Read_Signal::Read_Signal(std::vector<int> signal_values) {
     this->signal_values = signal_values;
+}
 
-    // === Mean ===
+// Compute basic statistics
+void Read_Signal::init() {
+    // Mean
     int size = signal_values.size();
     double sum = std::accumulate(std::begin(signal_values), std::end(signal_values), 0.0);
     double mean =  sum / size;
     this->signal_mean = mean;
 
-    // === Standard deviation ===
+    // Standard deviation
     // Σ(value - mean)²
     double accum = 0.0;
     std::for_each (std::begin(signal_values), std::end(signal_values), [&](const double d) {
@@ -286,7 +289,7 @@ Read_Signal::Read_Signal(std::vector<int> signal_values) {
     double stdev = sqrt(accum / (signal_values.size()-1));
     this->signal_std = stdev;
 
-    // === Median ===
+    // Median
     double median;
     std::sort(signal_values.begin(), signal_values.end());
     if (signal_values.size() % 2 != 0) {
