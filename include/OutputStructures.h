@@ -19,9 +19,7 @@ Define the C++ bindings from our Python modules
 #define MoneDefault -1
 
 
-/*
-Output_Info: Base class which contains error output.
-*/
+// Base class for storing error output.
 class Output_Info
 {
 public:
@@ -31,10 +29,7 @@ public:
 };
 
 
-
-/*
-Basic_Seq_Statistics: Python-invoked C++ class which contains basic statistics from the C++ module
-*/
+// Base class for storing basic QC data
 class Basic_Seq_Statistics
 {
 public:
@@ -58,7 +53,6 @@ public:
    double gc_cnt = ZeroDefault;        // GC ratio
 
    std::vector<int64_t> read_length_count;
-   // read_length_count[x] is the number of reads that length is equal to x. read_length_count[MAX_READ_LENGTH] includes the number of reads that are longer than MAX_READ_LENGTH. size of read_length_count is MAX_READ_LENGTH+1
 
    std::vector<int64_t> read_gc_content_count;
 
@@ -75,15 +69,8 @@ public:
    ~Basic_Seq_Statistics();
 };
 
-// Data structures for FASTA
-class Output_FA : public Output_Info
-{
-public:
-   Basic_Seq_Statistics long_read_info;
-};
 
-
-
+// Base class for storing base quality data
 class Basic_Seq_Quality_Statistics
 {
 public:
@@ -109,7 +96,28 @@ public:
    ~Basic_Seq_Quality_Statistics();
 };
 
-// Data structures for FASTQ
+
+// Base class for storing a read's signal data
+class Read_Signal
+{
+public:
+    std::vector<int> signal_values;
+    double signal_mean;
+    double signal_median;
+    double signal_std;
+
+    Read_Signal(std::vector<int> read_signals);
+};
+
+
+// FASTA output
+class Output_FA : public Output_Info
+{
+public:
+   Basic_Seq_Statistics long_read_info;
+};
+
+// FASTQ output
 class Output_FQ : public Output_FA
 {
 public:
@@ -117,7 +125,7 @@ public:
 };
 
 
-// Data structures for BAM
+// BAM output
 class Output_BAM : public Output_FQ
 {
 public:
@@ -131,21 +139,17 @@ public:
    int64_t forward_alignment = ZeroDefault;
    int64_t reverse_alignment = ZeroDefault;
 
-   //int64_t map_quality_distribution[MAX_MAP_QUALITY]; // The mapping quality distribution;
    std::vector<int64_t> map_quality_distribution;
    int min_map_quality = MoneDefault; // the minimum mapping quality
    int max_map_quality = MoneDefault; // the maximum mapping quality
 
    // Similar to Output_FA: below are for mapped.
-   //int64_t num_mapped_reads = ZeroDefault; // the number of mapped long reads
-   //int64_t num_mapped_bases = ZeroDefault; // the number of mapped bases with X/=/M
    int64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
    int64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
    int64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
    int64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
    int64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
-   //int64_t accuracy_per_read[PERCENTAGE_ARRAY_SIZE]; //
    std::vector<int64_t> accuracy_per_read;
 
    Basic_Seq_Statistics mapped_long_read_info;
@@ -163,26 +167,16 @@ public:
 };
 
 
-// Data structures for sequencing_summary.txt
+// sequencing_summary.txt output
 class Basic_SeqTxt_Statistics
 {
 public:
    Basic_Seq_Statistics long_read_info;
    Basic_Seq_Quality_Statistics seq_quality_info;
 
-   //int signal_range[MAX_SIGNAL_VALUE]; // statistics of all signals
    std::vector<int> signal_range;
    int min_signal = MoneDefault; // minimum signals;
    int max_signal = MoneDefault; // maximum signals;
-
-   //int64_t read_quality_distribution[MAX_READ_QUALITY]; // The mapping quality distribution;
-   /*std::vector<int64_t> read_quality_distribution;
-   int min_read_quality = MoneDefault; // the minimum mapping quality
-   int max_read_quality = MoneDefault; // the maximum mapping quality
-   */
-
-   // int64_t num_reads = ZeroDefault; // The number of long reads
-   // int64_t *read_length_list; // statistics of read length for long reads: each position is the number of reads with the length of the index;
 
    void reset();
    void add(Basic_SeqTxt_Statistics &output_data);
@@ -205,11 +199,15 @@ public:
 };
 
 
-// Data structures for FAST5
+// FAST5 output
 class Output_FAST5 : public Output_FA
 {
 public:
-   Basic_Seq_Quality_Statistics seq_quality_info;
+    // Base quality section
+    Basic_Seq_Quality_Statistics seq_quality_info;
+
+    // Signal data section
+    std::vector<Read_Signal> read_signals;
 };
 
 #endif

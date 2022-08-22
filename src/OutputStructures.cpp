@@ -1,14 +1,19 @@
+#include <numeric>  // std::accumulate
+#include<algorithm>  // std::foreach
+#include <math.h>  // sqrt
 #include <iostream>
 
 #include "OutputStructures.h"
 
+
+// Base class for storing error output.
 Output_Info::Output_Info(){
    error_flag = 0;
    error_str = "";
 }
 
 
-// function for Basic_Seq_Statistics
+// Base class for storing basic QC data
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -30,6 +35,7 @@ void Basic_Seq_Statistics::resize(){
    }
 }
 
+// Base class for storing base quality data
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_gc_content_count = _bss.read_gc_content_count;
    read_length_count.resize(MAX_READ_LENGTH);
@@ -147,7 +153,7 @@ void Basic_Seq_Statistics::global_sum(){
    if ( median_read_length==MoneDefault){ median_read_length = ZeroDefault; }
 }
 
-// function for Basic_Seq_Quality_Statistics
+// Constructor
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
    pos_quality_distribution.resize(MAX_READ_LENGTH);
    pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
@@ -258,7 +264,43 @@ void Basic_Seq_Quality_Statistics::global_sum(){
    if ( max_read_quality ==MoneDefault){ max_read_quality=ZeroDefault; }
 }
 
-//// function for Output_BAM
+
+// Base class for storing a read's signal data
+Read_Signal::Read_Signal(std::vector<int> signal_values) {
+    this->signal_values = signal_values;
+
+    // === Mean ===
+    int size = signal_values.size();
+    double sum = std::accumulate(std::begin(signal_values), std::end(signal_values), 0.0);
+    double mean =  sum / size;
+    this->signal_mean = mean;
+
+    // === Standard deviation ===
+    // Σ(value - mean)²
+    double accum = 0.0;
+    std::for_each (std::begin(signal_values), std::end(signal_values), [&](const double d) {
+        accum += (d - mean) * (d - mean);
+    });
+
+    // sqrt( Σ(value - mean)² / N-1 )
+    double stdev = sqrt(accum / (signal_values.size()-1));
+    this->signal_std = stdev;
+
+    // === Median ===
+    double median;
+    std::sort(signal_values.begin(), signal_values.end());
+    if (signal_values.size() % 2 != 0) {
+        // Median is the middle value
+        median = (double)signal_values[size/2];
+    } else {
+        // Median is the mean of the two middle values
+        median = (double)(signal_values[(size-1)/2] + signal_values[size/2])/2.0;
+    }
+    this->signal_median = median;
+}
+
+
+// BAM output constructor
 Output_BAM::Output_BAM(){
    map_quality_distribution.resize( MAX_MAP_QUALITY );
    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
@@ -364,7 +406,8 @@ void Output_BAM::global_sum(){
    if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
 }
 
-// Data structures for sequencing_summary.txt
+
+// sequencing_summary.txt output
 Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
    signal_range.resize( MAX_SIGNAL_VALUE );
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){

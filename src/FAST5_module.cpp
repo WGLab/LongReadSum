@@ -186,7 +186,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     output_data.long_read_info.NXX_read_length.clear();
     output_data.long_read_info.median_read_length = MoneDefault; // median of read length
 
-    // TODO: Don't need the commented block below
     output_data.long_read_info.total_a_cnt = ZeroDefault;  // A content
     output_data.long_read_info.total_c_cnt = ZeroDefault;  // C content
     output_data.long_read_info.total_g_cnt = ZeroDefault;  // G content
