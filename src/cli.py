@@ -53,7 +53,8 @@ def get_common_param(margs, para_dict):
         # Populate our
         para_dict["input_files"] = []
         if not (margs.input == None or margs.input == ""):
-            para_dict["input_files"].append(margs.input)
+            input_filepath = margs.input.name
+            para_dict["input_files"].append(input_filepath)
         if not (margs.inputs == None or margs.inputs == ""):
             file_list = [file_str.strip() for file_str in margs.inputs.split(',')]
             para_dict["input_files"].extend(file_list)
@@ -71,12 +72,13 @@ def get_common_param(margs, para_dict):
     if (margs.outputfolder == None or margs.outputfolder == ""):
         this_error_str += "No output file is provided. \n"
     else:
-        para_dict["output_folder"] = margs.outputfolder
+        output_dir = margs.outputfolder
+        para_dict["output_folder"] = output_dir
         try:
-            if not os.path.isdir(para_dict["output_folder"]):
-                os.makedirs(para_dict["output_folder"])
-            if not os.path.isdir(para_dict["output_folder"]+'/'+lrst_global.default_image_path):
-                os.makedirs(para_dict["output_folder"]+'/' +
+            if not os.path.isdir(output_dir):
+                os.makedirs(output_dir)
+            if not os.path.isdir(output_dir + '/'+lrst_global.default_image_path):
+                os.makedirs(output_dir + '/' +
                         lrst_global.default_image_path)
 
         except OSError as e:
@@ -391,7 +393,7 @@ common_grp_param = parent_parser.add_argument_group(
     "Common parameters for %(prog)s")
 input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
-    "-i", "--input", type=str, default=None, help="Single input filepath")
+    "-i", "--input", type=argparse.FileType('r'), default=None, help="Single input filepath")
 input_files_group.add_argument(
     "-I", "--inputs", type=str, default=None,
     help="Multiple comma-separated input filepaths",)
