@@ -101,10 +101,10 @@ public:
 class Read_Signal
 {
 public:
-    std::vector<int> signal_values;
-    double signal_mean;
-    double signal_median;
-    double signal_std;
+    std::vector<int> values;
+    double mean;
+    double median;
+    double std;
 
     Read_Signal(std::vector<int> read_signals);
     void init();

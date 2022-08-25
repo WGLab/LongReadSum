@@ -165,7 +165,6 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
-    const char * read_name;
 
     // Access the output signal QC structure
     std::vector<Read_Signal> &read_signals = output_data.read_signals;
@@ -193,21 +192,14 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         H5::DataSet signal_ds = f5.openDataSet(signal_dataset_str);
         H5::DataType mdatatype= signal_ds.getDataType();
         H5::DataSpace dataspace  = signal_ds.getSpace();
-        hsize_t rank;
         hsize_t dims[2];
-        rank = dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
+        dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
         int data_count = dims[0];
         std::cout << "Signal data count: " << data_count << std::endl; // this is the correct number of values
 
         // Store the signals in an array
         int f5signals [data_count];
         signal_ds.read(f5signals, mdatatype);
-
-//        // loop through the array elements
-//        size_t n = data_count;
-//        for (size_t i = 0; i < n; i++) {
-//            std::cout << f5signals[i] << ' ';
-//        }
 
         // Generate signal QC
         std::vector<int> signal_vector(f5signals, f5signals + data_count);
@@ -216,67 +208,12 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
 
         // Append the read's QC to the output structure
         read_signals.push_back(signal_qc);
-        std::cout << "Size: " << signal_qc.signal_values.size() << std::endl;
+        std::cout << "Size: " << signal_qc.values.size() << std::endl;
 
+        // Write QC out to the details text file
+        //fprintf(read_details_fp, "#read_name\tlength\tmean\tmedian\tstd\n");
+        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\t%.2f\n", read_name.c_str(), data_count, signal_qc.mean, signal_qc.median, signal_qc.std);
 
-//        // Update the total number of bases
-//        int base_count = sequence_data_str.length();
-//        long_read_info.total_num_bases += base_count;
-//
-//        // Store the read length
-//        long_read_info.read_lengths.push_back(base_count);
-//
-//        // Access base quality data
-//        char value;
-//        std::vector<int> base_quality_values;
-//        std::string base_quality_str = fq[3];
-//        std::istringstream iss( base_quality_str );
-//        while (iss >> value) {
-//            int base_quality_value = value - '!';  // '!' symbol represent 0-quality score
-//            base_quality_values.push_back(base_quality_value);
-//        }
-//
-//        // Update the base quality and GC content information
-//        int gc_count = 0;
-//        double read_mean_base_qual = 0;
-//        char current_base;
-//        for (int i = 0; i < base_count; i++)
-//        {
-//            current_base = sequence_data_str[i];
-//            if (current_base == 'A' || current_base == 'a')
-//            {
-//                long_read_info.total_a_cnt += 1;
-//            }
-//            else if (current_base == 'G' || current_base == 'g')
-//            {
-//                long_read_info.total_g_cnt += 1;
-//                gc_count += 1;
-//            }
-//            else if (current_base == 'C' || current_base == 'c')
-//            {
-//                long_read_info.total_c_cnt += 1;
-//                gc_count += 1;
-//            }
-//            else if (current_base == 'T' || current_base == 't' || current_base == 'U' || current_base == 'u')
-//            {
-//                long_read_info.total_tu_cnt += 1;
-//            }
-//            baseq = base_quality_values[i];  // Get the base quality
-//            seq_quality_info.base_quality_distribution[baseq] += 1;
-//            read_mean_base_qual += baseq;
-//        }
-//
-//        // Calculate percent guanine & cytosine
-//        gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
-//
-//        // Look into this section
-//        long_read_info.read_gc_content_count[(int)(gc_content_pct + 0.5)] += 1;
-//        read_mean_base_qual /= (double) base_count;
-//        seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-//        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);
-//
-//        // Update the total number of reads (1 per FAST5 file)
-//        output_data.long_read_info.total_num_reads += 1;
     // catch failure caused by the H5File operations
     }
     catch (FileIException &error) {
@@ -295,27 +232,9 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         error.printErrorStack();
         exit_code = 2;
     }
-//    } catch (FileIException &error) {
-//        // If the dataset is missing, continue and ignore this file
-//        if (error.getFuncName() == "H5File::openDataSet") {
-//            std::cout << "No FASTQ sequence dataset found for file: " << input_file << std::endl;
-//        } else {
-//            std::cerr << "Error accessing the FAST5 file: " << input_file << std::endl;
-//            error.printErrorStack();
-//            exit_code = 2;
-//        }
-//    };
 
     return exit_code;
 }
-
-// Add read signal QC to the output data structure and the output details file
-//static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
-//static int writeSignalQCDetailsTest(const char *input_file)
-//{
-//    std::cout << "Entered" << std::endl;
-//    return 0;
-//}
 
 
 // Generate QC data for either base calls or signal data
@@ -323,7 +242,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
 {
     int exit_code = 0;
     const char *input_file = NULL;
-    char quality_value_offset;
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
 
@@ -344,7 +262,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
             exit_code = 3;
         } else {
             // Add the header
-            fprintf(read_details_fp, "#read_name\tlength\tGC\taverage_baseq_quality\n");
+            fprintf(read_details_fp, "#read_name\tlength\tmean\tmedian\tstd\n");
 
             // Loop through each input file and get the QC data across files
             size_t file_count = _input_data.num_input_files;
@@ -354,9 +272,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                 std::cout << "File name: " << input_file << std::endl;
 
                 // Write QC details to the file
-//                exit_code = writeSignalQCDetailsTest(input_file);  // Works
-//                exit_code = writeSignalQCDetailsTest(output_data);  // Works
-//                exit_code = writeSignalQCDetailsTest(read_details_fp);  // Works
                 exit_code = writeSignalQCDetails(input_file, output_data, read_details_fp);
             }
             fclose(read_details_fp);
