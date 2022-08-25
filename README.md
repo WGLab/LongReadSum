@@ -23,7 +23,8 @@ First install [Anaconda](https://www.anaconda.com/). Then follow the instruction
 
 ```
 git clone https://github.com/WGLab/LongReadSum
-conda env create -f LongReadSum/environment.yml
+cd LongReadSum
+conda env create -f environment.yml
 
 export PATH=~/miniconda3/envs/lrst_py39/bin:$PATH
 conda activate lrst_py39
