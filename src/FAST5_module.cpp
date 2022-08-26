@@ -7,7 +7,9 @@ Class for calling FAST5 statistics modules.
 #include <numeric>      // std::accumulate
 #include <iostream>
 #include <vector>  // std::begin, std::end
+#include <string>
 #include <sstream>
+#include <fstream>  // std::ofstream
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -200,6 +202,17 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         // Store the signals in an array
         int f5signals [data_count];
         signal_ds.read(f5signals, mdatatype);
+
+        // [Test] Save the signal to CSV
+        std::string test_csv("/home/perdomoj/github/LongReadSum/example.csv");
+        std::ofstream csv_stream;
+        csv_stream.open(test_csv);
+        csv_stream << read_name << "\n";  // Add the read name
+        for (int i=0; i<data_count; i++) {
+            csv_stream << std::to_string(f5signals[i]) << "\n";
+        }
+        csv_stream.close();
+        std::cout << "Saved test CSV: " << test_csv << std::endl;
 
         // Generate signal QC
         std::vector<int> signal_vector(f5signals, f5signals + data_count);
