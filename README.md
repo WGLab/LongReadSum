@@ -18,7 +18,23 @@ Please refer to `environment.yml` for detail. For your quick reference, LongRead
   - matplotlib
 ```
 
-# Installation
+# Installation using Docker (recommended)
+First, install [Docker](https://docs.docker.com/engine/install/).
+Pull the latest image from Docker hub:
+
+```
+docker pull genomicslab/longreadsum
+```
+
+## Running
+
+On Unix/Linux:
+
+```
+docker run -it genomicslab/longreadsum [arguments]
+```
+
+# Installation using Anaconda
 First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
 
 ```
@@ -31,11 +47,10 @@ conda activate lrst_py39
 make
 
 ```
+## Running
+Activate the conda environment:
 
-
-# General Usage
-
-First, make sure you have activated the `lrst_py39` conda environment.
+`conda activate lrst_py39`
 
 To test that you are using the correct Python interpreter, run:
 
@@ -45,11 +60,15 @@ This should point to the environment's Python interpreter path:
 
 `~/miniconda3/envs/lrst_py39/bin/python`
 
-If the path is incorrect, export its location to `PATH` as described above.
+If the path is incorrect, export its location to `PATH`:
+
+`export PATH=~/miniconda3/envs/lrst_py39/bin:$PATH`
 
 Then you can run LongReadSum using the following command:
 
 `python /path/to/LongReadSum [arguments]`
+
+# General Usage
 
 Specifying input files:
 
