@@ -1,9 +1,9 @@
-#ifndef CXX_TO_PYTHON_CLASS_H
-#define CXX_TO_PYTHON_CLASS_H
+#ifndef OUTPUTSTRUCTURES_H
+#define OUTPUTSTRUCTURES_H
 
 /*
-CXX_to_python_class.h:
-Define the C++ bindings from our Python modules
+OutputStructures.h
+Define the output structures for each module.
 */
 
 #include <string>

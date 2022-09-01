@@ -4,7 +4,7 @@
 #include <iostream>
 
 #include "OutputStructures.h"
-
+#include "BasicStatistics.h"
 
 // Base class for storing error output.
 Output_Info::Output_Info(){
