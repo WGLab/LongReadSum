@@ -4,7 +4,6 @@ FROM continuumio/miniconda3
 # Copy the project directory
 COPY . /longreadsum
 WORKDIR /longreadsum
-RUN ls
 
 # Install build tools
 RUN apt-get update && apt-get install build-essential -y
@@ -24,7 +23,5 @@ RUN which python
 RUN make
 
 # The code to run when container is started:
-#NTRYPOINT ["python", "longreadsum"]
 WORKDIR /
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "lrst_py39", "python", "longreadsum"]
-
