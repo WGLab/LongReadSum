@@ -23,7 +23,7 @@ First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub:
 
 ```
-docker pull genomicslab/longreadsum
+docker pull genomicslab/longreadsum:v0.0.1
 ```
 
 ## Running
