@@ -171,7 +171,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
     std::string basecall_group = "Basecall_1D_000";
 
     // Access the output signal QC structure
-    std::vector<Base_Signals> &base_signals = output_data.base_signals;
+    std::vector<Base_Signals> &read_base_signals = output_data.read_base_signals;
 
     // Run QC on the HDF5 file
     //H5::Exception::dontPrint();  // Disable error printing
@@ -246,7 +246,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         signal_ds.read(move_bool, move_datatype);
 
         // Segment the raw signal by the window length
-        int basecall_signals [sequence_length][block_stride_value];
+        std::vector<std::vector<int>> basecall_signals(sequence_length, std::vector<int> (block_stride_value, 0));
         int basecall_index = 0;
         int base_start_index = start_index;
         int base_end_index = base_start_index + block_stride_value;
@@ -255,11 +255,11 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
             if (move_bool[i] == 1)
             {
                 // Grab the signal
-                int base_signal [block_stride_value];
-                std::copy(f5signals + base_start_index, f5signals + base_end_index, base_signal);
+                std::vector<int> called_base_signal(block_stride_value);
+                called_base_signal.assign(f5signals + base_start_index, f5signals + base_end_index);
 
                 // Store in the 2D array
-                *basecall_signals[basecall_index] = *base_signal;
+                basecall_signals[basecall_index] = called_base_signal;
             }
 
             // Update indices
@@ -269,8 +269,8 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         }
 
         // Append the basecall signals to the output structure
-        basecall_obj = Base_Signals(basecall_signals);
-        base_signals.push_back(basecall_obj);
+        Base_Signals basecall_obj(basecall_signals);
+        read_base_signals.push_back(basecall_obj);
         std::cout << "nice" << std::endl;
 
         // Read output

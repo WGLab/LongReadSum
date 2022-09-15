@@ -264,6 +264,12 @@ void Basic_Seq_Quality_Statistics::global_sum(){
    if ( max_read_quality ==MoneDefault){ max_read_quality=ZeroDefault; }
 }
 
+// Base class for storing a read's base signal data
+Base_Signals::Base_Signals(std::vector<std::vector<int>> basecall_signals) {
+    this->basecall_signals = basecall_signals;
+
+    // TODO: Getters can be added for indexing bases
+}
 
 // Base class for storing a read's signal data
 Read_Signal::Read_Signal(std::vector<int> signal_values) {
@@ -301,13 +307,6 @@ void Read_Signal::init() {
     }
     this->median = median;
 }
-
-
-// Base class for storing a read's base signal data
-Base_Signals::Base_Signals(int* base_signals) {
-    this->base_signals = base_signals;
-}
-
 
 // BAM output constructor
 Output_BAM::Output_BAM(){
