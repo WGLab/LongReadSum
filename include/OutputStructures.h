@@ -111,6 +111,14 @@ public:
 };
 
 
+// Base class for storing base signal data
+class Base_Signals
+{
+public:
+    int* base_signals;
+};
+
+
 // FASTA output
 class Output_FA : public Output_Info
 {
@@ -209,6 +217,7 @@ public:
 
     // Signal data section
     std::vector<Read_Signal> read_signals;
+    std::vector<Base_Signals> base_signals;
 };
 
 #endif

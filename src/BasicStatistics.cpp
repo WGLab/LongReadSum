@@ -17,15 +17,16 @@ double computeMean(std::vector<int> values)
     // Mean
     int size = values.size();
     double sum = std::accumulate(std::begin(values), std::end(values), 0.0);
-    double mean =  sum / size;
+    double mean = sum / size;
 
-    return mean
+    return mean;
 }
 
 double computeStd(std::vector<int> values)
 {
     // Standard deviation
     // Σ(value - mean)²
+    double mean = computeMean(values);
     double accum = 0.0;
     std::for_each (std::begin(values), std::end(values), [&](const double d) {
         accum += (d - mean) * (d - mean);
@@ -42,7 +43,8 @@ double computeMedian(std::vector<int> values)
     // Median
     double median;
     std::sort(values.begin(), values.end());
-    if (values.size() % 2 != 0) {
+    int size = values.size();
+    if (size % 2 != 0) {
         // Median is the middle value
         median = (double)values[size/2];
     } else {
@@ -50,5 +52,5 @@ double computeMedian(std::vector<int> values)
         median = (double)(values[(size-1)/2] + values[size/2])/2.0;
     }
 
-    return median
-}
+    return median;
+};

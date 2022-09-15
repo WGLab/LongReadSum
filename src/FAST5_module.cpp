@@ -3,7 +3,8 @@ F5_module.cpp:
 Class for calling FAST5 statistics modules.
 
 */
-#include <algorithm>    // std::sort
+#include <array>
+#include <algorithm>    // std::sort, copy
 #include <numeric>      // std::accumulate
 #include <iostream>
 #include <vector>  // std::begin, std::end
@@ -167,12 +168,13 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
+    std::string basecall_group = "Basecall_1D_000";
 
     // Access the output signal QC structure
-    std::vector<Read_Signal> &read_signals = output_data.read_signals;
+    std::vector<Base_Signals> &base_signals = output_data.base_signals;
 
     // Run QC on the HDF5 file
-    H5::Exception::dontPrint();  // Disable error printing
+    //H5::Exception::dontPrint();  // Disable error printing
     try {
         // Open the file
         H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
@@ -203,29 +205,105 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         int f5signals [data_count];
         signal_ds.read(f5signals, mdatatype);
 
-        // [Test] Save the signal to CSV
-        std::string test_csv("/home/perdomoj/github/LongReadSum/example.csv");
-        std::ofstream csv_stream;
-        csv_stream.open(test_csv);
-        csv_stream << read_name << "\n";  // Add the read name
-        for (int i=0; i<data_count; i++) {
-            csv_stream << std::to_string(f5signals[i]) << "\n";
+        // Get the block stride (window length) attribute
+        H5::Group group_obj = f5.openGroup("/Analyses/Basecall_1D_000/Summary/basecall_1d_template");
+        H5::Attribute block_stride_obj = group_obj.openAttribute("block_stride");
+        H5::DataType bs_datatype= block_stride_obj.getDataType();
+        int bs_buffer [1];
+        block_stride_obj.read(bs_datatype, bs_buffer);
+        int block_stride_value = bs_buffer[0];
+        std::cout << "Block stride = " << block_stride_value << std::endl;
+
+        // Get the sequence length attribute
+        H5::Attribute seq_length_obj = group_obj.openAttribute("sequence_length");
+        H5::DataType sl_datatype= seq_length_obj.getDataType();
+        int sl_buffer [1];
+        seq_length_obj.read(sl_datatype, sl_buffer);
+        int sequence_length = sl_buffer[0];
+        std::cout << "Sequence length = " << sequence_length << std::endl;
+
+        // Get the raw signal basecall start position
+        H5::Group segm_group_obj = f5.openGroup("/Analyses/Segmentation_000/Summary/segmentation");
+        H5::Attribute start_attr_obj = segm_group_obj.openAttribute("first_sample_template");
+        H5::DataType st_datatype= start_attr_obj.getDataType();
+        int st_buffer [1];
+        start_attr_obj.read(st_datatype, st_buffer);
+        int start_index = st_buffer[0];
+        std::cout << "Start position = " << start_index << std::endl;
+
+        // Get the boolean array of base calls (move)
+        H5::DataSet move_dataset_obj;
+        move_dataset_obj = f5.openDataSet("/Analyses/" + basecall_group + "/BaseCalled_template/Move");
+        H5::DataType  move_datatype = move_dataset_obj.getDataType();
+        H5::DataSpace move_dataspace  = move_dataset_obj.getSpace();
+        hsize_t move_dims[2];
+        move_dataspace.getSimpleExtentDims(move_dims, NULL); // rank = 1
+        int move_data_count = move_dims[0];
+        std::cout << "Move data count: " << move_data_count << std::endl; // this is the correct number of values
+
+        // Read the boolean array
+        int move_bool [move_data_count];
+        signal_ds.read(move_bool, move_datatype);
+
+        // Segment the raw signal by the window length
+        int basecall_signals [sequence_length][block_stride_value];
+        int basecall_index = 0;
+        int base_start_index = start_index;
+        int base_end_index = base_start_index + block_stride_value;
+        for (int i = 0; i < move_data_count; i++)
+        {
+            if (move_bool[i] == 1)
+            {
+                // Grab the signal
+                int base_signal [block_stride_value];
+                std::copy(f5signals + base_start_index, f5signals + base_end_index, base_signal);
+
+                // Store in the 2D array
+                *basecall_signals[basecall_index] = *base_signal;
+            }
+
+            // Update indices
+            base_start_index = base_end_index + 1;
+            base_end_index = base_start_index + block_stride_value;
+            basecall_index ++;
         }
-        csv_stream.close();
-        std::cout << "Saved test CSV: " << test_csv << std::endl;
 
-        // Generate signal QC
-        std::vector<int> signal_vector(f5signals, f5signals + data_count);
-        Read_Signal signal_qc(signal_vector);
-        signal_qc.init();
+        // Append the basecall signals to the output structure
+        basecall_obj = Base_Signals(basecall_signals);
+        base_signals.push_back(basecall_obj);
+        std::cout << "nice" << std::endl;
 
-        // Append the read's QC to the output structure
-        read_signals.push_back(signal_qc);
-        std::cout << "Size: " << signal_qc.values.size() << std::endl;
+        // Read output
+//        std::string data;
+//        dataset.read(data, datatype);
+//        std::vector<std::string> tokens = splitString(data);
 
-        // Write QC out to the details text file
-        //fprintf(read_details_fp, "#read_name\tlength\tmean\tmedian\tstd\n");
-        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\t%.2f\n", read_name.c_str(), data_count, signal_qc.mean, signal_qc.median, signal_qc.std);
+        // Get the base-level signal data
+
+//
+//        // [Test] Save the signal to CSV
+//        std::string test_csv("/home/perdomoj/github/LongReadSum/example.csv");
+//        std::ofstream csv_stream;
+//        csv_stream.open(test_csv);
+//        csv_stream << read_name << "\n";  // Add the read name
+//        for (int i=0; i<data_count; i++) {
+//            csv_stream << std::to_string(f5signals[i]) << "\n";
+//        }
+//        csv_stream.close();
+//        std::cout << "Saved test CSV: " << test_csv << std::endl;
+//
+//        // Generate signal QC
+//        std::vector<int> signal_vector(f5signals, f5signals + data_count);
+//        Read_Signal signal_qc(signal_vector);
+//        signal_qc.init();
+//
+//        // Append the read's QC to the output structure
+//        read_signals.push_back(signal_qc);
+//        std::cout << "Size: " << signal_qc.values.size() << std::endl;
+//
+//        // Write QC out to the details text file
+//        //fprintf(read_details_fp, "#read_name\tlength\tmean\tmedian\tstd\n");
+//        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\t%.2f\n", read_name.c_str(), data_count, signal_qc.mean, signal_qc.median, signal_qc.std);
 
     // catch failure caused by the H5File operations
     }
@@ -242,6 +320,12 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
 
     // catch failure caused by the DataSpace operations
     catch (DataSpaceIException &error) {
+        error.printErrorStack();
+        exit_code = 2;
+    }
+
+    // catch failure caused by the Attribute operations
+    catch (AttributeIException &error) {
         error.printErrorStack();
         exit_code = 2;
     }

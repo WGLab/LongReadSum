@@ -303,6 +303,12 @@ void Read_Signal::init() {
 }
 
 
+// Base class for storing a read's base signal data
+Base_Signals::Base_Signals(int* base_signals) {
+    this->base_signals = base_signals;
+}
+
+
 // BAM output constructor
 Output_BAM::Output_BAM(){
    map_quality_distribution.resize( MAX_MAP_QUALITY );
