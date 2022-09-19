@@ -509,3 +509,48 @@ std::vector<std::vector<int>> Output_FAST5::getNthReadBaseSignals(int read_index
 
     return data_vector;
 }
+
+// Get the Nth read's base signal means
+std::vector<double> Output_FAST5::getNthReadBaseMeans(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate means
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeMean );
+
+    return output;
+}
+
+// Get the Nth read's base signal standard deviations
+std::vector<double> Output_FAST5::getNthReadBaseStds(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate stds
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeStd );
+
+    return output;
+}
+
+// Get the Nth read's base signal medians
+std::vector<double> Output_FAST5::getNthReadBaseMedians(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate medians
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeMedian );
+
+    return output;
+}

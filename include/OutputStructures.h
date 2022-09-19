@@ -224,6 +224,9 @@ public:
     int getReadCount();
     void addReadBaseSignals(Base_Signals values);
     std::vector<std::vector<int>> getNthReadBaseSignals(int read_index);
+    std::vector<double> getNthReadBaseMeans(int read_index);
+    std::vector<double> getNthReadBaseStds(int read_index);
+    std::vector<double> getNthReadBaseMedians(int read_index);
 
     Output_FAST5();
 };
