@@ -362,10 +362,11 @@ def fast5_signal_module(margs):
 
         fast5_output = lrst.Output_FAST5()
         exit_code = lrst.callFAST5Module(input_para, fast5_output)
-        nth_read_data = fast5_output.getNthReadBaseSignals(0)
-        nth_read_means = fast5_output.getNthReadBaseMeans(0)
-        nth_read_stds = fast5_output.getNthReadBaseStds(0)
-        nth_read_medians = fast5_output.getNthReadBaseMedians(0)
+        base_count = fast5_output.getTotalBaseCount()
+        # nth_read_data = fast5_output.getNthReadBaseSignals(0)
+        # nth_read_means = fast5_output.getNthReadBaseMeans(0)
+        # nth_read_stds = fast5_output.getNthReadBaseStds(0)
+        # nth_read_medians = fast5_output.getNthReadBaseMedians(0)
         0
         # if exit_code == 0:
         #     print("Generating output files...")

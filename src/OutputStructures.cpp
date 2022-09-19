@@ -437,10 +437,15 @@ void Output_SeqTxt::global_sum(){
 // Base class for storing a read's base signal data
 Base_Signals::Base_Signals(std::vector<std::vector<int>> basecall_signals) {
     this->basecall_signals = basecall_signals;
+    this->base_count += basecall_signals[0].size();
 }
 
 std::vector<std::vector<int>> Base_Signals::getDataVector() {
     return this->basecall_signals;
+}
+
+int Base_Signals::getBaseCount() {
+    return this->base_count;
 }
 
 // Base class for storing a read's signal data
@@ -484,15 +489,25 @@ void Read_Signal::init() {
 // FAST5
 Output_FAST5::Output_FAST5(){
     this->read_count = 0;
+    this->base_count = 0;
 }
 
+// Add read base signals
 void Output_FAST5::addReadBaseSignals(Base_Signals values){
     this->read_base_signals.push_back(values);
-    this->read_count++;
+    this->read_count++;  // Update read count
+    int base_count = values.getBaseCount();
+    this->base_count += base_count;  // Update base count
 }
 
+// Get the read count
 int Output_FAST5::getReadCount(){
     return this->read_count;
+}
+
+// Get the total base count across reads
+int Output_FAST5::getTotalBaseCount(){
+    return this->base_count;
 }
 
 // Get the Nth read's base signal data

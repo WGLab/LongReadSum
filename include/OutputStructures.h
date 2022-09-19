@@ -201,9 +201,11 @@ public:
 class Base_Signals
 {
 public:
+    int base_count;
     std::vector<std::vector<int>> basecall_signals;
 
     // Methods
+    int getBaseCount();
     std::vector<std::vector<int>> getDataVector();
     Base_Signals(std::vector<std::vector<int>> basecall_signals);
 };
@@ -217,11 +219,13 @@ public:
 
     // Signal data section
     int read_count;
+    int base_count;
     std::vector<Read_Signal> read_signals;
     std::vector<Base_Signals> read_base_signals;
 
     // Methods
     int getReadCount();
+    int getTotalBaseCount();
     void addReadBaseSignals(Base_Signals values);
     std::vector<std::vector<int>> getNthReadBaseSignals(int read_index);
     std::vector<double> getNthReadBaseMeans(int read_index);

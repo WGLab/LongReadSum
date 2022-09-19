@@ -299,6 +299,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
             basecall_index ++;
         }
 
+        // TODO: Can just use sequence length for base count
         std::cout << "Final base count =" << base_count << std::endl;
 
         // Append the basecall signals to the output structure

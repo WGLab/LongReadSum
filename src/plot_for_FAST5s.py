@@ -1,5 +1,5 @@
 """
-plot_for_FAST5.py:
+plot_for_FAST5s.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
@@ -11,14 +11,14 @@ def generate_bs(f5_output, para_dict):
     lrst_global.plot_filenames["basic_st"] = {};
     lrst_global.plot_filenames["basic_st"]['file'] = ""
     lrst_global.plot_filenames["basic_st"]['title'] = "Basic statistics"
-    lrst_global.plot_filenames["basic_st"]['description'] = "FAST5: Basic statistics"
+    lrst_global.plot_filenames["basic_st"]['description'] = "FAST5: Base signal statistics"
 
     table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
     table_str += "\n<tbody>"
     int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
     double_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:.1f}</td></tr>"
     table_str += int_str_for_format.format("#Total Reads", \
-                                           f5_output.getReadCount())
+                                           f5_output.long_read_info.total_num_reads);
     table_str += int_str_for_format.format("#Total Bases", \
                                            f5_output.long_read_info.total_num_bases);
     table_str += int_str_for_format.format("Longest Read Length", \
