@@ -171,7 +171,8 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
     std::string basecall_group = "Basecall_1D_000";
 
     // Access the output signal QC structure
-    std::vector<Base_Signals> &read_base_signals = output_data.read_base_signals;
+    std::vector<Read_Signal> &read_signals = output_data.read_signals;
+    //std::vector<Base_Signals> &read_base_signals = output_data.read_base_signals;
 
     // Run QC on the HDF5 file
     //H5::Exception::dontPrint();  // Disable error printing
@@ -242,24 +243,42 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::cout << "Move data count: " << move_data_count << std::endl; // this is the correct number of values
 
         // Read the boolean array
-        int move_bool [move_data_count];
-        signal_ds.read(move_bool, move_datatype);
+        uint8_t move_bool [move_data_count];
+        move_dataset_obj.read(move_bool, move_datatype, move_dataspace);
 
         // Segment the raw signal by the window length
         std::vector<std::vector<int>> basecall_signals(sequence_length, std::vector<int> (block_stride_value, 0));
         int basecall_index = 0;
         int base_start_index = start_index;
         int base_end_index = base_start_index + block_stride_value;
+
+        // Test
         for (int i = 0; i < move_data_count; i++)
         {
-            if (move_bool[i] == 1)
+            int move_value(move_bool[i]);
+            //std::cout << "Move = " << move_value << std::endl;
+
+            if (move_value == 1)
             {
                 // Grab the signal
                 std::vector<int> called_base_signal(block_stride_value);
-                called_base_signal.assign(f5signals + base_start_index, f5signals + base_end_index);
+//                called_base_signal.assign(f5signals + base_start_index, f5signals + base_end_index);
 
-                // Store in the 2D array
-                basecall_signals[basecall_index] = called_base_signal;
+                std::cout << "[0] Printing contents..." << std::endl;
+                std::cout << f5signals[2925] << std::endl;
+
+                // TODO
+//                for (int j = 0; j < block_stride_value; j++) {
+//                    std::cout << f5signals[base_start_index + j] << std::endl;
+//                }
+
+//                std::cout << "[0] Printing contents..." << std::endl;
+//                for (int j: called_base_signal) {
+//                    std::cout << j << std::endl;
+//                }
+
+//                // Store in the 2D array
+//                basecall_signals[basecall_index] = called_base_signal;
             }
 
             // Update indices
@@ -269,41 +288,12 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         }
 
         // Append the basecall signals to the output structure
-        Base_Signals basecall_obj(basecall_signals);
-        read_base_signals.push_back(basecall_obj);
+//        Base_Signals basecall_obj(basecall_signals);
+//        output_data.addReadBaseSignals(basecall_obj);
+    //        read_base_signals.push_back(basecall_obj);
+
+        // Test
         std::cout << "nice" << std::endl;
-
-        // Read output
-//        std::string data;
-//        dataset.read(data, datatype);
-//        std::vector<std::string> tokens = splitString(data);
-
-        // Get the base-level signal data
-
-//
-//        // [Test] Save the signal to CSV
-//        std::string test_csv("/home/perdomoj/github/LongReadSum/example.csv");
-//        std::ofstream csv_stream;
-//        csv_stream.open(test_csv);
-//        csv_stream << read_name << "\n";  // Add the read name
-//        for (int i=0; i<data_count; i++) {
-//            csv_stream << std::to_string(f5signals[i]) << "\n";
-//        }
-//        csv_stream.close();
-//        std::cout << "Saved test CSV: " << test_csv << std::endl;
-//
-//        // Generate signal QC
-//        std::vector<int> signal_vector(f5signals, f5signals + data_count);
-//        Read_Signal signal_qc(signal_vector);
-//        signal_qc.init();
-//
-//        // Append the read's QC to the output structure
-//        read_signals.push_back(signal_qc);
-//        std::cout << "Size: " << signal_qc.values.size() << std::endl;
-//
-//        // Write QC out to the details text file
-//        //fprintf(read_details_fp, "#read_name\tlength\tmean\tmedian\tstd\n");
-//        fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\t%.2f\n", read_name.c_str(), data_count, signal_qc.mean, signal_qc.median, signal_qc.std);
 
     // catch failure caused by the H5File operations
     }

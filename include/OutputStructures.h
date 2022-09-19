@@ -96,30 +96,6 @@ public:
    ~Basic_Seq_Quality_Statistics();
 };
 
-
-// Base class for storing a read's signal data
-class Read_Signal
-{
-public:
-    std::vector<int> values;
-    double mean;
-    double median;
-    double std;
-
-    Read_Signal(std::vector<int> read_signals);
-    void init();
-};
-
-// Base class for storing a read's base signal data
-class Base_Signals
-{
-public:
-    std::vector<std::vector<int>> basecall_signals;
-
-    Base_Signals(std::vector<std::vector<int>> basecall_signals);
-    void init();
-};
-
 // FASTA output
 class Output_FA : public Output_Info
 {
@@ -208,6 +184,29 @@ public:
    void global_sum();
 };
 
+// Base class for storing a read's signal data
+class Read_Signal
+{
+public:
+    std::vector<int> values;
+    double mean;
+    double median;
+    double std;
+
+    Read_Signal(std::vector<int> read_signals);
+    void init();
+};
+
+// Base class for storing a read's base signal data
+class Base_Signals
+{
+public:
+    std::vector<std::vector<int>> basecall_signals;
+
+    // Methods
+    std::vector<std::vector<int>> getDataVector();
+    Base_Signals(std::vector<std::vector<int>> basecall_signals);
+};
 
 // FAST5 output
 class Output_FAST5 : public Output_FA
@@ -217,8 +216,16 @@ public:
     Basic_Seq_Quality_Statistics seq_quality_info;
 
     // Signal data section
+    int read_count;
     std::vector<Read_Signal> read_signals;
     std::vector<Base_Signals> read_base_signals;
+
+    // Methods
+    int getReadCount();
+    void addReadBaseSignals(Base_Signals values);
+    std::vector<std::vector<int>> getNthReadBaseSignals(int read_index);
+
+    Output_FAST5();
 };
 
 #endif

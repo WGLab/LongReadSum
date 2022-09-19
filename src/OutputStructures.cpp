@@ -264,50 +264,6 @@ void Basic_Seq_Quality_Statistics::global_sum(){
    if ( max_read_quality ==MoneDefault){ max_read_quality=ZeroDefault; }
 }
 
-// Base class for storing a read's base signal data
-Base_Signals::Base_Signals(std::vector<std::vector<int>> basecall_signals) {
-    this->basecall_signals = basecall_signals;
-
-    // TODO: Getters can be added for indexing bases
-}
-
-// Base class for storing a read's signal data
-Read_Signal::Read_Signal(std::vector<int> signal_values) {
-    this->values = signal_values;
-}
-
-// Compute basic statistics
-void Read_Signal::init() {
-    // Mean
-    int size = values.size();
-    double sum = std::accumulate(std::begin(values), std::end(values), 0.0);
-    double mean =  sum / size;
-    this->mean = mean;
-
-    // Standard deviation
-    // Σ(value - mean)²
-    double accum = 0.0;
-    std::for_each (std::begin(values), std::end(values), [&](const double d) {
-        accum += (d - mean) * (d - mean);
-    });
-
-    // sqrt( Σ(value - mean)² / N-1 )
-    double std = sqrt(accum / (values.size()-1));
-    this->std = std;
-
-    // Median
-    double median;
-    std::sort(values.begin(), values.end());
-    if (values.size() % 2 != 0) {
-        // Median is the middle value
-        median = (double)values[size/2];
-    } else {
-        // Median is the mean of the two middle values
-        median = (double)(values[(size-1)/2] + values[size/2])/2.0;
-    }
-    this->median = median;
-}
-
 // BAM output constructor
 Output_BAM::Output_BAM(){
    map_quality_distribution.resize( MAX_MAP_QUALITY );
@@ -476,4 +432,80 @@ void Output_SeqTxt::global_sum(){
    all_long_read_info.global_sum();
    passed_long_read_info.global_sum();
    failed_long_read_info.global_sum();
+}
+
+// Base class for storing a read's base signal data
+Base_Signals::Base_Signals(std::vector<std::vector<int>> basecall_signals) {
+    this->basecall_signals = basecall_signals;
+}
+
+std::vector<std::vector<int>> Base_Signals::getDataVector() {
+    return this->basecall_signals;
+}
+
+// Base class for storing a read's signal data
+Read_Signal::Read_Signal(std::vector<int> signal_values) {
+    this->values = signal_values;
+}
+
+// Compute basic statistics
+void Read_Signal::init() {
+    // Mean
+    int size = values.size();
+    double sum = std::accumulate(std::begin(values), std::end(values), 0.0);
+    double mean =  sum / size;
+    this->mean = mean;
+
+    // Standard deviation
+    // Σ(value - mean)²
+    double accum = 0.0;
+    std::for_each (std::begin(values), std::end(values), [&](const double d) {
+        accum += (d - mean) * (d - mean);
+    });
+
+    // sqrt( Σ(value - mean)² / N-1 )
+    double std = sqrt(accum / (values.size()-1));
+    this->std = std;
+
+    // Median
+    double median;
+    std::sort(values.begin(), values.end());
+    if (values.size() % 2 != 0) {
+        // Median is the middle value
+        median = (double)values[size/2];
+    } else {
+        // Median is the mean of the two middle values
+        median = (double)(values[(size-1)/2] + values[size/2])/2.0;
+    }
+    this->median = median;
+}
+
+
+// FAST5
+Output_FAST5::Output_FAST5(){
+    this->read_count = 0;
+}
+
+void Output_FAST5::addReadBaseSignals(Base_Signals values){
+    this->read_base_signals.push_back(values);
+    this->read_count++;
+}
+
+int Output_FAST5::getReadCount(){
+    return this->read_count;
+}
+
+// Get the Nth read's base signal data
+std::vector<std::vector<int>> Output_FAST5::getNthReadBaseSignals(int read_index){
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Print vector
+    std::cout << "Printing contents..." << std::endl;
+    for (int i: data_vector[0]) {
+        std::cout << i << std::endl;
+    }
+
+    return data_vector;
 }
