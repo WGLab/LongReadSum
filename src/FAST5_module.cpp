@@ -247,12 +247,10 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         move_dataset_obj.read(move_bool, move_datatype, move_dataspace);
 
         // Segment the raw signal by the window length
-        std::vector<std::vector<int>> basecall_signals(sequence_length, std::vector<int> (block_stride_value, 0));
+        std::vector<std::vector<int>> basecall_signals;
         int basecall_index = 0;
         int base_start_index = start_index;
-        int base_end_index = base_start_index + block_stride_value;
-
-        // Test
+        int base_count = 0;
         for (int i = 0; i < move_data_count; i++)
         {
             int move_value(move_bool[i]);
@@ -260,37 +258,52 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
 
             if (move_value == 1)
             {
+                base_count++;
+
                 // Grab the signal
                 std::vector<int> called_base_signal(block_stride_value);
-//                called_base_signal.assign(f5signals + base_start_index, f5signals + base_end_index);
 
-                std::cout << "[0] Printing contents..." << std::endl;
-                std::cout << f5signals[2925] << std::endl;
+//                std::cout << "1. size: " << called_base_signal.size() << std::endl;
+                int end_index = base_start_index + block_stride_value;
+                called_base_signal.assign(f5signals + base_start_index, f5signals + end_index);
 
-                // TODO
-//                for (int j = 0; j < block_stride_value; j++) {
-//                    std::cout << f5signals[base_start_index + j] << std::endl;
-//                }
+                //called_base_signal.assign(f5signals + base_start_index, f5signals + base_end_index);
+//                called_base_signal.assign(f5signals + base_start_index, f5signals + (base_start_index + block_stride_value));
+
+                // Debugging code
+//                std::cout << "[0] Printing contents..." << std::endl;
+//                //std::cout << f5signals[2925] << std::endl;
+//                std::cout << "Start=" << base_start_index << std::endl;
+//                std::cout << "End=" << (base_start_index + block_stride_value) << std::endl;
 
 //                std::cout << "[0] Printing contents..." << std::endl;
 //                for (int j: called_base_signal) {
 //                    std::cout << j << std::endl;
 //                }
 
-//                // Store in the 2D array
+//                // Test on the first loop
+//                if (i==0) {
+//                    std::cout << "[0] Printing contents..." << std::endl;
+//                    for (int j: called_base_signal) {
+//                        std::cout << j << std::endl;
+//                    }
+//                }
+//
+                // Store in the 2D array
 //                basecall_signals[basecall_index] = called_base_signal;
+                basecall_signals.push_back(called_base_signal);
             }
 
             // Update indices
-            base_start_index = base_end_index + 1;
-            base_end_index = base_start_index + block_stride_value;
+            base_start_index += block_stride_value;
             basecall_index ++;
         }
 
+        std::cout << "Final base count =" << base_count << std::endl;
+
         // Append the basecall signals to the output structure
-//        Base_Signals basecall_obj(basecall_signals);
-//        output_data.addReadBaseSignals(basecall_obj);
-    //        read_base_signals.push_back(basecall_obj);
+        Base_Signals basecall_obj(basecall_signals);
+        output_data.addReadBaseSignals(basecall_obj);
 
         // Test
         std::cout << "nice" << std::endl;
@@ -318,6 +331,11 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
     catch (AttributeIException &error) {
         error.printErrorStack();
         exit_code = 2;
+    }
+
+    // Other
+    catch (std::exception& e) {
+        std::cerr << "Exception caught : " << e.what() << std::endl;
     }
 
     return exit_code;
