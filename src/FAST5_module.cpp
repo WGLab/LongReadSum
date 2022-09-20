@@ -170,10 +170,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
     int exit_code = 0;
     std::string basecall_group = "Basecall_1D_000";
 
-    // Access the output signal QC structure
-    std::vector<Read_Signal> &read_signals = output_data.read_signals;
-    //std::vector<Base_Signals> &read_base_signals = output_data.read_base_signals;
-
     // Run QC on the HDF5 file
     //H5::Exception::dontPrint();  // Disable error printing
     try {
@@ -186,6 +182,10 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::string read_name;
         read_name = signal_group.getObjnameByIdx(0);
         std::cout<< "Read name: " << read_name << std::endl;
+
+        // Get the sequence string
+        std::vector<std::string> fq = getFastq(f5, basecall_group);
+        std::string sequence_data_str = fq[1];
 
         // Format the read signal dataset name
         std::ostringstream ss;
@@ -303,7 +303,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::cout << "Final base count =" << base_count << std::endl;
 
         // Append the basecall signals to the output structure
-        Base_Signals basecall_obj(basecall_signals);
+        Base_Signals basecall_obj(read_name, sequence_data_str, basecall_signals);
         output_data.addReadBaseSignals(basecall_obj);
 
         // Test

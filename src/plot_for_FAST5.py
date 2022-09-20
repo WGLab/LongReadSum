@@ -49,8 +49,3 @@ def plot(f5_output, para_dict):
 
     lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(f5_output.long_read_info,
                                                                           get_image_path('read_length_hist'))
-    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(f5_output.seq_quality_info,
-                                                                         get_image_path('base_quality'))
-    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(f5_output.seq_quality_info,
-                                                                                           get_image_path(
-                                                                                               'read_avg_base_quality'))

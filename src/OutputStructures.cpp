@@ -435,9 +435,11 @@ void Output_SeqTxt::global_sum(){
 }
 
 // Base class for storing a read's base signal data
-Base_Signals::Base_Signals(std::vector<std::vector<int>> basecall_signals) {
-    this->basecall_signals = basecall_signals;
-    this->base_count += basecall_signals[0].size();
+Base_Signals::Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals) {
+    this->read_name = read_name;  // Update the read name
+    this->sequence_data_str = sequence_data_str;  // Update the sequence string
+    this->basecall_signals = basecall_signals;  // Update values
+    this->base_count = basecall_signals.size();  // Update read length
 }
 
 std::vector<std::vector<int>> Base_Signals::getDataVector() {
@@ -448,41 +450,12 @@ int Base_Signals::getBaseCount() {
     return this->base_count;
 }
 
-// Base class for storing a read's signal data
-Read_Signal::Read_Signal(std::vector<int> signal_values) {
-    this->values = signal_values;
+std::string Base_Signals::getReadName() {
+    return this->read_name;
 }
 
-// Compute basic statistics
-void Read_Signal::init() {
-    // Mean
-    int size = values.size();
-    double sum = std::accumulate(std::begin(values), std::end(values), 0.0);
-    double mean =  sum / size;
-    this->mean = mean;
-
-    // Standard deviation
-    // Σ(value - mean)²
-    double accum = 0.0;
-    std::for_each (std::begin(values), std::end(values), [&](const double d) {
-        accum += (d - mean) * (d - mean);
-    });
-
-    // sqrt( Σ(value - mean)² / N-1 )
-    double std = sqrt(accum / (values.size()-1));
-    this->std = std;
-
-    // Median
-    double median;
-    std::sort(values.begin(), values.end());
-    if (values.size() % 2 != 0) {
-        // Median is the middle value
-        median = (double)values[size/2];
-    } else {
-        // Median is the mean of the two middle values
-        median = (double)(values[(size-1)/2] + values[size/2])/2.0;
-    }
-    this->median = median;
+std::string Base_Signals::getSequenceString() {
+    return this->sequence_data_str;
 }
 
 
@@ -494,10 +467,11 @@ Output_FAST5::Output_FAST5(){
 
 // Add read base signals
 void Output_FAST5::addReadBaseSignals(Base_Signals values){
-    this->read_base_signals.push_back(values);
+    this->read_base_signals.push_back(values);  // Update values
     this->read_count++;  // Update read count
     int base_count = values.getBaseCount();
     this->base_count += base_count;  // Update base count
+    std::cout << "Base count update = " << this->base_count << std::endl;
 }
 
 // Get the read count
@@ -508,6 +482,20 @@ int Output_FAST5::getReadCount(){
 // Get the total base count across reads
 int Output_FAST5::getTotalBaseCount(){
     return this->base_count;
+}
+
+// Get the Nth read's name
+std::string Output_FAST5::getNthReadName(int read_index){
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::string read_name(signal_data.getReadName());
+    return read_name;
+}
+
+// Get the Nth read's sequence string
+std::string Output_FAST5::getNthReadSequence(int read_index){
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::string sequence_str(signal_data.getSequenceString());
+    return sequence_str;
 }
 
 // Get the Nth read's base signal data

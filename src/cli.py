@@ -362,21 +362,21 @@ def fast5_signal_module(margs):
 
         fast5_output = lrst.Output_FAST5()
         exit_code = lrst.callFAST5Module(input_para, fast5_output)
-        base_count = fast5_output.getTotalBaseCount()
+        # base_count = fast5_output.getTotalBaseCount()
         # nth_read_data = fast5_output.getNthReadBaseSignals(0)
         # nth_read_means = fast5_output.getNthReadBaseMeans(0)
         # nth_read_stds = fast5_output.getNthReadBaseStds(0)
         # nth_read_medians = fast5_output.getNthReadBaseMedians(0)
-        0
-        # if exit_code == 0:
-        #     print("Generating output files...")
-        #     from src import plot_for_FAST5
-        #     plot_for_FAST5.plot(fast5_output, para_dict)
-        #     for static in [True, False]:
-        #         fast5_html_obj = generate_html.ST_HTML_Generator(
-        #             [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
-        #         fast5_html_obj.generate_st_html()
-        #     print("Done.")
+
+        if exit_code == 0:
+            print("Generating output files...")
+            from src import plot_for_FAST5s
+            plot_for_FAST5s.plot(fast5_output, para_dict)
+            # for static in [True, False]:
+            #     fast5_html_obj = generate_html.ST_HTML_Generator(
+            #         [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
+            #     fast5_html_obj.generate_st_html()
+            # print("Done.")
 
 
 # =====

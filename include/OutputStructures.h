@@ -184,30 +184,21 @@ public:
    void global_sum();
 };
 
-// Base class for storing a read's signal data
-class Read_Signal
-{
-public:
-    std::vector<int> values;
-    double mean;
-    double median;
-    double std;
-
-    Read_Signal(std::vector<int> read_signals);
-    void init();
-};
-
 // Base class for storing a read's base signal data
 class Base_Signals
 {
 public:
+    std::string read_name;
     int base_count;
-    std::vector<std::vector<int>> basecall_signals;
+    std::string sequence_data_str;  // Sequence of bases
+    std::vector<std::vector<int>> basecall_signals;  // 2D vector of base signals
 
     // Methods
     int getBaseCount();
+    std::string getReadName();
+    std::string getSequenceString();
     std::vector<std::vector<int>> getDataVector();
-    Base_Signals(std::vector<std::vector<int>> basecall_signals);
+    Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals);
 };
 
 // FAST5 output
@@ -220,12 +211,13 @@ public:
     // Signal data section
     int read_count;
     int base_count;
-    std::vector<Read_Signal> read_signals;
     std::vector<Base_Signals> read_base_signals;
 
     // Methods
     int getReadCount();
     int getTotalBaseCount();
+    std::string getNthReadName(int read_index);
+    std::string getNthReadSequence(int read_index);
     void addReadBaseSignals(Base_Signals values);
     std::vector<std::vector<int>> getNthReadBaseSignals(int read_index);
     std::vector<double> getNthReadBaseMeans(int read_index);
