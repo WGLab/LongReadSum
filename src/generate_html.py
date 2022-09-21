@@ -7,9 +7,9 @@ from src import lrst_global  # Contains our image filepaths
 
 
 class ST_HTML_Generator:
-    def __init__(self, para_list, static=True):
+    def __init__(self, para_list, static=True, signal_mode=False):
+        self.signal_mode = signal_mode  # Type of QC to display (Base vs. signal)
         self.image_key_list = para_list[0]  # List of statistics variables to look for
-
         self.header_info = para_list[1]  # The webpage's title
         self.input_para = para_list[2]  # List of the input parameters used for these statistics
         self.static = static  # Static vs. dynamic webpage boolean
@@ -304,7 +304,13 @@ class ST_HTML_Generator:
         self.html_writer.close()
 
     def generate_st_html(self):
-        self.generate_header()
-        self.generate_left()
-        self.generate_right()
-        self.generate_end()
+        """
+        Top-level function for generating the HTML.
+        """
+        if self.signal_mode:
+            print("here")
+        else:
+            self.generate_header()
+            self.generate_left()
+            self.generate_right()
+            self.generate_end()

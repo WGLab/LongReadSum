@@ -16,7 +16,6 @@ def plot(fast5_output, para_dict):
     Update the global variables with HTML strings using the output data.
     """
     out_path = para_dict["output_folder"]
-    get_image_path = lambda x: os.path.join(out_path, lrst_global.plot_filenames[x]['file'])
 
     # Set up the global variable with HTML titles
     lrst_global.plot_filenames["basic_st"] = {}
@@ -37,11 +36,8 @@ def plot(fast5_output, para_dict):
     table_str += "\n</tbody>\n</table>"
     lrst_global.plot_filenames["basic_st"]['detail'] = table_str
 
-    # plot_read_length_stats([fast5_output.long_read_info], get_image_path('read_length_st'), subtitles=['Long Reads'])
-    # plot_base_counts([fast5_output.long_read_info], get_image_path('base_st'), subtitles=['Long Reads'])
-    # plot_basic_info([fast5_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
-
     # Plot the reads
+    output_html_plots = []
     for read_index in range(read_count):
         # Create the figure
         fig = go.Figure()
@@ -56,24 +52,44 @@ def plot(fast5_output, para_dict):
 
         sequence_length = len(nth_read_sequence)
         start_index = 0
+        end_index = 0
+        window_size = len(nth_read_data[0])
         for i in range(sequence_length):
             base_signals = nth_read_data[i]
-            end_index = start_index + len(base_signals)
+            end_index = start_index + window_size
             x = np.arange(start_index, end_index, 1)
-            fig.add_trace(go.Scatter(x=x, y=base_signals, mode='markers', opacity=0.5, fillcolor='green'))
 
-        start_index = end_index
+            # df = pd.DataFrame({'Base': x, 'Signal': base_signals})
+            fig.add_trace(go.Scatter(
+                x=x, y=base_signals,
+                mode='markers',
+                marker=dict(color='LightSkyBlue',
+                            size=5,
+                            line=dict(color='MediumPurple', width=2)),
+                opacity=0.5))
+            start_index = end_index
 
-        test_filepath = os.path.join(out_path, 'fig1.png')
-        print("saving plot to ", test_filepath, "...")
-        fig.write_image(test_filepath)
+        # Add labels
+        fig.update_layout(
+            title=nth_read_name,
+            xaxis_title="Base",
+            yaxis_title="Signal",
+            showlegend=False
+        )
+        tick_sequence = list(nth_read_sequence)
+        fig.update_xaxes(tickangle=45,
+                         tickmode='array',
+                         tickvals=np.arange(0, end_index, window_size),
+                         ticktext=tick_sequence)
+
+        # Save
+        image_filepath = os.path.join(out_path, nth_read_name + '_BaseSignal.png')
+        print("saving plot to ", image_filepath, "...")
+        fig.write_image(image_filepath)
+
+        # Append the dynamic HTML object to the output structure
+        dynamic_html = fig.to_html(full_html=False)
+        output_html_plots.append(dynamic_html)
         print("Plot generated.")
-        0
 
-    # lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(fast5_output.long_read_info,
-    #                                                                       get_image_path('read_length_hist'))
-    # lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(fast5_output.seq_quality_info,
-    #                                                                      get_image_path('base_quality'))
-    # lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(fast5_output.seq_quality_info,
-    #                                                                                        get_image_path(
-    #                                                                                            'read_avg_base_quality'))
+    return output_html_plots

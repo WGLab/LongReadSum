@@ -143,7 +143,7 @@ def fq_module(margs):
             plot_for_FQ.fq_plot(fq_output, para_dict)
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FASTQ QC", para_dict], static=static)
                 fq_html_gen.generate_st_html()
 
             print("Call FQ-module done!")
@@ -193,7 +193,7 @@ def fa_module(margs):
             # TODO: Unused 'static' variable results in redundant function call
             for static in [True, False]:
                 fa_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FA", para_dict], static=True)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "FASTA QC", para_dict], static=True)
                 fa_html_gen.generate_st_html()
 
             print("Call FA-module done!")
@@ -235,7 +235,7 @@ def bam_module(margs):
 
             for static in [True, False]:
                 bam_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality"], "The statistics for BAM", para_dict], static=static)
+                    [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality"], "BAM QC", para_dict], static=static)
                 bam_html_gen.generate_st_html()
 
 
@@ -285,10 +285,10 @@ def seqtxt_module(margs):
             plot_for_SeqTxt.plot(seqtxt_output, para_dict)
             for static in [True, False]:
                 if margs.seq==0:
-                    f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "QC for sequencing_summary.txt", para_dict], static=static);
+                    f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "sequencing_summary.txt QC", para_dict], static=static);
                 else:
                     f5_html_gen = generate_html.ST_HTML_Generator(
-                       [["basic_st", "read_length_st","read_length_hist", "basic_info"], "QC for sequencing_summary.txt", para_dict], static=static)
+                       [["basic_st", "read_length_st","read_length_hist", "basic_info"], "sequencing_summary.txt QC", para_dict], static=static)
                 f5_html_gen.generate_st_html()
             print("Done.")
 
@@ -328,7 +328,7 @@ def fast5_module(margs):
             plot_for_FAST5.plot(fast5_output, para_dict)
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FAST5 QC", para_dict], static=static)
                 fast5_html_obj.generate_st_html()
             print("Done.")
 
@@ -371,12 +371,14 @@ def fast5_signal_module(margs):
         if exit_code == 0:
             print("Generating output files...")
             from src import plot_for_FAST5s
-            plot_for_FAST5s.plot(fast5_output, para_dict)
-            # for static in [True, False]:
-            #     fast5_html_obj = generate_html.ST_HTML_Generator(
-            #         [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
-            #     fast5_html_obj.generate_st_html()
-            # print("Done.")
+            dynamic_plots = plot_for_FAST5s.plot(fast5_output, para_dict)
+
+            # Generate a dynamic HTML file
+            fast5_html_obj = generate_html.ST_HTML_Generator(
+                [[], "FAST5 signal QC", para_dict], static=False, signal_mode=True)
+            #fast5_html_obj.generate_st_html()
+            fast5_html_obj.generate_st_html()
+            print("Done.")
 
 
 # =====
