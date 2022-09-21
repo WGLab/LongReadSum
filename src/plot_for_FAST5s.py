@@ -37,7 +37,7 @@ def plot(fast5_output, para_dict):
     lrst_global.plot_filenames["basic_st"]['detail'] = table_str
 
     # Plot the reads
-    output_html_plots = []
+    output_html_plots = {}
     for read_index in range(read_count):
         # Create the figure
         fig = go.Figure()
@@ -89,7 +89,8 @@ def plot(fast5_output, para_dict):
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)
-        output_html_plots.append(dynamic_html)
+        #output_html_plots.append(dynamic_html)
+        output_html_plots.update({nth_read_name: dynamic_html})
         print("Plot generated.")
 
     return output_html_plots

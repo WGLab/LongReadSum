@@ -471,7 +471,6 @@ void Output_FAST5::addReadBaseSignals(Base_Signals values){
     this->read_count++;  // Update read count
     int base_count = values.getBaseCount();
     this->base_count += base_count;  // Update base count
-    std::cout << "Base count update = " << this->base_count << std::endl;
 }
 
 // Get the read count
@@ -503,12 +502,6 @@ std::vector<std::vector<int>> Output_FAST5::getNthReadBaseSignals(int read_index
     Base_Signals signal_data(this->read_base_signals[read_index]);
     std::vector<std::vector<int>> data_vector;
     data_vector = signal_data.getDataVector();
-
-    // Print vector
-    std::cout << "Printing contents..." << std::endl;
-    for (int i: data_vector[0]) {
-        std::cout << i << std::endl;
-    }
 
     return data_vector;
 }

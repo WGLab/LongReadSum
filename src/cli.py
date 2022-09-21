@@ -375,9 +375,9 @@ def fast5_signal_module(margs):
 
             # Generate a dynamic HTML file
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [[], "FAST5 signal QC", para_dict], static=False, signal_mode=True)
+                [[], "FAST5 signal QC", para_dict], static=False)
             #fast5_html_obj.generate_st_html()
-            fast5_html_obj.generate_st_html()
+            fast5_html_obj.generate_st_html(signal_plots=dynamic_plots)
             print("Done.")
 
 

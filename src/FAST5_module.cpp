@@ -181,7 +181,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         H5::Group signal_group = f5.openGroup(signal_group_str);
         std::string read_name;
         read_name = signal_group.getObjnameByIdx(0);
-        std::cout<< "Read name: " << read_name << std::endl;
 
         // Get the sequence string
         std::vector<std::string> fq = getFastq(f5, basecall_group);
@@ -191,7 +190,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::ostringstream ss;
         ss << signal_group_str << "/" << read_name << "/Signal";
         std::string signal_dataset_str = ss.str();
-        std::cout<< "Dataset name: " << signal_dataset_str << std::endl;
 
         // Get the signal dataset
         H5::DataSet signal_ds = f5.openDataSet(signal_dataset_str);
@@ -200,7 +198,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         hsize_t dims[2];
         dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
         int data_count = dims[0];
-        std::cout << "Signal data count: " << data_count << std::endl; // this is the correct number of values
 
         // Store the signals in an array
         int f5signals [data_count];
@@ -213,15 +210,13 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         int bs_buffer [1];
         block_stride_obj.read(bs_datatype, bs_buffer);
         int block_stride_value = bs_buffer[0];
-        std::cout << "Block stride = " << block_stride_value << std::endl;
 
         // Get the sequence length attribute
         H5::Attribute seq_length_obj = group_obj.openAttribute("sequence_length");
         H5::DataType sl_datatype= seq_length_obj.getDataType();
         int sl_buffer [1];
         seq_length_obj.read(sl_datatype, sl_buffer);
-        int sequence_length = sl_buffer[0];
-        std::cout << "Sequence length = " << sequence_length << std::endl;
+        //int sequence_length = sl_buffer[0];
 
         // Get the raw signal basecall start position
         H5::Group segm_group_obj = f5.openGroup("/Analyses/Segmentation_000/Summary/segmentation");
@@ -230,7 +225,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         int st_buffer [1];
         start_attr_obj.read(st_datatype, st_buffer);
         int start_index = st_buffer[0];
-        std::cout << "Start position = " << start_index << std::endl;
 
         // Get the boolean array of base calls (move)
         H5::DataSet move_dataset_obj;
@@ -240,7 +234,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         hsize_t move_dims[2];
         move_dataspace.getSimpleExtentDims(move_dims, NULL); // rank = 1
         int move_data_count = move_dims[0];
-        std::cout << "Move data count: " << move_data_count << std::endl; // this is the correct number of values
 
         // Read the boolean array
         uint8_t move_bool [move_data_count];
@@ -254,43 +247,16 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         for (int i = 0; i < move_data_count; i++)
         {
             int move_value(move_bool[i]);
-            //std::cout << "Move = " << move_value << std::endl;
-
             if (move_value == 1)
             {
                 base_count++;
 
                 // Grab the signal
                 std::vector<int> called_base_signal(block_stride_value);
-
-//                std::cout << "1. size: " << called_base_signal.size() << std::endl;
                 int end_index = base_start_index + block_stride_value;
                 called_base_signal.assign(f5signals + base_start_index, f5signals + end_index);
 
-                //called_base_signal.assign(f5signals + base_start_index, f5signals + base_end_index);
-//                called_base_signal.assign(f5signals + base_start_index, f5signals + (base_start_index + block_stride_value));
-
-                // Debugging code
-//                std::cout << "[0] Printing contents..." << std::endl;
-//                //std::cout << f5signals[2925] << std::endl;
-//                std::cout << "Start=" << base_start_index << std::endl;
-//                std::cout << "End=" << (base_start_index + block_stride_value) << std::endl;
-
-//                std::cout << "[0] Printing contents..." << std::endl;
-//                for (int j: called_base_signal) {
-//                    std::cout << j << std::endl;
-//                }
-
-//                // Test on the first loop
-//                if (i==0) {
-//                    std::cout << "[0] Printing contents..." << std::endl;
-//                    for (int j: called_base_signal) {
-//                        std::cout << j << std::endl;
-//                    }
-//                }
-//
                 // Store in the 2D array
-//                basecall_signals[basecall_index] = called_base_signal;
                 basecall_signals.push_back(called_base_signal);
             }
 
@@ -299,15 +265,9 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
             basecall_index ++;
         }
 
-        // TODO: Can just use sequence length for base count
-        std::cout << "Final base count =" << base_count << std::endl;
-
         // Append the basecall signals to the output structure
         Base_Signals basecall_obj(read_name, sequence_data_str, basecall_signals);
         output_data.addReadBaseSignals(basecall_obj);
-
-        // Test
-        std::cout << "nice" << std::endl;
 
     // catch failure caused by the H5File operations
     }
@@ -381,106 +341,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                 exit_code = writeSignalQCDetails(input_file, output_data, read_details_fp);
             }
             fclose(read_details_fp);
-
-            // TODO: Continue here
-
-            // Check if the GC content was calculated successfully
-//            if (exit_code == 0) {
-//
-//                // Add the G + C bases
-//                double g_c = output_data.long_read_info.total_g_cnt + output_data.long_read_info.total_c_cnt;
-//
-//                // Add all bases
-//                double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
-//
-//                // Check that our total base counts match what was stored (That our code works)
-//                int total_num_bases = output_data.long_read_info.total_num_bases;
-//                if (a_tu_g_c != (double)total_num_bases)
-//                {
-//                    std::cerr << "Total number of bases is not consistent." << std::endl;
-//                    exit_code = 4;
-//                } else {
-//                    // Calculate GC-content
-//                    output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
-//
-//                    // Sort the read lengths in descending order
-//                    std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
-//                    std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int>());
-//
-//                    // Get the max read length
-//                    int max_read_length = *std::max_element(read_lengths.begin(), read_lengths.end());
-//                    output_data.long_read_info.longest_read_length = max_read_length;
-//
-//                    // Get the median read length
-//                    int median_read_length = read_lengths[read_lengths.size() / 2];
-//                    output_data.long_read_info.median_read_length = median_read_length;
-//
-//                    // Get the mean read length
-//                    float mean_read_length = (double)total_num_bases / (double)read_lengths.size();
-//                    output_data.long_read_info.mean_read_length = mean_read_length;
-//
-//                    // Calculate N50 and other N-scores
-//                    for (int percent_value = 1; percent_value <= 100; percent_value++)
-//                    {
-//                        // Get the base percentage threshold for this N-score
-//                        double base_threshold = (double)total_num_bases * (percent_value / 100.0);
-//
-//                        // Calculate the NXX score
-//                        double current_base_count = 0;
-//                        int current_read_index = -1;
-//                        while (current_base_count < base_threshold) {
-//                            current_read_index ++;
-//                            current_base_count += read_lengths[current_read_index];
-//                        }
-//                        int nxx_read_length = read_lengths[current_read_index];
-//                        output_data.long_read_info.NXX_read_length[percent_value] = nxx_read_length;
-//                    }
-//                    // Set common score variables
-//                    output_data.long_read_info.n50_read_length = output_data.long_read_info.NXX_read_length[50];
-//                    output_data.long_read_info.n95_read_length = output_data.long_read_info.NXX_read_length[95];
-//                    output_data.long_read_info.n05_read_length = output_data.long_read_info.NXX_read_length[5];
-//
-//                    // Create the summary file
-//                    std::cout << "Writing summary file: " << read_summary_file.c_str() << std::endl;
-//                    read_summary_fp = fopen(read_summary_file.c_str(), "w");
-//                    fprintf(read_summary_fp, "total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
-//                    fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
-//                    fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
-//                    fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
-//                    fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-//                    fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
-//                    fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
-//                    fprintf(read_summary_fp, "\n\n");
-//                    for (int percent = 5; percent < 100; percent += 5)
-//                    {
-//                        fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, output_data.long_read_info.NXX_read_length[percent]);
-//                    }
-//
-//                    fprintf(read_summary_fp, "\n\n");
-//
-//                    fprintf(read_summary_fp, "GC content\tnumber of reads\n");
-//                    for (int gc_ratio = 0; gc_ratio < 100; gc_ratio++)
-//                    {
-//                        fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
-//                    }
-//
-//
-//                    fprintf(read_summary_fp, "\n\n");
-//                    fprintf(read_summary_fp, "base quality\tnumber of bases\n");
-//                    for (int baseq = 0; baseq <= 60; baseq++)
-//                    {
-//                        fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
-//                    }
-//
-//                    fprintf(read_summary_fp, "\n\n");
-//                    fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
-//                    for (int baseq = 0; baseq <= 60; baseq++)
-//                    {
-//                        fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
-//                    }
-//                    fclose(read_summary_fp);
-//                }
-//            }
         }
     } else {
         // Generate the usual read and base QC output
