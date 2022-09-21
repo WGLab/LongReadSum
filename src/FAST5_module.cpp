@@ -165,10 +165,16 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 
 
 // Add read signal QC to the output data structure and the output details file
-static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
+static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data)
 {
     int exit_code = 0;
     std::string basecall_group = "Basecall_1D_000";
+
+//    // Open the CSV files
+//    std::ofstream raw_csv;
+//    raw_csv.open(signal_raw_csv);
+//    std::ofstream qc_csv;
+//    qc_csv.open(signal_qc_csv);
 
     // Run QC on the HDF5 file
     //H5::Exception::dontPrint();  // Disable error printing
@@ -299,6 +305,10 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::cerr << "Exception caught : " << e.what() << std::endl;
     }
 
+//    // Close the CSV files
+//    raw_csv.close();
+//    qc_csv.close();
+
     return exit_code;
 }
 
@@ -316,31 +326,19 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     std::cout << "FAST5 mode: " << ( signal_mode == true? "Signal" : "Base" ) << " QC" << std::endl;
 
     if (signal_mode == true) {
-        // Generate the signal data QC output
-        read_details_file = _input_data.output_folder + "/FAST5s_details.txt";
-        read_summary_file = _input_data.output_folder + "/FAST5s_summary.txt";
+//        // Generate the signal data QC output
+//        std::string signal_raw_csv(_input_data.output_folder + "/FAST5_signal_raw.csv");
+//        std::string signal_qc_csv(_input_data.output_folder + "/FAST5_signal_QC.csv");
 
-        // Set up the output summary text file
-        read_details_fp = fopen(read_details_file.c_str(), "w");
-        if (NULL == read_details_fp)
+        // Loop through each input file and get the QC data across files
+        size_t file_count = _input_data.num_input_files;
+        for (size_t i = 0; i < file_count; i++)
         {
-            std::cerr << "Failed to set up output file: " << read_details_file.c_str() << std::endl;
-            exit_code = 3;
-        } else {
-            // Add the header
-            fprintf(read_details_fp, "#read_name\tlength\tmean\tmedian\tstd\n");
+            input_file = _input_data.input_files[i].c_str();
+            std::cout << "File name: " << input_file << std::endl;
 
-            // Loop through each input file and get the QC data across files
-            size_t file_count = _input_data.num_input_files;
-            for (size_t i = 0; i < file_count; i++)
-            {
-                input_file = _input_data.input_files[i].c_str();
-                std::cout << "File name: " << input_file << std::endl;
-
-                // Write QC details to the file
-                exit_code = writeSignalQCDetails(input_file, output_data, read_details_fp);
-            }
-            fclose(read_details_fp);
+            // Write QC details to the file
+            exit_code = writeSignalQCDetails(input_file, output_data);
         }
     } else {
         // Generate the usual read and base QC output

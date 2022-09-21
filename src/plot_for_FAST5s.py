@@ -4,9 +4,9 @@ Use the formatted statistics from our C++ module output text files to generate s
 """
 
 from src import lrst_global
-# from src.utils import *
 
 import os
+import csv
 import numpy as np
 import plotly.graph_objs as go
 
@@ -49,17 +49,25 @@ def plot(fast5_output, para_dict):
         nth_read_stds = fast5_output.getNthReadBaseStds(read_index)
         nth_read_medians = fast5_output.getNthReadBaseMedians(read_index)
         nth_read_sequence = fast5_output.getNthReadSequence(read_index)
-
         sequence_length = len(nth_read_sequence)
+
+        # Set up the output CSVs
+        csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
+        qc_file = open(csv_qc_filepath, 'w')
+        qc_writer = csv.writer(qc_file)
+        qc_writer.writerow(["Base", "Raw_Signal", "Mean", "Median", "StdDev"])
+
+        # Loop through the data
         start_index = 0
         end_index = 0
         window_size = len(nth_read_data[0])
+        sequence_list = list(nth_read_sequence)
         for i in range(sequence_length):
             base_signals = nth_read_data[i]
             end_index = start_index + window_size
-            x = np.arange(start_index, end_index, 1)
 
-            # df = pd.DataFrame({'Base': x, 'Signal': base_signals})
+            # Plot
+            x = np.arange(start_index, end_index, 1)
             fig.add_trace(go.Scatter(
                 x=x, y=base_signals,
                 mode='markers',
@@ -67,29 +75,40 @@ def plot(fast5_output, para_dict):
                             size=5,
                             line=dict(color='MediumPurple', width=2)),
                 opacity=0.5))
+
+            # Update CSVs
+            base_value = sequence_list[i]
+            signal_mean = nth_read_means[i]
+            signal_median = nth_read_medians[i]
+            signal_stds = nth_read_stds[i]
+            raw_row = [base_value, base_signals, signal_mean, signal_median, signal_stds]
+            qc_writer.writerow(raw_row)
+
+            # Update the index
             start_index = end_index
 
-        # Add labels
+        # Close CSVs
+        qc_file.close()
+
+        # Add plot labels
         fig.update_layout(
             title=nth_read_name,
             xaxis_title="Base",
             yaxis_title="Signal",
             showlegend=False
         )
-        tick_sequence = list(nth_read_sequence)
         fig.update_xaxes(tickangle=45,
                          tickmode='array',
                          tickvals=np.arange(0, end_index, window_size),
-                         ticktext=tick_sequence)
+                         ticktext=sequence_list)
 
-        # Save
+        # Save image
         image_filepath = os.path.join(out_path, nth_read_name + '_BaseSignal.png')
         print("saving plot to ", image_filepath, "...")
         fig.write_image(image_filepath)
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)
-        #output_html_plots.append(dynamic_html)
         output_html_plots.update({nth_read_name: dynamic_html})
         print("Plot generated.")
 
