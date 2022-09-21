@@ -28,7 +28,7 @@ def fasta_output():
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
-        input_file = os.path.join(local_dir, "SampleData/fasta_trim1.fa") # Local path
+        input_file = os.path.join(local_dir, "SampleData/fasta_trim1.fa")  # Local path
     else:
         input_file = os.path.abspath(str("SampleData/fasta_trim1.fa"))  # Remote path
 
@@ -41,10 +41,12 @@ def fasta_output():
 
     yield [exit_code, output]
 
+
 class TestFASTA:
     """
     Tests for FASTA inputs.
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, fasta_output):
@@ -69,6 +71,7 @@ class TestFASTA:
         output_statistics = fasta_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 9726200
+
 
 @pytest.fixture(scope='class')
 def multiple_fasta_output():
@@ -102,10 +105,12 @@ def multiple_fasta_output():
 
     yield [exit_code, output]
 
+
 class TestMultipleFASTA:
     """
     Tests for multiple FASTA inputs
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, multiple_fasta_output):
@@ -147,7 +152,7 @@ def fastq_output():
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
-        input_file = os.path.join(local_dir, "SampleData/guppy.fastq") # Local path
+        input_file = os.path.join(local_dir, "SampleData/guppy.fastq")  # Local path
     else:
         input_file = os.path.abspath(str("SampleData/guppy.fastq"))  # Remote path
 
@@ -160,10 +165,12 @@ def fastq_output():
 
     yield [exit_code, output]
 
+
 class TestFASTQ:
     """
     Tests for FASTQ inputs.
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, fastq_output):
@@ -189,6 +196,7 @@ class TestFASTQ:
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 8731
 
+
 # FAST5 tests
 @pytest.fixture(scope='class')
 def fast5_output():
@@ -205,7 +213,7 @@ def fast5_output():
     file_dir = ''
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
-        file_dir = os.path.join(local_dir, "SampleData/") # Local path
+        file_dir = os.path.join(local_dir, "SampleData/")  # Local path
     else:
         file_dir = os.path.abspath(str("SampleData/"))  # Remote path
 
@@ -215,11 +223,11 @@ def fast5_output():
 
     # Get the first 5 FAST5 files (Github Actions throws a seg.fault error if all 50 are used)
     file_names = \
-    ["kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read101553_strand.fast5",
-     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read110620_strand.fast5",
-     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read152950_strand.fast5",
-     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch100_read6082_strand.fast5",
-     "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read77163_strand.fast5"]
+        ["kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read101553_strand.fast5",
+         "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read110620_strand.fast5",
+         "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read152950_strand.fast5",
+         "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch100_read6082_strand.fast5",
+         "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read77163_strand.fast5"]
 
     # Add input files
     for file_name in file_names:
@@ -232,10 +240,12 @@ def fast5_output():
 
     yield [exit_code, output]
 
+
 class TestFAST5:
     """
     Tests for FAST5 inputs.
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, fast5_output):
@@ -262,6 +272,77 @@ class TestFAST5:
         assert n50_read_length == 7050
 
 
+# FAST5 signal tests
+@pytest.fixture(scope='class')
+def fast5s_output():
+    """
+    Run the FAST5 signal QC module.
+    """
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("f5s_")
+    default_parameters.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
+
+    # Check if running remotely
+    file_dir = ''
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        file_dir = os.path.join(local_dir, "SampleData/")  # Local path
+    else:
+        file_dir = os.path.abspath(str("SampleData/"))  # Remote path
+
+    # Get the first 2 FAST5 files
+    file_names = [
+        "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch100_read6082_strand.fast5",
+        "kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch101_read110620_strand.fast5"
+    ]
+
+    # Add input files
+    for file_name in file_names:
+        input_file = os.path.join(file_dir, file_name)
+        default_parameters.add_input_file(input_file)
+
+    # Run the FAST5 statistics module
+    output = lrst.Output_FAST5()
+    exit_code = lrst.callFAST5Module(default_parameters, output)
+
+    yield [exit_code, output]
+
+
+class TestFAST5Signal:
+    """
+    Tests for FAST5 inputs with signal QC output.
+    """
+
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, fast5s_output):
+        exit_code = fast5s_output[0]
+        assert exit_code == 0
+
+    # Tests
+    @pytest.mark.dependency(depends=["TestFAST5Signal::test_success"])
+    def test_base_count(self, fast5s_output):
+        output_statistics = fast5s_output[1]
+        base_count = output_statistics.getTotalBaseCount()
+        assert base_count == 9720
+
+    @pytest.mark.dependency(depends=["TestFAST5Signal::test_success"])
+    def test_read_count(self, fast5s_output):
+        output_statistics = fast5s_output[1]
+        read_count = output_statistics.getReadCount()
+        assert read_count == 2
+
+    @pytest.mark.dependency(depends=["TestFAST5Signal::test_success"])
+    def test_window_length(self, fast5s_output):
+        output_statistics = fast5s_output[1]
+        first_read_data = output_statistics.getNthReadBaseSignals(0)
+        window_length = len(first_read_data[0])
+        assert window_length == 5
+
+
 # BAM tests
 @pytest.fixture(scope='class')
 def bam_output():
@@ -277,7 +358,7 @@ def bam_output():
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
-        input_file = os.path.join(local_dir, "SampleData/guppy.bam") # Local path
+        input_file = os.path.join(local_dir, "SampleData/guppy.bam")  # Local path
     else:
         input_file = os.path.abspath(str("SampleData/guppy.bam"))  # Remote path
 
@@ -290,10 +371,12 @@ def bam_output():
 
     yield [exit_code, output]
 
+
 class TestBAM:
     """
     Tests for BAM inputs.
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, bam_output):
@@ -331,6 +414,7 @@ class TestBAM:
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 7415
 
+
 @pytest.fixture(scope='class')
 def unmapped_bam_output():
     """
@@ -345,7 +429,7 @@ def unmapped_bam_output():
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
-        input_file = os.path.join(local_dir, "SampleData/pacbio_unmapped_trim.bam") # Local path
+        input_file = os.path.join(local_dir, "SampleData/pacbio_unmapped_trim.bam")  # Local path
     else:
         input_file = os.path.abspath(str("SampleData/pacbio_unmapped_trim.bam"))  # Remote path
 
@@ -358,10 +442,12 @@ def unmapped_bam_output():
 
     yield [exit_code, output]
 
+
 class TestUnmappedBAM:
     """
     Tests for unmapped BAM inputs.
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, unmapped_bam_output):
@@ -415,7 +501,7 @@ def seqtxt_output():
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
-        input_file = os.path.join(local_dir, "SampleData/sequencing_summary.txt") # Local path
+        input_file = os.path.join(local_dir, "SampleData/sequencing_summary.txt")  # Local path
     else:
         input_file = os.path.abspath(str("SampleData/sequencing_summary.txt"))  # Remote path
 
@@ -428,10 +514,12 @@ def seqtxt_output():
 
     yield [exit_code, output]
 
+
 class TestSeqTxt:
     """
     Tests for sequencing_summary.txt inputs.
     """
+
     # Ensure the module ran successfully
     @pytest.mark.dependency()
     def test_success(self, seqtxt_output):
