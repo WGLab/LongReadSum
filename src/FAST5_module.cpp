@@ -200,14 +200,18 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         // Get the signal dataset
         H5::DataSet signal_ds = f5.openDataSet(signal_dataset_str);
         H5::DataType mdatatype= signal_ds.getDataType();
-        H5::DataSpace dataspace  = signal_ds.getSpace();
+        H5::DataSpace dataspace = signal_ds.getSpace();
         hsize_t dims[2];
         dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
         int data_count = dims[0];
 
         // Store the signals in an array
+        uint16_t f5signals_u16 [data_count];
+        signal_ds.read(f5signals_u16, mdatatype);
+
+        // Cast signals to int
         int f5signals [data_count];
-        signal_ds.read(f5signals, mdatatype);
+        std::copy(f5signals_u16, f5signals_u16 + data_count, f5signals);
 
         // Get the block stride (window length) attribute
         H5::Group group_obj = f5.openGroup("/Analyses/Basecall_1D_000/Summary/basecall_1d_template");
