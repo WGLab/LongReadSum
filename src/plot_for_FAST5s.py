@@ -60,11 +60,16 @@ def plot(fast5_output, para_dict):
         # Loop through the data
         start_index = 0
         end_index = 0
-        window_size = len(nth_read_data[0])
+        # window_size = len(nth_read_data[0])
         sequence_list = list(nth_read_sequence)
+        base_tick_values = []  # Append the last indices of the base signal to use for tick values
         for i in range(sequence_length):
             base_signals = nth_read_data[i]
+
+            window_size = len(base_signals)
             end_index = start_index + window_size
+            base_tick_values.append(end_index)
+            # end_index = start_index + len(base_signals)
 
             # Plot
             x = np.arange(start_index, end_index, 1)
@@ -99,7 +104,7 @@ def plot(fast5_output, para_dict):
         )
         fig.update_xaxes(tickangle=45,
                          tickmode='array',
-                         tickvals=np.arange(0, end_index, window_size),
+                         tickvals=base_tick_values,
                          ticktext=sequence_list)
 
         # Save image

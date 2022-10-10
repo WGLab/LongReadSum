@@ -250,24 +250,34 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         move_dataset_obj.read(move_bool, move_datatype, move_dataspace);
 
         // Segment the raw signal by the window length
-        std::vector<std::vector<int>> basecall_signals;
+        std::vector<int> called_base_signal;  // Holds the current base's signal
+        std::vector<std::vector<int>> basecall_signals;  // Holds signals across bases
         int basecall_index = 0;
         int base_start_index = start_index;
         int base_count = 0;
         for (int i = 0; i < move_data_count; i++)
         {
+
+            // Grab the signal
+            int end_index = base_start_index + block_stride_value;
+            std::vector<int> block_signal(block_stride_value);
+            block_signal.assign(f5signals + base_start_index, f5signals + end_index);
+
+            // Append the signal to the current base signal vector
+            called_base_signal.insert( called_base_signal.end(), block_signal.begin(), block_signal.end() );
+
+            // Check whether a basecall occurred
             int move_value(move_bool[i]);
             if (move_value == 1)
             {
+                // Update the base count
                 base_count++;
 
-                // Grab the signal
-                std::vector<int> called_base_signal(block_stride_value);
-                int end_index = base_start_index + block_stride_value;
-                called_base_signal.assign(f5signals + base_start_index, f5signals + end_index);
-
-                // Store in the 2D array
+                // Store the base's signal in the 2D array
                 basecall_signals.push_back(called_base_signal);
+
+                // Reset the current base signal vector
+                called_base_signal.clear();
             }
 
             // Update indices
