@@ -558,7 +558,7 @@ std::vector<double> Output_FAST5::getNthReadPearsonSkewnessCoeff(int read_index)
     std::vector<std::vector<int>> data_vector;
     data_vector = signal_data.getDataVector();
 
-    // Calculate medians
+    // Calculate skewness
     std::vector<double> output;
     output.resize( data_vector.size() );
     std::transform( data_vector.begin(), data_vector.end(), output.begin(), computePearsonsSkewnessCoeff );
@@ -573,7 +573,7 @@ std::vector<double> Output_FAST5::getNthReadKurtosis(int read_index){
     std::vector<std::vector<int>> data_vector;
     data_vector = signal_data.getDataVector();
 
-    // Calculate medians
+    // Calculate kurtosis
     std::vector<double> output;
     output.resize( data_vector.size() );
     std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeKurtosis );
