@@ -223,6 +223,8 @@ public:
     std::vector<double> getNthReadBaseMeans(int read_index);
     std::vector<double> getNthReadBaseStds(int read_index);
     std::vector<double> getNthReadBaseMedians(int read_index);
+    std::vector<double> getNthReadPearsonSkewnessCoeff(int read_index);
+    std::vector<double> getNthReadKurtosis(int read_index);
 
     Output_FAST5();
 };

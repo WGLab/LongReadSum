@@ -7,7 +7,7 @@ Utility functions for basic statistics
 #include <vector>
 #include <numeric>  // std::accumulate
 #include<algorithm>  // std::foreach
-#include <math.h>  // sqrt
+#include <math.h>  // sqrt, pow
 
 #include "BasicStatistics.h"
 
@@ -53,4 +53,38 @@ double computeMedian(std::vector<int> values)
     }
 
     return median;
+};
+
+double computeMoment(int moment_value, double mean, std::vector<int> values)
+{
+    // Moment
+    double accum = 0.0;
+    std::for_each (std::begin(values), std::end(values), [&](const double d) {
+        accum += pow((d - mean), moment_value);
+    });
+    double moment = accum / values.size();
+
+    return moment;
+}
+
+double computePearsonsSkewnessCoeff(std::vector<int> values)
+{
+    // Pearson's Skewness Coefficient
+    double mean = computeMean(values);
+    double m3 = computeMoment(3, mean, values);
+    double m2 = computeMoment(2, mean, values);
+    double coeff = m3 / pow(sqrt(m2), 3);
+
+    return coeff;
+};
+
+double computeKurtosis(std::vector<int> values)
+{
+    // Kurtosis
+    double mean = computeMean(values);
+    double m2 = computeMoment(2, mean, values);
+    double m4 = computeMoment(4, mean, values);
+    double kurtosis = m4 / pow(m2, 2.);
+
+    return kurtosis;
 };

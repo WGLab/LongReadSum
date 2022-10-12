@@ -48,6 +48,8 @@ def plot(fast5_output, para_dict):
         nth_read_means = fast5_output.getNthReadBaseMeans(read_index)
         nth_read_stds = fast5_output.getNthReadBaseStds(read_index)
         nth_read_medians = fast5_output.getNthReadBaseMedians(read_index)
+        nth_read_skewness = fast5_output.getNthReadPearsonSkewnessCoeff(read_index)
+        nth_read_kurtosis = fast5_output.getNthReadKurtosis(read_index)
         nth_read_sequence = fast5_output.getNthReadSequence(read_index)
         sequence_length = len(nth_read_sequence)
 
@@ -55,12 +57,10 @@ def plot(fast5_output, para_dict):
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
         qc_file = open(csv_qc_filepath, 'w')
         qc_writer = csv.writer(qc_file)
-        qc_writer.writerow(["Base", "Raw_Signal", "Mean", "Median", "StdDev"])
+        qc_writer.writerow(["Base", "Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
 
         # Loop through the data
         start_index = 0
-        end_index = 0
-        # window_size = len(nth_read_data[0])
         sequence_list = list(nth_read_sequence)
         base_tick_values = []  # Append the last indices of the base signal to use for tick values
         for i in range(sequence_length):
@@ -69,7 +69,6 @@ def plot(fast5_output, para_dict):
             window_size = len(base_signals)
             end_index = start_index + window_size
             base_tick_values.append(end_index)
-            # end_index = start_index + len(base_signals)
 
             # Plot
             x = np.arange(start_index, end_index, 1)
@@ -86,7 +85,13 @@ def plot(fast5_output, para_dict):
             signal_mean = nth_read_means[i]
             signal_median = nth_read_medians[i]
             signal_stds = nth_read_stds[i]
-            raw_row = [base_value, base_signals, signal_mean, signal_median, signal_stds]
+            signal_skewness = nth_read_skewness[i]
+            signal_kurtosis = nth_read_kurtosis[i]
+            raw_row = \
+                [base_value, base_signals, window_size,
+                 signal_mean, signal_median, signal_stds,
+                 signal_skewness, signal_kurtosis]
+
             qc_writer.writerow(raw_row)
 
             # Update the index
