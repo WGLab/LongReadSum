@@ -1,16 +1,19 @@
+#include <numeric>  // std::accumulate
+#include<algorithm>  // std::foreach
+#include <math.h>  // sqrt
 #include <iostream>
 
-#include "CXX_to_python_class.h"
+#include "OutputStructures.h"
+#include "BasicStatistics.h"
 
+// Base class for storing error output.
 Output_Info::Output_Info(){
    error_flag = 0;
    error_str = "";
 }
 
 
-//// function for Basic_Seq_Statistics
-//
-//
+// Base class for storing basic QC data
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
@@ -32,10 +35,9 @@ void Basic_Seq_Statistics::resize(){
    }
 }
 
+// Base class for storing base quality data
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_gc_content_count = _bss.read_gc_content_count;
-
-   //read_length_count = new int64_t[MAX_READ_LENGTH];
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = _bss.read_length_count[ _i_ ];
@@ -151,9 +153,7 @@ void Basic_Seq_Statistics::global_sum(){
    if ( median_read_length==MoneDefault){ median_read_length = ZeroDefault; }
 }
 
-//// function for Basic_Seq_Quality_Statistics
-//
-//
+// Constructor
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
    pos_quality_distribution.resize(MAX_READ_LENGTH);
    pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
@@ -264,9 +264,7 @@ void Basic_Seq_Quality_Statistics::global_sum(){
    if ( max_read_quality ==MoneDefault){ max_read_quality=ZeroDefault; }
 }
 
-//// function for Output_BAM
-//
-//
+// BAM output constructor
 Output_BAM::Output_BAM(){
    map_quality_distribution.resize( MAX_MAP_QUALITY );
    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
@@ -279,7 +277,6 @@ Output_BAM::Output_BAM(){
 }
 
 Output_BAM::~Output_BAM(){
-   //std::cout<<" ~Output_BAM" <<std::endl<<std::flush;
 }
 
 void Output_BAM::reset(){
@@ -373,12 +370,9 @@ void Output_BAM::global_sum(){
    if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
 }
 
-// Data structures for sequencing_summary.txt
+
+// sequencing_summary.txt output
 Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
-   /*read_length_list = new int64_t[MAX_READ_LENGTH];
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_list[ _i_ ] = ZeroDefault;
-   }*/
    signal_range.resize( MAX_SIGNAL_VALUE );
    for(int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] = ZeroDefault;
@@ -386,7 +380,6 @@ Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
 }
 
 Basic_SeqTxt_Statistics::~Basic_SeqTxt_Statistics(){
-   // delete [] read_length_list;
 }
 
 void Basic_SeqTxt_Statistics::reset(){
@@ -401,11 +394,8 @@ void Basic_SeqTxt_Statistics::reset(){
 }
 
 void Basic_SeqTxt_Statistics::add(Basic_SeqTxt_Statistics& t_output_bSeqTxt){
-   //std::cout<<"seq"<<std::endl;
    long_read_info.add( t_output_bSeqTxt.long_read_info );
-   //std::cout<<"qual"<<std::endl;
    seq_quality_info.add( t_output_bSeqTxt.seq_quality_info );
-   //std::cout<<"signal"<<std::endl;
    for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
       signal_range[ _i_ ] += t_output_bSeqTxt.signal_range[ _i_ ];
    }
@@ -432,14 +422,9 @@ void Output_SeqTxt::reset(){
 }
 
 void Output_SeqTxt::add(Output_SeqTxt& t_output_SeqTxt){
-   //std::cout<<"long- passed"<<std::endl;
    all_long_read_info.add(t_output_SeqTxt.passed_long_read_info);
-   //std::cout<<"long- failed"<<std::endl;
    all_long_read_info.add(t_output_SeqTxt.failed_long_read_info);
-
-   //std::cout<<"passed"<<std::endl;
    passed_long_read_info.add(t_output_SeqTxt.passed_long_read_info);
-   //std::cout<<"failed"<<std::endl;
    failed_long_read_info.add(t_output_SeqTxt.failed_long_read_info);
 }
 
@@ -447,4 +432,151 @@ void Output_SeqTxt::global_sum(){
    all_long_read_info.global_sum();
    passed_long_read_info.global_sum();
    failed_long_read_info.global_sum();
+}
+
+// Base class for storing a read's base signal data
+Base_Signals::Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals) {
+    this->read_name = read_name;  // Update the read name
+    this->sequence_data_str = sequence_data_str;  // Update the sequence string
+    this->basecall_signals = basecall_signals;  // Update values
+    this->base_count = basecall_signals.size();  // Update read length
+}
+
+std::vector<std::vector<int>> Base_Signals::getDataVector() {
+    return this->basecall_signals;
+}
+
+int Base_Signals::getBaseCount() {
+    return this->base_count;
+}
+
+std::string Base_Signals::getReadName() {
+    return this->read_name;
+}
+
+std::string Base_Signals::getSequenceString() {
+    return this->sequence_data_str;
+}
+
+
+// FAST5
+Output_FAST5::Output_FAST5(){
+    this->read_count = 0;
+    this->base_count = 0;
+}
+
+// Add read base signals
+void Output_FAST5::addReadBaseSignals(Base_Signals values){
+    this->read_base_signals.push_back(values);  // Update values
+    this->read_count++;  // Update read count
+    int base_count = values.getBaseCount();
+    this->base_count += base_count;  // Update base count
+}
+
+// Get the read count
+int Output_FAST5::getReadCount(){
+    return this->read_count;
+}
+
+// Get the total base count across reads
+int Output_FAST5::getTotalBaseCount(){
+    return this->base_count;
+}
+
+// Get the Nth read's name
+std::string Output_FAST5::getNthReadName(int read_index){
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::string read_name(signal_data.getReadName());
+    return read_name;
+}
+
+// Get the Nth read's sequence string
+std::string Output_FAST5::getNthReadSequence(int read_index){
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::string sequence_str(signal_data.getSequenceString());
+    return sequence_str;
+}
+
+// Get the Nth read's base signal data
+std::vector<std::vector<int>> Output_FAST5::getNthReadBaseSignals(int read_index){
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    return data_vector;
+}
+
+// Get the Nth read's base signal means
+std::vector<double> Output_FAST5::getNthReadBaseMeans(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate means
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeMean );
+
+    return output;
+}
+
+// Get the Nth read's base signal standard deviations
+std::vector<double> Output_FAST5::getNthReadBaseStds(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate stds
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeStd );
+
+    return output;
+}
+
+// Get the Nth read's base signal medians
+std::vector<double> Output_FAST5::getNthReadBaseMedians(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate medians
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeMedian );
+
+    return output;
+}
+
+// Get the Nth read's skewness
+std::vector<double> Output_FAST5::getNthReadPearsonSkewnessCoeff(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate skewness
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computePearsonsSkewnessCoeff );
+
+    return output;
+}
+
+// Get the Nth read's sample kurtosis
+std::vector<double> Output_FAST5::getNthReadKurtosis(int read_index){
+    // Get the data vector
+    Base_Signals signal_data(this->read_base_signals[read_index]);
+    std::vector<std::vector<int>> data_vector;
+    data_vector = signal_data.getDataVector();
+
+    // Calculate kurtosis
+    std::vector<double> output;
+    output.resize( data_vector.size() );
+    std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeKurtosis );
+
+    return output;
 }

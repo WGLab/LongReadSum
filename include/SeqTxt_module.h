@@ -1,8 +1,8 @@
 #ifndef SeqTxt_MODULE_H_
 #define SeqTxt_MODULE_H_
 
-#include "CXX_to_python_class.h"
-#include "Python_to_CXX_class.h"
+#include "InputStructure.h"
+#include "OutputStructures.h"
 
 #include <string>
 #include <fstream>

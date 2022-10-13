@@ -82,6 +82,7 @@ positional arguments:
     fa                  FASTA file input
     fq                  FASTQ file input
     f5                  FAST5 file input
+    f5s                 FAST5 file input with signal statistics output    
     seqtxt              sequencing_summary.txt input
     bam                 BAM file input
 

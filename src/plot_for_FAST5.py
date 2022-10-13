@@ -1,5 +1,5 @@
 """
-plot_for_FAST%.py:
+plot_for_FAST5.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
@@ -18,7 +18,7 @@ def generate_bs(f5_output, para_dict):
     int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
     double_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:.1f}</td></tr>"
     table_str += int_str_for_format.format("#Total Reads", \
-                                           f5_output.long_read_info.total_num_reads);
+                                           f5_output.getReadCount())
     table_str += int_str_for_format.format("#Total Bases", \
                                            f5_output.long_read_info.total_num_bases);
     table_str += int_str_for_format.format("Longest Read Length", \
@@ -49,8 +49,3 @@ def plot(f5_output, para_dict):
 
     lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(f5_output.long_read_info,
                                                                           get_image_path('read_length_hist'))
-    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(f5_output.seq_quality_info,
-                                                                         get_image_path('base_quality'))
-    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(f5_output.seq_quality_info,
-                                                                                           get_image_path(
-                                                                                               'read_avg_base_quality'))

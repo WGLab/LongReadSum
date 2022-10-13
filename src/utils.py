@@ -1,6 +1,5 @@
 import os, itertools
 import matplotlib.pyplot as plt
-from textwrap import wrap
 import numpy as np
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -92,7 +91,8 @@ def bar_plot(fig, numbers_list,category_list, xlabel_list, ylabel_list, subtitle
 
     
     plt.savefig(path) 
-    
+
+
 def histogram(data, path):
     mat=data.read_length_count
     mean, median, n50=int(data.mean_read_length), data.median_read_length, data.n50_read_length

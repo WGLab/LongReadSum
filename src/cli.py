@@ -53,7 +53,8 @@ def get_common_param(margs, para_dict):
         # Populate our
         para_dict["input_files"] = []
         if not (margs.input == None or margs.input == ""):
-            para_dict["input_files"].append(margs.input)
+            input_filepath = margs.input.name
+            para_dict["input_files"].append(input_filepath)
         if not (margs.inputs == None or margs.inputs == ""):
             file_list = [file_str.strip() for file_str in margs.inputs.split(',')]
             para_dict["input_files"].extend(file_list)
@@ -71,12 +72,13 @@ def get_common_param(margs, para_dict):
     if (margs.outputfolder == None or margs.outputfolder == ""):
         this_error_str += "No output file is provided. \n"
     else:
-        para_dict["output_folder"] = margs.outputfolder
+        output_dir = margs.outputfolder
+        para_dict["output_folder"] = output_dir
         try:
-            if not os.path.isdir(para_dict["output_folder"]):
-                os.makedirs(para_dict["output_folder"])
-            if not os.path.isdir(para_dict["output_folder"]+'/'+lrst_global.default_image_path):
-                os.makedirs(para_dict["output_folder"]+'/' +
+            if not os.path.isdir(output_dir):
+                os.makedirs(output_dir)
+            if not os.path.isdir(output_dir + '/'+lrst_global.default_image_path):
+                os.makedirs(output_dir + '/' +
                         lrst_global.default_image_path)
 
         except OSError as e:
@@ -141,7 +143,7 @@ def fq_module(margs):
             plot_for_FQ.fq_plot(fq_output, para_dict)
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FASTQ QC", para_dict], static=static)
                 fq_html_gen.generate_st_html()
 
             print("Call FQ-module done!")
@@ -170,17 +172,12 @@ def fa_module(margs):
     else:
         # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
-        para_dict["out_prefix"] += "fa_";
-
-        # TODO: Multiple calls to the Python-wrapped C++ module are made (the lrst calls), but only a single
-        #  module call to the filetype-specific function should be needed. Could improve performance
+        para_dict["out_prefix"] += "fa_"
         input_para = lrst.Input_Para()
         input_para.threads = para_dict["threads"]
         input_para.rdm_seed = para_dict["random_seed"]
         input_para.downsample_percentage = para_dict["downsample_percentage"]
-
         input_para.other_flags = 0
-
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
 
@@ -196,7 +193,7 @@ def fa_module(margs):
             # TODO: Unused 'static' variable results in redundant function call
             for static in [True, False]:
                 fa_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "The statistics for FA", para_dict], static=True)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "FASTA QC", para_dict], static=True)
                 fa_html_gen.generate_st_html()
 
             print("Call FA-module done!")
@@ -238,7 +235,7 @@ def bam_module(margs):
 
             for static in [True, False]:
                 bam_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality"], "The statistics for BAM", para_dict], static=static)
+                    [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality"], "BAM QC", para_dict], static=static)
                 bam_html_gen.generate_st_html()
 
 
@@ -288,10 +285,10 @@ def seqtxt_module(margs):
             plot_for_SeqTxt.plot(seqtxt_output, para_dict)
             for static in [True, False]:
                 if margs.seq==0:
-                    f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "QC for sequencing_summary.txt", para_dict], static=static);
+                    f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "sequencing_summary.txt QC", para_dict], static=static);
                 else:
                     f5_html_gen = generate_html.ST_HTML_Generator(
-                       [["basic_st", "read_length_st","read_length_hist", "basic_info"], "QC for sequencing_summary.txt", para_dict], static=static)
+                       [["basic_st", "read_length_st","read_length_hist", "basic_info"], "sequencing_summary.txt QC", para_dict], static=static)
                 f5_html_gen.generate_st_html()
             print("Done.")
 
@@ -318,6 +315,7 @@ def fast5_module(margs):
         input_para.downsample_percentage = para_dict["downsample_percentage"]
         input_para.output_folder = str(para_dict["output_folder"])
         input_para.out_prefix = str(para_dict["out_prefix"])
+        input_para.other_flags = 0  # 0 for normal QC, 1 for signal statistics output
 
         for _ipf in para_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
@@ -330,8 +328,51 @@ def fast5_module(margs):
             plot_for_FAST5.plot(fast5_output, para_dict)
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "The statistics for FQ", para_dict], static=static)
+                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FAST5 QC", para_dict], static=static)
                 fast5_html_obj.generate_st_html()
+            print("Done.")
+
+def fast5_signal_module(margs):
+    """
+    Run the FAST5 filetype module with signal statistics output.
+    """
+    para_dict = {}
+    errorStr = lrst_global.originalError
+    errorStr += get_common_param(margs, para_dict)
+
+    if not errorStr == lrst_global.originalError:
+        print(errorStr)
+        print("#############################################\n")
+        # parser.print_help()
+        parser.parse_args(['f5s', '--help'])
+        sys.exit(1004)
+    else:
+        logging.info('Input file(s) are ' + ';'.join(para_dict["input_files"]))
+        para_dict["out_prefix"] += "f5s_"
+        input_para = lrst.Input_Para()
+        input_para.threads = para_dict["threads"]
+        input_para.rdm_seed = para_dict["random_seed"]
+        input_para.downsample_percentage = para_dict["downsample_percentage"]
+        input_para.output_folder = str(para_dict["output_folder"])
+        input_para.out_prefix = str(para_dict["out_prefix"])
+        input_para.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
+
+        for _ipf in para_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        fast5_output = lrst.Output_FAST5()
+        exit_code = lrst.callFAST5Module(input_para, fast5_output)
+
+        if exit_code == 0:
+            print("Generating output files...")
+            from src import plot_for_FAST5s
+            dynamic_plots = plot_for_FAST5s.plot(fast5_output, para_dict)
+
+            # Generate a dynamic HTML file
+            fast5_html_obj = generate_html.ST_HTML_Generator(
+                [[], "FAST5 signal QC", para_dict], static=False)
+            fast5_html_obj.generate_st_html(signal_plots=dynamic_plots)
+
             print("Done.")
 
 
@@ -355,7 +396,7 @@ common_grp_param = parent_parser.add_argument_group(
     "Common parameters for %(prog)s")
 input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
-    "-i", "--input", type=str, default=None, help="Single input filepath")
+    "-i", "--input", type=argparse.FileType('r'), default=None, help="Single input filepath")
 input_files_group.add_argument(
     "-I", "--inputs", type=str, default=None,
     help="Multiple comma-separated input filepaths",)
@@ -409,6 +450,15 @@ fast5_parser = subparsers.add_parser('f5',
                                                  "python %(prog)s -i input.fast5 -o /output_directory/",
                                      formatter_class=RawTextHelpFormatter)
 fast5_parser.set_defaults(func=fast5_module)
+
+# FAST5 signal mode inputs
+fast5_signal_parser = subparsers.add_parser('f5s',
+                                     parents=[parent_parser],
+                                     help="FAST5 file input with signal statistics output",
+                                     description="For example:\n"
+                                                 "python %(prog)s -i input.fast5 -o /output_directory/",
+                                     formatter_class=RawTextHelpFormatter)
+fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
 # sequencing_summary.txt inputs
 seqtxt_parsers = subparsers.add_parser('seqtxt',

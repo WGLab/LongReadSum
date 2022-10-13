@@ -1,5 +1,5 @@
 #include <iostream>
-#include "LRST_function.h"
+#include "ModuleCaller.h"
 #include "BAM_module.h"
 #include "SeqTxt_module.h"
 #include "FASTQ_module.h"
