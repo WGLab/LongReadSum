@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 preferred-citation:
-  type: conference
+  type: proceedings
   authors:
   - family-names: "Perdomo"
     given-names: "Jonathan Elliot"
