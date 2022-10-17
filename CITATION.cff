@@ -1,23 +1,19 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
-authors:
-- family-names: "Perdomo"
-  given-names: "Jonathan Elliot"
-  orcid: "https://orcid.org/0000-0001-7145-7401"
-- family-names: "Ahsan"
-  given-names: "Mian Umair"
-- family-names: "Liu"
-  given-names: "Qian"
-- family-names: "Fang"
-  given-names: "Li"
-- family-names: "Wang"
-  given-names: "Kai"  
-title: "LongReadSum"
-version: 0.1.0
-date-released: 2022-06-03
-url: "https://github.com/WGLab/LongReadSum"
 preferred-citation:
   type: conference
+  authors:
+  - family-names: "Perdomo"
+    given-names: "Jonathan Elliot"
+    orcid: "https://orcid.org/0000-0001-7145-7401"
+  - family-names: "Ahsan"
+    given-names: "Mian Umair"
+  - family-names: "Liu"
+    given-names: "Qian"
+  - family-names: "Fang"
+    given-names: "Li"
+  - family-names: "Wang"
+    given-names: "Kai"  
   title: "LongReadSum: A fast and flexible quality control tool for long-read sequencing data"
   conference:
     name: "Poster presented at the American Society of Human Genetics (ASHG) Annual Meeting"
@@ -26,3 +22,4 @@ preferred-citation:
     state: "CA"
     date-start: "2022-10-25"
     date-end: "2022-10-29"
+  url: "https://github.com/WGLab/LongReadSum"
