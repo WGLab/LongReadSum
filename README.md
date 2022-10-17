@@ -104,4 +104,6 @@ For release history, please visit [here](https://github.com/WGLab/LongReadSum/re
 Please refer to the [LongReadSum issue pages](https://github.com/WGLab/LongReadSum/issues) for posting your issues. We will also respond your questions quickly. Your comments are criticl to improve our tool and will benefit other users.
 
 # Citing LongReadSum
-***Please cite the publication below if you use our tool***
+***Please cite the presentation below if you use our tool***
+
+Perdomo, J. E., M. U. Ahsan, Q. Liu, L. Fang, K. Wang. *LongReadSum: A fast and flexible quality control tool for long-read sequencing data*. Poster presented at: American Society of Human Genetics (ASHG) Annual Meeting; 2022 October 25-29; Los Angeles Convention Center, Los Angeles, CA.
