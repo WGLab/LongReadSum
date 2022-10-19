@@ -20,31 +20,32 @@
 #define RNASEQ 2
 
 
+// Type representing data for a single record in the BAM file
 typedef struct Bam1Record{
-   uint64_t qry_start_pos;
-   uint64_t qry_end_pos;
-   uint64_t qry_start_pos_rel;
-   uint64_t qry_seq_len;
-   uint64_t _len_original_read; 
-   uc8string qry_qual;
-   std::string qry_name;
-   std::string qry_seq;   
+    uint64_t qry_start_pos;
+    uint64_t qry_end_pos;
+    uint64_t qry_start_pos_rel;
+    uint64_t qry_seq_len;
+    uint64_t _len_original_read;
+    uc8string qry_qual;
+    std::string qry_name;
+    std::string qry_seq;
 
-   uint16_t pri_sec_sup;
-   uint16_t map_flag;
-   uint8_t  map_qual;
-   uint16_t  map_strand;
-   std::vector<uint32_t> cigar_len;
-   std::vector<uint16_t> cigar_type;
+    uint16_t pri_sec_sup;
+    uint16_t map_flag;
+    uint8_t  map_qual;
+    uint16_t  map_strand;
+    std::vector<uint32_t> cigar_len;
+    std::vector<uint16_t> cigar_type;
 
-   std::vector<Map1Base> map_detail; 
-   std::vector<Map1BasePos> map_pos_detail;
+    std::vector<Map1Base> map_detail;
+    std::vector<Map1BasePos> map_pos_detail;
 
-   uint64_t ref_start_pos;
-   uint64_t ref_end_pos;
-   uint64_t left_clip;
-   uint64_t right_clip;
-   std::string map_chr;
+    uint64_t ref_start_pos;
+    uint64_t ref_end_pos;
+    uint64_t left_clip;
+    uint64_t right_clip;
+    std::string map_chr;
 } Bam1Record;
 
 class BamReadOption{

@@ -115,42 +115,62 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
    total_n_cnt += t_seq_st.total_n_cnt ;
 }
 
+// Calculates NXX scores and GC content for BAM and sequencing_summary.txt files
 void Basic_Seq_Statistics::global_sum(){
-   gc_cnt = double( total_c_cnt + total_g_cnt)/(total_num_bases>0?total_num_bases:1);
 
-   mean_read_length = total_num_bases / double(total_num_reads>0?total_num_reads:1);
-   uint64_t t_base=0, t_read=0; 
-   bool has_cal_median = false;
-   double base_perc = 0;
-   int start_perct = 0;
-   uint64_t t_max_length = (MAX_READ_LENGTH<longest_read_length?MAX_READ_LENGTH:longest_read_length);
-   for(size_t _i_=0; _i_<t_max_length; _i_++){
-      if ( read_length_count[ _i_ ] == 0) { continue; }
+    // Add the G + C bases
+    double g_c = this->total_g_cnt + this->total_c_cnt;
 
-      t_base += _i_ * read_length_count[ _i_ ];
-      t_read += read_length_count[ _i_ ];
-      if ( t_read > 0){
-         if ( t_read/double( total_num_reads )< 0.5 ) { median_read_length = _i_; }
-         else if (!has_cal_median && t_read/double( total_num_reads ) == 0.5 ){ median_read_length = _i_; has_cal_median = true; }
-         else if (!has_cal_median && t_read/double( total_num_reads ) > 0.5 ){
-            median_read_length = ( median_read_length + _i_ )/2;
-            has_cal_median = true;
-         }
-         
-         base_perc = double( t_base )/total_num_bases;
-         start_perct = int(base_perc*10+0.5);
-         for (int _t_sp=start_perct; _t_sp<start_perct+1&&_t_sp<10; _t_sp++){
-            if ( int(base_perc*1000)<(_t_sp)*100 ){ nx_read_length[ _t_sp ] = _i_; }
-         }
-         if ( int(base_perc*1000)<50){ n05_read_length = _i_; }
-         if ( int(base_perc*1000)<500){ n50_read_length = _i_; }
-         if ( int(base_perc*1000)<950){ n95_read_length = _i_; }
-      }
-   }
-   if ( n05_read_length==MoneDefault){ n05_read_length = ZeroDefault; }
-   if ( n50_read_length==MoneDefault){ n50_read_length = ZeroDefault; }
-   if ( n95_read_length==MoneDefault){ n95_read_length = ZeroDefault; }
-   if ( median_read_length==MoneDefault){ median_read_length = ZeroDefault; }
+    // Add all bases
+    double a_tu_g_c = g_c + this->total_a_cnt + this->total_tu_cnt;
+
+    // Check that our total base counts match what was stored (That our code works)
+    int _total_num_bases = this->total_num_bases;
+    if (a_tu_g_c != (double)_total_num_bases)
+    {
+        std::cerr << "Total number of bases is not consistent." << std::endl;
+    } else {
+        // Calculate GC-content
+        this->gc_cnt = g_c / a_tu_g_c;
+
+        // Sort the read lengths in descending order
+        std::vector<int> _read_lengths = this->read_lengths;
+        std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
+
+        // Get the max read length
+        uint64_t max_read_length = *std::max_element(_read_lengths.begin(), _read_lengths.end());
+        this->longest_read_length = max_read_length;
+
+//        // Get the median read length
+//        double median_read_length = _read_lengths[_read_lengths.size() / 2];
+//        this->median_read_length = median_read_length;
+
+//        // Get the mean read length
+//        float mean_read_length = (double)total_num_bases / (double)read_lengths.size();
+//        this->mean_read_length = mean_read_length;
+//
+//        // Calculate N50 and other N-scores
+//        for (int percent_value = 1; percent_value <= 100; percent_value++)
+//        {
+//            // Get the base percentage threshold for this N-score
+//            double base_threshold = (double)total_num_bases * (percent_value / 100.0);
+//
+//            // Calculate the NXX score
+//            double current_base_count = 0;
+//            int current_read_index = -1;
+//            while (current_base_count < base_threshold) {
+//                current_read_index ++;
+//                current_base_count += read_lengths[current_read_index];
+//            }
+//            int nxx_read_length = read_lengths[current_read_index];
+//            this->NXX_read_length[percent_value] = nxx_read_length;
+//        }
+//
+//        // Set common score variables
+//        this->n50_read_length = this->NXX_read_length[50];
+//        this->n95_read_length = this->NXX_read_length[95];
+//        this->n05_read_length = this->NXX_read_length[5];
+    }
 }
 
 // Constructor

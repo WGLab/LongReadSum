@@ -3,15 +3,10 @@ test_statistics.py:
 Test expected values for output statistics using sample input files (FASTA, FAST5, FASTQ, BAM).
 """
 import os
-import glob
-import sys
 import pytest
 
 from lib import lrst
 
-
-# def test_run():
-#     assert False, print(sys.path)
 
 # FASTA tests
 @pytest.fixture(scope='class')

@@ -471,6 +471,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                         int nxx_read_length = read_lengths[current_read_index];
                         output_data.long_read_info.NXX_read_length[percent_value] = nxx_read_length;
                     }
+
                     // Set common score variables
                     output_data.long_read_info.n50_read_length = output_data.long_read_info.NXX_read_length[50];
                     output_data.long_read_info.n95_read_length = output_data.long_read_info.NXX_read_length[95];
