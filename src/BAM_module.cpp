@@ -168,6 +168,10 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                 output_qc = &( ref_thread_data.t_output_bam_.unmapped_long_read_info);
                 output_quality_qc = &(ref_thread_data.t_output_bam_.unmapped_seq_quality_info);
 
+                // Update the read lengths
+                int read_length = record_data->qry_seq_len;
+                output_qc->read_lengths.push_back(read_length);
+
             }else if ( (record_data->map_flag)& BAM_FSUPPLEMENTARY ) {
                 // Supplementary alignments (Only reads are counted for these)
                 ref_thread_data.t_output_bam_.num_supplementary_alignment += 1;
@@ -183,6 +187,10 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                 ref_thread_data.t_output_bam_.num_primary_alignment += 1;
                 output_qc = &( ref_thread_data.t_output_bam_.mapped_long_read_info);
                 output_quality_qc = &(ref_thread_data.t_output_bam_.mapped_seq_quality_info);
+
+                // Update the read lengths
+                int read_length = record_data->qry_seq_len;
+                output_qc->read_lengths.push_back(read_length);
             }
 
             if ( !( (record_data->map_flag)& BAM_FUNMAP ) ){
@@ -198,8 +206,11 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
             if (output_qc!= NULL && !( (record_data->map_flag)& BAM_FSECONDARY ) && !((record_data->map_flag)& BAM_FSUPPLEMENTARY ) ){
                 output_qc->total_num_reads += 1;
                 output_qc->total_num_bases += record_data->qry_seq_len;
+
                 if( record_data->qry_seq_len > output_qc->longest_read_length){ output_qc->longest_read_length = record_data->qry_seq_len; }
-                if (  record_data->qry_seq_len < MAX_READ_LENGTH ){ output_qc->read_length_count[record_data->qry_seq_len] += 1; }
+                if (  record_data->qry_seq_len < MAX_READ_LENGTH ){
+                    output_qc->read_length_count[record_data->qry_seq_len] += 1;
+                }
 
                 _t_a=0;
                 _t_c=0;
@@ -283,7 +294,6 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                 }
             }
         }
-
         myMutex_output.lock();
        
         ref_secondary_alignment.insert(ref_thread_data.t_secondary_alignment.begin(), ref_thread_data.t_secondary_alignment.end());

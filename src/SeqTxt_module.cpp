@@ -38,7 +38,7 @@ std::map<std::string, int> SeqTxt_Thread_data::getHeaderColumns()
 }
 
 size_t SeqTxt_Thread_data::read_ss_record(std::ifstream* file_stream, std::map<std::string, int> header_columns){
-    std::cout << "Type 1." << std::endl;
+    //std::cout << "Type 1." << std::endl;
     thread_index = 0;  // Index where this thread's data will be stored
     while( std::getline( *file_stream, current_line )) {
         std::istringstream column_stream( current_line );
@@ -105,7 +105,7 @@ SeqTxt_Module::SeqTxt_Module(Input_Para& input_parameters){
     const char * first_filepath = _input_parameters.input_files[file_index].c_str();
     input_file_stream = new std::ifstream(first_filepath);
     if (!(input_file_stream->is_open())){
-        std::cout<< "Error!!! Cannot open sequencing_summary.txt file="<< first_filepath <<std::endl;
+        std::cerr << "Cannot open sequencing_summary.txt file="<< first_filepath <<std::endl;
         has_error |= 2;
     }else{
         file_index ++;
@@ -263,13 +263,16 @@ void SeqTxt_Module::SeqTxt_do_thread(std::ifstream* file_stream, Input_Para& ref
            Basic_SeqTxt_Statistics* seqtxt_statistics = NULL;
            bool passes_filtering_value = ref_thread_data.stored_records[read_ss_i].passes_filtering;
            if ( passes_filtering_value == true) {
-               seqtxt_statistics = &(ref_thread_data.t_output_SeqTxt_.passed_long_read_info);
+                seqtxt_statistics = &(ref_thread_data.t_output_SeqTxt_.passed_long_read_info);
            } else {
                 seqtxt_statistics = &(ref_thread_data.t_output_SeqTxt_.failed_long_read_info);
            }
            seqtxt_statistics->long_read_info.total_num_reads++;
            size_t sequence_base_count = ref_thread_data.stored_records[read_ss_i].sequence_length_template;
            seqtxt_statistics->long_read_info.total_num_bases += sequence_base_count;
+
+            // Store the read length
+            seqtxt_statistics->long_read_info.read_lengths.push_back(sequence_base_count);
 
            if ( seqtxt_statistics->long_read_info.longest_read_length < ref_thread_data.stored_records[read_ss_i].sequence_length_template){
                seqtxt_statistics->long_read_info.longest_read_length = ref_thread_data.stored_records[read_ss_i].sequence_length_template;

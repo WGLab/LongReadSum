@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <algorithm>
 
 // "Seqtk is a fast and lightweight tool for processing sequences in the FASTA or FASTQ format":
 // https://github.com/lh3/seqtk
@@ -15,7 +16,7 @@
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
-static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &py_output_fq, FILE *read_details_fp)
+static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
     gzFile input_fp;
@@ -28,8 +29,8 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
     double read_gc_cnt;
     double read_mean_base_qual;
 
-    Basic_Seq_Statistics &long_read_info = py_output_fq.long_read_info;
-    Basic_Seq_Quality_Statistics &seq_quality_info = py_output_fq.seq_quality_info;
+    Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
+    Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
     input_fp = gzopen(input_file, "r");
     if (!input_fp)
     {
@@ -55,6 +56,10 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
                 long_read_info.read_length_count.resize(read_len + 1000, 0);
                 long_read_info.read_length_count[read_len] += 1;
             }
+
+            // Store the read length
+            long_read_info.read_lengths.push_back(read_len);
+
             read_gc_cnt = 0;
             read_mean_base_qual = 0;
             for (int i = 0; i < read_len; i++)
@@ -147,12 +152,12 @@ static uint8_t predict_base_quality_offset(Input_Para &_input_data)
     if (fastq_base_qual_offset == 0){
         fastq_base_qual_offset = 64;
     }
-    std::cout << "NOTICE: predicted FASTQ base quality offset is " << fastq_base_qual_offset << std::endl;
+//    std::cout << "NOTICE: predicted FASTQ base quality offset is " << fastq_base_qual_offset << std::endl;
 
     return fastq_base_qual_offset;
 }
 
-int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
+int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
 {
     int exit_code = 0;
     const char *input_file = NULL;
@@ -163,45 +168,45 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
     read_details_file = _input_data.output_folder + "/FASTQ_details.txt";
     read_summary_file = _input_data.output_folder + "/FASTQ_summary.txt";
     
-    py_output_fq.long_read_info.total_num_reads = ZeroDefault; // total number of long reads
-    py_output_fq.long_read_info.total_num_bases = ZeroDefault; // total number of bases
+    output_data.long_read_info.total_num_reads = ZeroDefault; // total number of long reads
+    output_data.long_read_info.total_num_bases = ZeroDefault; // total number of bases
 
-    py_output_fq.long_read_info.longest_read_length = ZeroDefault; // the length of longest reads
-    py_output_fq.long_read_info.n50_read_length = MoneDefault;     // N50
-    py_output_fq.long_read_info.n95_read_length = MoneDefault;     // N95
-    py_output_fq.long_read_info.n05_read_length = MoneDefault;     // N05;
-    py_output_fq.long_read_info.mean_read_length = MoneDefault;    // mean of read length
+    output_data.long_read_info.longest_read_length = ZeroDefault; // the length of longest reads
+    output_data.long_read_info.n50_read_length = MoneDefault;     // N50
+    output_data.long_read_info.n95_read_length = MoneDefault;     // N95
+    output_data.long_read_info.n05_read_length = MoneDefault;     // N05;
+    output_data.long_read_info.mean_read_length = MoneDefault;    // mean of read length
 
-    py_output_fq.long_read_info.NXX_read_length.clear();
-    py_output_fq.long_read_info.median_read_length = MoneDefault; // median of read length
+    output_data.long_read_info.NXX_read_length.clear();
+    output_data.long_read_info.median_read_length = MoneDefault; // median of read length
 
-    py_output_fq.long_read_info.total_a_cnt = ZeroDefault;  // A content
-    py_output_fq.long_read_info.total_c_cnt = ZeroDefault;  // C content
-    py_output_fq.long_read_info.total_g_cnt = ZeroDefault;  // G content
-    py_output_fq.long_read_info.total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
-    py_output_fq.long_read_info.total_n_cnt = ZeroDefault;  // N content
-    py_output_fq.long_read_info.gc_cnt = ZeroDefault;       // GC ratio
+    output_data.long_read_info.total_a_cnt = ZeroDefault;  // A content
+    output_data.long_read_info.total_c_cnt = ZeroDefault;  // C content
+    output_data.long_read_info.total_g_cnt = ZeroDefault;  // G content
+    output_data.long_read_info.total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
+    output_data.long_read_info.total_n_cnt = ZeroDefault;  // N content
+    output_data.long_read_info.gc_cnt = ZeroDefault;       // GC ratio
 
     //int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
 
-    py_output_fq.long_read_info.read_gc_content_count.clear();
-    py_output_fq.long_read_info.read_length_count.clear();
-    py_output_fq.seq_quality_info.base_quality_distribution.clear();
-    py_output_fq.seq_quality_info.read_average_base_quality_distribution.clear();
+    output_data.long_read_info.read_gc_content_count.clear();
+    output_data.long_read_info.read_length_count.clear();
+    output_data.seq_quality_info.base_quality_distribution.clear();
+    output_data.seq_quality_info.read_average_base_quality_distribution.clear();
 
-    py_output_fq.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
+    output_data.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
     // read_length_count[x] is the number of reads that length is equal to x. MAX_READ_LENGTH is a initial max value, the vector can expand if thre are reads longer than MAX_READ_LENGTH.
 
-    py_output_fq.long_read_info.read_gc_content_count.resize(101, 0);
+    output_data.long_read_info.read_gc_content_count.resize(101, 0);
     // read_gc_content_count[x], x is a integer in the range of [0, 101). read_gc_content_count[x] means number of reads that average GC is x%.
 
-    py_output_fq.long_read_info.NXX_read_length.resize(101, 0);
+    output_data.long_read_info.NXX_read_length.resize(101, 0);
     // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
 
-    py_output_fq.seq_quality_info.base_quality_distribution.resize(256, 0);
+    output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
     // base_quality_distribution[x] means number of bases that quality = x.
 
-    py_output_fq.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
+    output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
     // base_quality_distribution[x] means number of reads that average base quality = x.
 
     if (_input_data.user_defined_fastq_base_qual_offset > 0) {
@@ -221,59 +226,76 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
         for (size_t i = 0; i < _input_data.num_input_files; i++)
         {
             input_file = _input_data.input_files[i].c_str();
-            qc1fastq(input_file, fastq_base_qual_offset, py_output_fq, read_details_fp);
+            qc1fastq(input_file, fastq_base_qual_offset, output_data, read_details_fp);
         }
         fclose(read_details_fp);
 
-        double g_c = py_output_fq.long_read_info.total_g_cnt + py_output_fq.long_read_info.total_c_cnt;
-        double a_tu_g_c = g_c + py_output_fq.long_read_info.total_a_cnt + py_output_fq.long_read_info.total_tu_cnt;
-        if (a_tu_g_c != (double)py_output_fq.long_read_info.total_num_bases)
+        // Add the G + C bases
+        double g_c = output_data.long_read_info.total_g_cnt + output_data.long_read_info.total_c_cnt;
+
+        // Add all bases
+        double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
+
+        // Check that our total base counts match what was stored (That our code works)
+        int total_num_bases = output_data.long_read_info.total_num_bases;
+        if (a_tu_g_c != (double)total_num_bases)
         {
             std::cerr << "Total number of bases is not consistent." << std::endl;
             exit_code = 4;
         } else {
-            py_output_fq.long_read_info.gc_cnt = g_c / a_tu_g_c;
+            // Calculate GC-content
+            output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
-            int percent = 1;
-            int64_t num_bases_sum = 0;
-            int64_t num_reads_sum = 0;
-            py_output_fq.long_read_info.median_read_length = -1;
-            for (int read_len = py_output_fq.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
+            // Sort the read lengths in descending order
+            std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
+            std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int>());
+
+            // Get the max read length
+            int max_read_length = read_lengths.at(0);
+            output_data.long_read_info.longest_read_length = max_read_length;
+
+            // Get the median read length
+            int median_read_length = read_lengths[read_lengths.size() / 2];
+            output_data.long_read_info.median_read_length = median_read_length;
+
+            // Get the mean read length
+            float mean_read_length = (double)total_num_bases / (double)read_lengths.size();
+            output_data.long_read_info.mean_read_length = mean_read_length;
+
+            // Calculate N50 and other N-scores
+            for (int percent_value = 1; percent_value <= 100; percent_value++)
             {
-                num_reads_sum += py_output_fq.long_read_info.read_length_count[read_len];
-                num_bases_sum += py_output_fq.long_read_info.read_length_count[read_len] * read_len;
-                if (num_reads_sum * 2 > py_output_fq.long_read_info.total_num_reads && py_output_fq.long_read_info.median_read_length < 0)
-                {
-                    py_output_fq.long_read_info.median_read_length = read_len;
+                // Get the base percentage threshold for this N-score
+                double base_threshold = (double)total_num_bases * (percent_value / 100.0);
+
+                // Calculate the NXX score
+                double current_base_count = 0;
+                int current_read_index = -1;
+                while (current_base_count < base_threshold) {
+                    current_read_index ++;
+                    current_base_count += read_lengths.at(current_read_index);
                 }
-                if (num_bases_sum * 100 > py_output_fq.long_read_info.total_num_bases * percent)
-                {
-                    py_output_fq.long_read_info.NXX_read_length[percent] = read_len;
-                    percent += 1;
-                    if (percent > 100)
-                    {
-                        break;
-                    }
-                }
+                int nxx_read_length = read_lengths.at(current_read_index);
+                output_data.long_read_info.NXX_read_length[percent_value] = nxx_read_length;
             }
 
-            py_output_fq.long_read_info.n50_read_length = py_output_fq.long_read_info.NXX_read_length[50];
-            py_output_fq.long_read_info.n95_read_length = py_output_fq.long_read_info.NXX_read_length[95];
-            py_output_fq.long_read_info.n05_read_length = py_output_fq.long_read_info.NXX_read_length[5];
-            py_output_fq.long_read_info.mean_read_length = (double)py_output_fq.long_read_info.total_num_bases / (double)py_output_fq.long_read_info.total_num_reads;
+            // Set common score variables
+            output_data.long_read_info.n50_read_length = output_data.long_read_info.NXX_read_length[50];
+            output_data.long_read_info.n95_read_length = output_data.long_read_info.NXX_read_length[95];
+            output_data.long_read_info.n05_read_length = output_data.long_read_info.NXX_read_length[5];
 
             read_summary_fp = fopen(read_summary_file.c_str(), "w");
-            fprintf(read_summary_fp, "total number of reads\t%ld\n", py_output_fq.long_read_info.total_num_reads);
-            fprintf(read_summary_fp, "total number of bases\t%ld\n", py_output_fq.long_read_info.total_num_bases);
-            fprintf(read_summary_fp, "longest read length\t%lu\n", py_output_fq.long_read_info.longest_read_length);
-            fprintf(read_summary_fp, "N50 read length\t%ld\n", py_output_fq.long_read_info.n50_read_length);
-            fprintf(read_summary_fp, "mean read length\t%.2f\n", py_output_fq.long_read_info.mean_read_length);
-            fprintf(read_summary_fp, "median read length\t%ld\n", py_output_fq.long_read_info.median_read_length);
-            fprintf(read_summary_fp, "GC%%\t%.2f\n", py_output_fq.long_read_info.gc_cnt * 100);
+            fprintf(read_summary_fp, "total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
+            fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
+            fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
+            fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+            fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
+            fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
+            fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
             fprintf(read_summary_fp, "\n\n");
             for (int percent = 5; percent < 100; percent += 5)
             {
-                fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, py_output_fq.long_read_info.NXX_read_length[percent]);
+                fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, output_data.long_read_info.NXX_read_length[percent]);
             }
 
             fprintf(read_summary_fp, "\n\n");
@@ -281,7 +303,7 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
             fprintf(read_summary_fp, "GC content\tnumber of reads\n");
             for (int gc_ratio = 0; gc_ratio < 100; gc_ratio++)
             {
-                fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, py_output_fq.long_read_info.read_gc_content_count[gc_ratio]);
+                fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
             }
 
 
@@ -289,14 +311,14 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &py_output_fq)
             fprintf(read_summary_fp, "base quality\tnumber of bases\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%ld\n", baseq, py_output_fq.seq_quality_info.base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
             }
 
             fprintf(read_summary_fp, "\n\n");
             fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%ld\n", baseq, py_output_fq.seq_quality_info.read_average_base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
             }
             fclose(read_summary_fp);
         }

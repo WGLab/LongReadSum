@@ -189,7 +189,7 @@ class TestFASTQ:
     def test_n50(self, fastq_output):
         output_statistics = fastq_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
-        assert n50_read_length == 8731
+        assert n50_read_length == 8733
 
 
 # FAST5 tests
@@ -407,7 +407,7 @@ class TestBAM:
     def test_n50(self, bam_output):
         output_statistics = bam_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
-        assert n50_read_length == 7415
+        assert n50_read_length == 8733
 
 
 @pytest.fixture(scope='class')
@@ -478,7 +478,7 @@ class TestUnmappedBAM:
     def test_n50(self, unmapped_bam_output):
         output_statistics = unmapped_bam_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
-        assert n50_read_length == 21391
+        assert n50_read_length == 22029
 
 
 # sequencing_summary.txt tests
@@ -550,10 +550,10 @@ class TestSeqTxt:
     def test_n50(self, seqtxt_output):
         output_statistics = seqtxt_output[1]
         n50_read_length = output_statistics.all_long_read_info.long_read_info.n50_read_length
-        assert n50_read_length == 7415
+        assert n50_read_length == 8733
 
     @pytest.mark.dependency(depends=["TestSeqTxt::test_success"])
     def test_passed_n50(self, seqtxt_output):
         output_statistics = seqtxt_output[1]
         passed_n50_read_length = output_statistics.passed_long_read_info.long_read_info.n50_read_length
-        assert passed_n50_read_length == 6925
+        assert passed_n50_read_length == 7050
