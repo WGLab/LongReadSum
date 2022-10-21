@@ -444,7 +444,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int>());
 
                     // Get the max read length
-                    int max_read_length = *std::max_element(read_lengths.begin(), read_lengths.end());
+                    int max_read_length = read_lengths.at(0);
                     output_data.long_read_info.longest_read_length = max_read_length;
 
                     // Get the median read length
@@ -466,11 +466,12 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                         int current_read_index = -1;
                         while (current_base_count < base_threshold) {
                             current_read_index ++;
-                            current_base_count += read_lengths[current_read_index];
+                            current_base_count += read_lengths.at(current_read_index);
                         }
-                        int nxx_read_length = read_lengths[current_read_index];
+                        int nxx_read_length = read_lengths.at(current_read_index);
                         output_data.long_read_info.NXX_read_length[percent_value] = nxx_read_length;
                     }
+
                     // Set common score variables
                     output_data.long_read_info.n50_read_length = output_data.long_read_info.NXX_read_length[50];
                     output_data.long_read_info.n95_read_length = output_data.long_read_info.NXX_read_length[95];

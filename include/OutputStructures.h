@@ -62,6 +62,7 @@ public:
    void reset();
    void add(Basic_Seq_Statistics &t_seq_st);
    void global_sum();
+    void global_sum_no_gc();
    void resize();
 
    Basic_Seq_Statistics();

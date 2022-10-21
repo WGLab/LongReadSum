@@ -13,7 +13,7 @@
 class BAM_Thread_data {
    public:
       int _thread_id;
-      std::vector<Bam1Record> br_list;
+      std::vector<Bam1Record> br_list;  // Vector of individual BAM file records
       Input_Para m_input_op;
       std::map<std::string, bool> t_secondary_alignment;
       std::map<std::string, bool> t_supplementary_alignment;
