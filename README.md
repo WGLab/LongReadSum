@@ -23,14 +23,14 @@ First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub:
 
 ```
-docker pull genomicslab/longreadsum:v0.0.1
+docker pull genomicslab/longreadsum
 ```
 
 ## Running
 
 On Unix/Linux:
 ```
-docker run -v local/inputs/:/inputs/ -it genomicslab/longreadsum:v0.0.1 bam -i /inputs/input.bam
+docker run -v local/inputs/:/inputs/ -it genomicslab/longreadsum bam -i /inputs/input.bam
 ```
 Note that the `-v` command is required for Docker to find the input file. In the above BAM file example, the local directory `local/inputs/` containing the input file is mapped to a directory `/inputs/` in the Docker container. Thus, the input file is specified as `/inputs/input.bam`
 
