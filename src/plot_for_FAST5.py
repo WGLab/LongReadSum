@@ -40,7 +40,10 @@ def plot(f5_output, para_dict):
     out_path = para_dict["output_folder"]
     get_image_path = lambda x: os.path.join(out_path, lrst_global.plot_filenames[x]['file'])
 
-    # print("num_primary_alignment: {}".format(f5_output.num_primary_alignment))
+    # Set the default font size
+    font_size = para_dict["fontsize"]
+    #setDefaultFontSize(font_size)
+
     generate_bs(f5_output, para_dict)
 
     plot_read_length_stats([f5_output.long_read_info], get_image_path('read_length_st'), subtitles=['Long Reads'])
@@ -48,4 +51,6 @@ def plot(f5_output, para_dict):
     plot_basic_info([f5_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
 
     lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(f5_output.long_read_info,
-                                                                          get_image_path('read_length_hist'))
+                                                                          get_image_path('read_length_hist'), font_size)
+    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(f5_output.seq_quality_info, get_image_path('base_quality'), font_size)
+    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(f5_output.seq_quality_info, get_image_path('read_avg_base_quality'), font_size)

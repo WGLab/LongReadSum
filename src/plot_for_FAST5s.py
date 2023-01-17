@@ -100,13 +100,17 @@ def plot(fast5_output, para_dict):
         # Close CSVs
         qc_file.close()
 
-        # Add plot labels
+        # Update the plot style
+        font_size = para_dict["fontsize"]
+        marker_size = para_dict["markersize"]
         fig.update_layout(
             title=nth_read_name,
             xaxis_title="Base",
             yaxis_title="Signal",
-            showlegend=False
+            showlegend=False,
+            font=dict(size=font_size)
         )
+        fig.update_traces(marker={'size': marker_size})
         fig.update_xaxes(tickangle=45,
                          tickmode='array',
                          tickvals=base_tick_values,

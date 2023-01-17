@@ -50,7 +50,7 @@ def get_common_param(margs, para_dict):
     if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (margs.inputPattern == None or margs.inputPattern == ""):
         this_error_str += "No input file(s) are provided. \n"
     else:
-        # Populate our
+        # Group parameters into an array
         para_dict["input_files"] = []
         if not (margs.input == None or margs.input == ""):
             input_filepath = margs.input.name
@@ -100,7 +100,11 @@ def get_common_param(margs, para_dict):
 
     para_dict["random_seed"] = margs.seed
 
-    para_dict["detail"] = margs.detail;
+    para_dict["detail"] = margs.detail
+
+    # Plot style parameters
+    para_dict["fontsize"] = margs.fontsize
+    para_dict["markersize"] = margs.markersize
 
     return this_error_str
 
@@ -394,15 +398,28 @@ parent_parser = argparse.ArgumentParser(add_help=False)
 
 common_grp_param = parent_parser.add_argument_group(
     "Common parameters for %(prog)s")
+
+# File input parameter
 input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
     "-i", "--input", type=argparse.FileType('r'), default=None, help="Single input filepath")
+
 input_files_group.add_argument(
     "-I", "--inputs", type=str, default=None,
     help="Multiple comma-separated input filepaths",)
+
 input_files_group.add_argument(
     "-P", "--inputPattern", type=str, default=None,
     help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
+
+# Plot style parameters
+common_grp_param.add_argument("--fontsize", type=int, default=20,
+                              help="Font size for plots. Default: 14")
+
+common_grp_param.add_argument("--markersize", type=int, default=15,
+                              help="Marker size for plots. Default: 10")
+
+# Misc. parameters
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
                                help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
 

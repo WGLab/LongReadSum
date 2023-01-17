@@ -5,6 +5,10 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
+def setDefaultFontSize(font_size):
+    """Set the default font size for matplotlib plots."""
+    plt.rcParams.update({'font.size': font_size})
+
 def fmt(x):
     if abs(x)>=1e7:
         return f'{x:.3E}'
@@ -93,7 +97,7 @@ def bar_plot(fig, numbers_list,category_list, xlabel_list, ylabel_list, subtitle
     plt.savefig(path) 
 
 
-def histogram(data, path):
+def histogram(data, path, font_size):
     mat=data.read_length_count
     mean, median, n50=int(data.mean_read_length), data.median_read_length, data.n50_read_length
     
@@ -112,12 +116,8 @@ def histogram(data, path):
     
     fig = make_subplots(
     rows=2, cols=1,
-    subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing = 0.18,)
-    fig.update_layout(showlegend=False, autosize=False,
-        width=800,
-        height=600)
-    
-    fig.update_annotations(font_size=16)
+    subplot_titles = ("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing = 0.3)
+    fig.update_layout(showlegend=False, autosize=True)
 
     xd=bins[1:]
     customdata=np.dstack((bins[:-1],bins[1:], hist))[0,:,:]
@@ -125,9 +125,9 @@ def histogram(data, path):
     y_max=np.max(hist)
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata, hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>', marker_color='#36a5c7'), row=1, col=1)
 
-    fig.add_vline(mean, line_width=1, line_dash="dash",annotation_text='Mean', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
-    fig.add_vline(median, line_width=1, line_dash="dash",annotation_text='Median', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
-    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+    fig.add_vline(mean, line_width=1, line_dash="dash",annotation_text='Mean', annotation_bgcolor="black", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+    fig.add_vline(median, line_width=1, line_dash="dash",annotation_text='Median', annotation_bgcolor="blue", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="red", annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
 
 
     xd=log_bins[1:]
@@ -135,9 +135,10 @@ def histogram(data, path):
     yd=log_hist
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata, hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>', marker_color='#36a5c7') , row=2, col=1)
 
-    fig.add_vline(np.log10(mean), line_width=1, line_dash="dash",annotation_text='Mean', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=2, col=1)
-    fig.add_vline(np.log10(median), line_width=1, line_dash="dash",annotation_text='Median', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=2, col=1)
-    fig.add_vline(np.log10(n50), line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="white", annotation_textangle=90, annotation_font=dict(size=10), row=2, col=1)
+    fig.add_vline(np.log10(mean), line_width=1, line_dash="dash",annotation_text='Mean', annotation_bgcolor="black", annotation_textangle=90, row=2, col=1)
+    fig.add_vline(np.log10(median), line_width=1, line_dash="dash",annotation_text='Median', annotation_bgcolor="blue", annotation_textangle=90, row=2, col=1)
+    fig.add_vline(np.log10(n50), line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="red", annotation_textangle=90, row=2, col=1)
+    fig.update_annotations(font=dict(color="white"))
 
     fig.update_xaxes(
         tickmode = 'array',
@@ -145,15 +146,22 @@ def histogram(data, path):
         ticktext = ['0']+['{:,}'.format(10**x) for x in range(1, 12)],
         ticks="outside", row=2, col=1)
 
-    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff= 0)
-    fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff= 0)    
+    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1)
+    fig.update_xaxes(ticks="outside", title_text='Read Length (Log scale)', title_standoff=0, row=2, col=1)
+    fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff= 0)
+
+    # Set font sizes
+    fig.update_layout(showlegend=False, autosize=True,
+                      font=dict(size=font_size))
+
+    fig.update_annotations(font_size=font_size)
 
     fig.write_image(path,engine="kaleido")
     
     return fig.to_html(full_html=False)
 
 
-def base_quality(data, path):
+def base_quality(data, path, font_size):
     """
     Save the 'Base quality' plot image.
     """
@@ -166,49 +174,25 @@ def base_quality(data, path):
     
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff= 0)
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff= 0)
-    
+    fig.update_layout(font=dict(size=font_size))  # Set font size
     fig.write_image(path,engine="kaleido")
     
     return fig.to_html(full_html=False)
 
 
-def read_avg_base_quality(data, path):
+def read_avg_base_quality(data, path, font_size):
     """
     Save the 'Average base quality' plot image.
     """
     xd=np.arange(256)
     yd=np.array(data.read_average_base_quality_distribution)
     fig = go.Figure()
-    
-    #customdata=np.dstack((xd,yd))[0,:,:]
-    
-    #fig.add_trace(go.Bar(x=xd, y=yd,  customdata=customdata, hovertemplate='Average Base Quality: %{customdata[0]:.0f}<br>Read Counts:%{customdata[1]:.0f}<extra></extra>', marker_color='#36a5c7'))
     fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
     
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff= 0)
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff= 0)
-    
+    fig.update_layout(font=dict(size=font_size))  # Set font size
+
     fig.write_image(path,engine="kaleido")
     
     return fig.to_html(full_html=False)
-
-def pos_quality(data, max_len, path):
-    """
-    Save the 'Average base quality' plot image.
-    """
-    qual=np.array(data.pos_quality_distribution)[:max_len+1]
-
-    xd=np.arange(max_len+1)
-    stdev=np.array(data.pos_quality_distribution_dev)[:max_len+1]
-    
-    fig = go.Figure()
-    
-    fig.add_trace(go.Scatter(x=xd, y=qual, marker_color='#36a5c7'))
-    fig.update_xaxes(ticks="outside", title_text='Base position in read', title_standoff= 0)
-    fig.update_yaxes(ticks="outside", title_text='Average Base Quality', title_standoff= 0)
-    
-    
-    fig.write_image(path,engine="kaleido")
-    
-    return fig.to_html(full_html=False)
-    
