@@ -102,6 +102,8 @@ def bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitl
 
 
 def histogram(data, path, font_size):
+    """Plot a histogram."""
+    annotation_size = 10  # Annotation font size
     mat = data.read_length_count
     mean, median, n50 = int(data.mean_read_length), data.median_read_length, data.n50_read_length
 
@@ -130,11 +132,11 @@ def histogram(data, path, font_size):
                          marker_color='#36a5c7'), row=1, col=1)
 
     fig.add_vline(mean, line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
-                  annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+                  annotation_textangle=90, row=1, col=1)
     fig.add_vline(median, line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
-                  annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
-    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="red",
-                  annotation_textangle=90, annotation_font=dict(size=10), row=1, col=1)
+                  annotation_textangle=90, row=1, col=1)
+    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
+                  annotation_textangle=90, row=1, col=1)
 
     xd = log_bins[1:]
     customdata = np.dstack((np.power(10, log_bins)[:-1], np.power(10, log_bins)[1:], log_hist))[0, :, :]
@@ -165,7 +167,7 @@ def histogram(data, path, font_size):
     fig.update_layout(showlegend=False, autosize=True,
                       font=dict(size=font_size))
 
-    fig.update_annotations(font_size=font_size)
+    fig.update_annotations(font_size=annotation_size)
 
     fig.write_image(path, engine="kaleido")
 
