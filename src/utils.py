@@ -56,10 +56,7 @@ def plot_base_counts(data, path, subtitles=None, categories=None):
 
 def plot_basic_info(data, path, subtitles=None, categories=None):
     fig, axes= plt.subplots(2,2, figsize =(8, 6))
-    
-
     numbers_list=[[x.total_num_reads, x.total_num_bases, x.longest_read_length, x.gc_cnt] for x in data]
-    
     numbers_list=zip(*numbers_list)
     
     category_list=itertools.cycle([categories])

@@ -413,7 +413,7 @@ input_files_group.add_argument(
     help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
 
 # Plot style parameters
-common_grp_param.add_argument("--fontsize", type=int, default=20,
+common_grp_param.add_argument("--fontsize", type=int, default=14,
                               help="Font size for plots. Default: 14")
 
 common_grp_param.add_argument("--markersize", type=int, default=15,

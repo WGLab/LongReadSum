@@ -247,7 +247,7 @@ class ST_HTML_Generator:
             self.html_writer.write('</li>')
         if True:  # self.more_input_files:
             self.html_writer.write('<li>')
-            self.html_writer.write('<a href="#lrst' + str(_imki) + '">Input files</a>')
+            self.html_writer.write('<a href="#lrst' + str(_imki) + '">List of input files</a>')
             _imki += 1;
             self.html_writer.write('</li>')
 
@@ -284,7 +284,7 @@ class ST_HTML_Generator:
 
         if True:  # self.more_input_files:  # TODO: Implement multi-file HTML generation?
             self.html_writer.write('<div class="module">')
-            self.html_writer.write('<h2 id="lrst' + str(_imki) + '">The list of input files: ' + str(
+            self.html_writer.write('<h2 id="lrst' + str(_imki) + '">File count = ' + str(
                 len(self.input_para["input_files"])) + '</h2><p>')
             for _af in self.input_para["input_files"]:
                 self.html_writer.write("<br/>" + _af)
@@ -351,7 +351,7 @@ class ST_HTML_Generator:
 
         # Add the input files section
         self.html_writer.write('<div class="module">')
-        self.html_writer.write('<h2 id="lrst' + str(url_index) + '">The list of input files: ' + str(
+        self.html_writer.write('<h2 id="lrst' + str(url_index) + '">File count = ' + str(
             len(self.input_para["input_files"])) + '</h2><p>')
         for input_file_str in self.input_para["input_files"]:
             self.html_writer.write("<br/>" + input_file_str)

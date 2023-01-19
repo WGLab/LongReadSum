@@ -40,15 +40,17 @@ def plot(f5_output, para_dict):
     out_path = para_dict["output_folder"]
     get_image_path = lambda x: os.path.join(out_path, lrst_global.plot_filenames[x]['file'])
 
-    # Set the default font size
+    # Set the default matplotlib font size
+    setDefaultFontSize(12)
+
+    # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
-    #setDefaultFontSize(font_size)
 
     generate_bs(f5_output, para_dict)
 
-    plot_read_length_stats([f5_output.long_read_info], get_image_path('read_length_st'), subtitles=['Long Reads'])
-    plot_base_counts([f5_output.long_read_info], get_image_path('base_st'), subtitles=['Long Reads'])
-    plot_basic_info([f5_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
+    plot_read_length_stats([f5_output.long_read_info], get_image_path('read_length_st'), subtitles=[''])
+    plot_base_counts([f5_output.long_read_info], get_image_path('base_st'), subtitles=[''])
+    plot_basic_info([f5_output.long_read_info], get_image_path('basic_info'), categories=['Read'])
 
     lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(f5_output.long_read_info,
                                                                           get_image_path('read_length_hist'), font_size)
