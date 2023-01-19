@@ -20,7 +20,7 @@ def plot(fast5_output, para_dict):
     # Set up the global variable with HTML titles
     lrst_global.plot_filenames["basic_st"] = {}
     lrst_global.plot_filenames["basic_st"]['file'] = ""
-    lrst_global.plot_filenames["basic_st"]['title'] = "Basic statistics"
+    lrst_global.plot_filenames["basic_st"]['title'] = "Summary Table"
     lrst_global.plot_filenames["basic_st"]['description'] = "FAST5: Basic statistics"
 
     # Get values

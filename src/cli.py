@@ -12,6 +12,8 @@ import logging
 from argparse import RawTextHelpFormatter
 from src import generate_html
 from src import lrst_global
+from src.utils import *
+
 from lib import lrst
 
 import faulthandler
@@ -143,8 +145,7 @@ def fq_module(margs):
         fq_output = lrst.Output_FQ()
         exit_code = lrst.callFASTQModule(input_para, fq_output)
         if exit_code == 0:
-            from src import plot_for_FQ
-            plot_for_FQ.fq_plot(fq_output, para_dict)
+            create_base_quality_plots(fq_output, para_dict, "FASTQ: Basic statistics")
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FASTQ QC", para_dict], static=static)
@@ -328,8 +329,7 @@ def fast5_module(margs):
         exit_code = lrst.callFAST5Module(input_para, fast5_output)
         if exit_code == 0:
             print("Generating output files...")
-            from src import plot_for_FAST5
-            plot_for_FAST5.plot(fast5_output, para_dict)
+            create_base_quality_plots(fast5_output, para_dict, "FAST5: Basic statistics")
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FAST5 QC", para_dict], static=static)

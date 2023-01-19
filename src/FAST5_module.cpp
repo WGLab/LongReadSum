@@ -156,8 +156,8 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
         } else {
             std::cerr << "Error accessing the FAST5 file: " << input_file << std::endl;
             error.printErrorStack();
-            exit_code = 2;
         }
+        exit_code = 2;
     };
 
     return exit_code;
