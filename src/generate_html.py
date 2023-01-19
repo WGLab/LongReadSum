@@ -282,14 +282,13 @@ class ST_HTML_Generator:
 
             _imki += 1
 
-        if True:  # self.more_input_files:  # TODO: Implement multi-file HTML generation?
-            self.html_writer.write('<div class="module">')
-            self.html_writer.write('<h2 id="lrst' + str(_imki) + '">File count = ' + str(
-                len(self.input_para["input_files"])) + '</h2><p>')
-            for _af in self.input_para["input_files"]:
-                self.html_writer.write("<br/>" + _af)
-            self.html_writer.write('</p></div>')
-            _imki += 1
+        self.html_writer.write('<div class="module">')
+        self.html_writer.write('<h2 id="lrst' + str(_imki) + '">File count = ' + str(
+            len(self.input_para["input_files"])) + '</h2><p>')
+        for _af in self.input_para["input_files"]:
+            self.html_writer.write("<br/>" + _af)
+        self.html_writer.write('</p></div>')
+        _imki += 1
 
         self.html_writer.write('</div>')
 

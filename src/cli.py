@@ -416,8 +416,8 @@ input_files_group.add_argument(
 common_grp_param.add_argument("--fontsize", type=int, default=14,
                               help="Font size for plots. Default: 14")
 
-common_grp_param.add_argument("--markersize", type=int, default=15,
-                              help="Marker size for plots. Default: 15")
+common_grp_param.add_argument("--markersize", type=int, default=10,
+                              help="Marker size for plots. Default: 10")
 
 # Misc. parameters
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,

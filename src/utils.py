@@ -168,10 +168,10 @@ def histogram(data, path, font_size):
                       font=dict(size=font_size))
 
     fig.update_annotations(font_size=annotation_size)
-
+    html_obj = fig.to_html(full_html=False)
     fig.write_image(path, engine="kaleido")
 
-    return fig.to_html(full_html=False)
+    return html_obj
 
 
 def base_quality(data, path, font_size):
