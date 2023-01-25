@@ -48,13 +48,18 @@ def generate_bs( output_statistics, para_dict ):
 def plot( output_statistics, para_dict ):
     out_path=para_dict["output_folder"]
     get_image_path=lambda x: os.path.join(out_path,lrst_global.plot_filenames[x]['file'])
- 
+
+    # Set the default matplotlib font size
+    setDefaultFontSize(12)
+
+    # Get the font size for plotly plots
+    font_size = para_dict["fontsize"]
+
+    # Create table
     generate_bs( output_statistics, para_dict );
- 
+
+    # Generate plots
     plot_read_length_stats([output_statistics.all_long_read_info.long_read_info, output_statistics.passed_long_read_info.long_read_info, output_statistics.failed_long_read_info.long_read_info], get_image_path('read_length_st'), subtitles=['All Reads', 'Passed Reads', 'Failed Reads'])
-    
     plot_base_counts([output_statistics.all_long_read_info.long_read_info, output_statistics.passed_long_read_info.long_read_info, output_statistics.failed_long_read_info.long_read_info], get_image_path('base_st'), subtitles=['All Reads', 'Passed Reads', 'Failed Reads'])
-    
     plot_basic_info([output_statistics.all_long_read_info.long_read_info, output_statistics.passed_long_read_info.long_read_info, output_statistics.failed_long_read_info.long_read_info], get_image_path('basic_info'), categories=['All Reads', 'Passed Reads', 'Failed Reads'])
-    
-    histogram(output_statistics.all_long_read_info.long_read_info, get_image_path('read_length_hist'))
+    histogram(output_statistics.all_long_read_info.long_read_info, get_image_path('read_length_hist'), font_size)

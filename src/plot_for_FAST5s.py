@@ -20,7 +20,7 @@ def plot(fast5_output, para_dict):
     # Set up the global variable with HTML titles
     lrst_global.plot_filenames["basic_st"] = {}
     lrst_global.plot_filenames["basic_st"]['file'] = ""
-    lrst_global.plot_filenames["basic_st"]['title'] = "Basic statistics"
+    lrst_global.plot_filenames["basic_st"]['title'] = "Summary Table"
     lrst_global.plot_filenames["basic_st"]['description'] = "FAST5: Basic statistics"
 
     # Get values
@@ -100,13 +100,17 @@ def plot(fast5_output, para_dict):
         # Close CSVs
         qc_file.close()
 
-        # Add plot labels
+        # Update the plot style
+        font_size = para_dict["fontsize"]
+        marker_size = para_dict["markersize"]
         fig.update_layout(
             title=nth_read_name,
             xaxis_title="Base",
             yaxis_title="Signal",
-            showlegend=False
+            showlegend=False,
+            font=dict(size=font_size)
         )
+        fig.update_traces(marker={'size': marker_size})
         fig.update_xaxes(tickangle=45,
                          tickmode='array',
                          tickvals=base_tick_values,

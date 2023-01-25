@@ -40,11 +40,17 @@ def fa_plot( fa_output, para_dict ):
     out_path=para_dict["output_folder"]
     get_image_path=lambda x: os.path.join(out_path,lrst_global.plot_filenames[x]['file'])
     
-    #print("num_primary_alignment: {}".format(fa_output.num_primary_alignment))
+    # Set the default matplotlib font size
+    setDefaultFontSize(12)
+
+    # Get the font size for plotly plots
+    font_size = para_dict["fontsize"]
+
+    # Generate plots
     generate_bs( fa_output, para_dict)
 
     # Save plot images using statistics generated from the C++ module
     plot_read_length_stats([fa_output.long_read_info], get_image_path('read_length_st'), subtitles=['Long Reads'])
     plot_base_counts([fa_output.long_read_info], get_image_path('base_st'), subtitles=['Long Reads'])
     plot_basic_info([fa_output.long_read_info], get_image_path('basic_info'), categories=['Long Reads'])
-    histogram(fa_output.long_read_info, get_image_path('read_length_hist'))
+    histogram(fa_output.long_read_info, get_image_path('read_length_hist'), font_size)

@@ -18,7 +18,7 @@ def plot_alignment_numbers(data, path):
     
     category_list=itertools.cycle([category])
     xlabel_list=itertools.cycle(['Counts'])
-    ylabel_list=itertools.cycle(['Read/Alignment Type'])
+    ylabel_list=itertools.cycle([''])
     subtitle_list=[None]
     bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='h')
     
@@ -83,10 +83,17 @@ def bam_plot( bam_output, para_dict ):
     
     out_path=para_dict["output_folder"]
     get_image_path=lambda x: os.path.join(out_path,lrst_global.plot_filenames[x]['file'])
-    
-    #print("num_primary_alignment: {}".format(bam_output.num_primary_alignment))
-    generate_bs( bam_output, para_dict)
 
+    # Set the default matplotlib font size
+    setDefaultFontSize(12)
+
+    # Get the font size for plotly plots
+    font_size = para_dict["fontsize"]
+
+    # Create table
+    generate_bs(bam_output, para_dict)
+
+    # Generate plots
     plot_alignment_numbers(bam_output, get_image_path('map_st'))
     plot_errors(bam_output, get_image_path('err_st'))
     
@@ -94,7 +101,5 @@ def bam_plot( bam_output, para_dict ):
     plot_base_counts([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('base_st'), subtitles=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
     plot_basic_info([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info], get_image_path('basic_info'), categories=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
     
-    lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(bam_output.long_read_info, get_image_path('read_length_hist'))
-    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(bam_output.seq_quality_info, get_image_path('base_quality'))
-    #lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_avg_base_quality(bam_output.seq_quality_info, get_image_path('read_avg_base_quality'))
-    #lrst_global.plot_filenames['pos_quality']['dynamic'] = pos_quality(bam_output.seq_quality_info, bam_output.long_read_info.longest_read_length , get_image_path('pos_quality'))
+    lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(bam_output.long_read_info, get_image_path('read_length_hist'), font_size)
+    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(bam_output.seq_quality_info, get_image_path('base_quality'), font_size)

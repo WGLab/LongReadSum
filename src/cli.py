@@ -12,6 +12,8 @@ import logging
 from argparse import RawTextHelpFormatter
 from src import generate_html
 from src import lrst_global
+from src.utils import *
+
 from lib import lrst
 
 import faulthandler
@@ -50,7 +52,7 @@ def get_common_param(margs, para_dict):
     if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (margs.inputPattern == None or margs.inputPattern == ""):
         this_error_str += "No input file(s) are provided. \n"
     else:
-        # Populate our
+        # Group parameters into an array
         para_dict["input_files"] = []
         if not (margs.input == None or margs.input == ""):
             input_filepath = margs.input.name
@@ -100,7 +102,11 @@ def get_common_param(margs, para_dict):
 
     para_dict["random_seed"] = margs.seed
 
-    para_dict["detail"] = margs.detail;
+    para_dict["detail"] = margs.detail
+
+    # Plot style parameters
+    para_dict["fontsize"] = margs.fontsize
+    para_dict["markersize"] = margs.markersize
 
     return this_error_str
 
@@ -139,8 +145,7 @@ def fq_module(margs):
         fq_output = lrst.Output_FQ()
         exit_code = lrst.callFASTQModule(input_para, fq_output)
         if exit_code == 0:
-            from src import plot_for_FQ
-            plot_for_FQ.fq_plot(fq_output, para_dict)
+            create_base_quality_plots(fq_output, para_dict, "FASTQ: Basic statistics")
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FASTQ QC", para_dict], static=static)
@@ -324,8 +329,7 @@ def fast5_module(margs):
         exit_code = lrst.callFAST5Module(input_para, fast5_output)
         if exit_code == 0:
             print("Generating output files...")
-            from src import plot_for_FAST5
-            plot_for_FAST5.plot(fast5_output, para_dict)
+            create_base_quality_plots(fast5_output, para_dict, "FAST5: Basic statistics")
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FAST5 QC", para_dict], static=static)
@@ -394,15 +398,28 @@ parent_parser = argparse.ArgumentParser(add_help=False)
 
 common_grp_param = parent_parser.add_argument_group(
     "Common parameters for %(prog)s")
+
+# File input parameter
 input_files_group = common_grp_param.add_mutually_exclusive_group()
 input_files_group.add_argument(
     "-i", "--input", type=argparse.FileType('r'), default=None, help="Single input filepath")
+
 input_files_group.add_argument(
     "-I", "--inputs", type=str, default=None,
     help="Multiple comma-separated input filepaths",)
+
 input_files_group.add_argument(
     "-P", "--inputPattern", type=str, default=None,
     help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
+
+# Plot style parameters
+common_grp_param.add_argument("--fontsize", type=int, default=14,
+                              help="Font size for plots. Default: 14")
+
+common_grp_param.add_argument("--markersize", type=int, default=10,
+                              help="Marker size for plots. Default: 10")
+
+# Misc. parameters
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
                                help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
 
