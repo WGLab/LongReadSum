@@ -210,7 +210,8 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         signal_ds.read(f5signals_u16, mdatatype);
 
         // Cast signals to int
-        int f5signals [data_count];
+        int* f5signals{};
+        f5signals = new int[data_count];
         std::copy(f5signals_u16, f5signals_u16 + data_count, f5signals);
 
         // Get the block stride (window length) attribute
@@ -226,7 +227,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         H5::DataType sl_datatype= seq_length_obj.getDataType();
         int sl_buffer [1];
         seq_length_obj.read(sl_datatype, sl_buffer);
-        //int sequence_length = sl_buffer[0];
 
         // Get the raw signal basecall start position
         H5::Group segm_group_obj = f5.openGroup("/Analyses/Segmentation_000/Summary/segmentation");
@@ -257,7 +257,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         int base_count = 0;
         for (int i = 0; i < move_data_count; i++)
         {
-
             // Grab the signal
             int end_index = base_start_index + block_stride_value;
             std::vector<int> block_signal(block_stride_value);

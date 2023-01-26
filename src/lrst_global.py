@@ -6,8 +6,6 @@ Set the log error code variables.
 
 
 prg_name = "LongReadSum"
-originalError = ''
-
 LOG_ALL = 0;
 LOG_DEBUG = 1;
 LOG_INFO = 2;
