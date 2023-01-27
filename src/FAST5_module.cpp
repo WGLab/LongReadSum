@@ -58,6 +58,56 @@ std::vector<std::string> getFastq(H5::H5File f5, std::string basecall_group)
     return tokens;
 }
 
+// Read alignment data from the file to get start and end map positions
+std::vector<int> getMapPositions(H5::H5File f5)
+{
+    std::vector<int> map_positions;  // Start and end map positions
+    try {
+        // Get the alignment start position
+        H5::Group align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
+        H5::Attribute start_map_obj = align_group_obj.openAttribute("mapped_start");
+        H5::DataType start_map_datatype= start_map_obj.getDataType();
+        int start_map_buffer [1];
+        start_map_obj.read(start_map_datatype, start_map_buffer);
+        int start_map = start_map_buffer[0];
+        map_positions.push_back(start_map);
+        std::cout << "Start map = " << start_map << std::endl;
+
+        // Get the alignment end position
+        H5::Attribute end_map_obj = align_group_obj.openAttribute("mapped_end");
+        H5::DataType end_map_datatype= end_map_obj.getDataType();
+        int end_map_buffer [1];
+        end_map_obj.read(end_map_datatype, end_map_buffer);
+        int end_map = end_map_buffer[0];
+        map_positions.push_back(end_map);
+        std::cout << "End map = " << end_map << std::endl;
+
+    } catch (FileIException &error) {
+    } catch (AttributeIException &error) {
+    }
+    return map_positions;
+}
+
+// Read alignment data from the file to get the mapped chromosome
+std::string getChromosome(H5::H5File f5)
+{
+    std::string mapped_chrom;  // Start and end map positions
+    try {
+        // Get the alignment start position
+        H5::Group align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
+        H5::Attribute chrom_obj = align_group_obj.openAttribute("mapped_chrom");
+        H5::DataType chrom_datatype= chrom_obj.getDataType();
+        std::string chrom_buffer;
+        chrom_obj.read(chrom_datatype, chrom_buffer);
+        std::cout << "Chromosome = " << chrom_buffer << std::endl;
+        mapped_chrom = chrom_buffer;
+    } catch (FileIException &error) {
+        error.printErrorStack();
+    } catch (AttributeIException &error) {
+        error.printErrorStack();
+    }
+    return mapped_chrom;
+}
 
 // Add base and read QC to the output data structure adn the output details file
 static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
@@ -245,6 +295,10 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         move_dataspace.getSimpleExtentDims(move_dims, NULL); // rank = 1
         int move_data_count = move_dims[0];
 
+        // Get alignment information
+        std::vector<int> map_positions = getMapPositions(f5);
+        std::string mapped_chrom = getChromosome(f5);
+
         // Read the boolean array
         uint8_t move_bool [move_data_count];
         move_dataset_obj.read(move_bool, move_datatype, move_dataspace);
@@ -284,31 +338,47 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
             basecall_index ++;
         }
 
+        // Set up the read information header for the output report
+        std::string read_info = read_name;
+        if (!mapped_chrom.empty()) {
+            read_info += " " + mapped_chrom;
+            if (!map_positions.empty()) {
+                std::string map_start = std::to_string(map_positions[0]);
+                read_info += " [" + map_start;
+                std::string map_end = std::to_string(map_positions[1]);
+                read_info += ", " + map_end + "]";
+            }
+        }
+
         // Append the basecall signals to the output structure
-        Base_Signals basecall_obj(read_name, sequence_data_str, basecall_signals);
+        Base_Signals basecall_obj(read_info, sequence_data_str, basecall_signals);
         output_data.addReadBaseSignals(basecall_obj);
 
     // catch failure caused by the H5File operations
     }
     catch (FileIException &error) {
+        std::cerr << "FileIException" << std::endl;
         error.printErrorStack();
         exit_code = 2;
     }
 
     // catch failure caused by the DataSet operations
     catch (DataSetIException &error) {
+        std::cerr << "DataSetIException" << std::endl;
         error.printErrorStack();
         exit_code = 2;
     }
 
     // catch failure caused by the DataSpace operations
     catch (DataSpaceIException &error) {
+        std::cerr << "DataSpaceIException" << std::endl;
         error.printErrorStack();
         exit_code = 2;
     }
 
     // catch failure caused by the Attribute operations
     catch (AttributeIException &error) {
+        std::cerr << "AttributeIException" << std::endl;
         error.printErrorStack();
         exit_code = 2;
     }

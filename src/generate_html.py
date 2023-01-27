@@ -338,7 +338,7 @@ class ST_HTML_Generator:
             self.html_writer.write('<div class="module">')
 
             # Set the description
-            description_text = "Base signal statistics for " + read_name
+            description_text = "Basecall signal"
             self.html_writer.write(
                 '<h2 id="lrst' + str(url_index) + '">' + description_text + '</h2><p>')
 

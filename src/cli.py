@@ -5,10 +5,11 @@ Parse arguments and run the filetype-specific module.
 """
 
 import os
+import logging
 import sys
+
 from glob import glob
 import argparse
-import logging
 from argparse import RawTextHelpFormatter
 from src import generate_html
 from src import lrst_global
@@ -18,6 +19,7 @@ from lib import lrst
 
 import faulthandler
 faulthandler.enable()
+logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
 def get_log_level(log_l):
@@ -111,7 +113,7 @@ def get_common_param(margs):
     return param_dict, this_error_str
 
 
-def fq_module(margs)
+def fq_module(margs):
     """
     Run the FASTQ filetype module.
     """
@@ -319,7 +321,7 @@ def fast5_module(margs):
         exit_code = lrst.callFAST5Module(input_para, fast5_output)
         if exit_code == 0:
             logging.info("QC generated.")
-            print("Generating output files...")
+            logging.info("Generating output files...")
             create_base_quality_plots(fast5_output, param_dict, "FAST5: Basic statistics")
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
@@ -359,7 +361,7 @@ def fast5_signal_module(margs):
 
         if exit_code == 0:
             logging.info("QC generated.")
-            print("Generating output files...")
+            logging.info("Generating output files...")
             from src import plot_for_FAST5s
             dynamic_plots = plot_for_FAST5s.plot(fast5_output, param_dict)
 

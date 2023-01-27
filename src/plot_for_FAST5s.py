@@ -6,6 +6,7 @@ Use the formatted statistics from our C++ module output text files to generate s
 from src import lrst_global
 
 import os
+import logging
 import csv
 import numpy as np
 import plotly.graph_objs as go
@@ -63,7 +64,8 @@ def plot(fast5_output, para_dict):
         start_index = 0
         sequence_list = list(nth_read_sequence)
         base_tick_values = []  # Append the last indices of the base signal to use for tick values
-        for i in range(sequence_length):
+        #for i in range(sequence_length):
+        for i in range(sequence_length - 1000, sequence_length):
             base_signals = nth_read_data[i]
 
             window_size = len(base_signals)
@@ -118,12 +120,12 @@ def plot(fast5_output, para_dict):
 
         # Save image
         image_filepath = os.path.join(out_path, nth_read_name + '_BaseSignal.png')
-        print("saving plot to ", image_filepath, "...")
         fig.write_image(image_filepath)
+        save_msg = "Plot image saved to: " + image_filepath
+        logging.info(save_msg)
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)
         output_html_plots.update({nth_read_name: dynamic_html})
-        print("Plot generated.")
 
     return output_html_plots
