@@ -61,12 +61,19 @@ def plot(fast5_output, para_dict):
         qc_writer.writerow(["Base", "Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
 
         # Loop through the data
+        # first_index = 19675
+        # last_index = 22000
+        first_index = 0
+        #last_index = sequence_length
+        last_index = 1000
         start_index = 0
         sequence_list = list(nth_read_sequence)
         base_tick_values = []  # Append the last indices of the base signal to use for tick values
         #for i in range(sequence_length):
-        for i in range(sequence_length - 1000, sequence_length):
-            base_signals = nth_read_data[i]
+        cag_current = []
+        previous_repeat = 0
+        for i in range(first_index, last_index):
+            base_signals = nth_read_data[i]  # Get the base's signal
 
             window_size = len(base_signals)
             end_index = start_index + window_size
@@ -99,6 +106,22 @@ def plot(fast5_output, para_dict):
             # Update the index
             start_index = end_index
 
+            # # Track CAG repeats
+            # if not cag_current:
+            #     if base_value == 'C':
+            #         cag_current = 'C'
+            # elif cag_current == 'C':
+            #     if base_value == 'A':
+            #         cag_current = 'CA'
+            #     else:
+            #         cag_current = ''
+            # elif cag_current == 'CA':
+            #     if base_value == 'G':
+            #         cag_current = ''
+            #         if i-previous_repeat < 4:
+            #             print(i)
+            #         previous_repeat = i
+
         # Close CSVs
         qc_file.close()
 
@@ -113,10 +136,14 @@ def plot(fast5_output, para_dict):
             font=dict(size=font_size)
         )
         fig.update_traces(marker={'size': marker_size})
-        fig.update_xaxes(tickangle=45,
+
+        # Set up X tick labels
+        x_tick_labels = sequence_list[first_index:last_index]
+
+        fig.update_xaxes(tickangle=0,
                          tickmode='array',
                          tickvals=base_tick_values,
-                         ticktext=sequence_list)
+                         ticktext=x_tick_labels)
 
         # Save image
         image_filepath = os.path.join(out_path, nth_read_name + '_BaseSignal.png')

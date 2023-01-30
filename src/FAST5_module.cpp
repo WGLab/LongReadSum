@@ -62,6 +62,7 @@ std::vector<std::string> getFastq(H5::H5File f5, std::string basecall_group)
 std::vector<int> getMapPositions(H5::H5File f5)
 {
     std::vector<int> map_positions;  // Start and end map positions
+    H5::Exception::dontPrint();  // Disable error printing
     try {
         // Get the alignment start position
         H5::Group align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
@@ -92,6 +93,8 @@ std::vector<int> getMapPositions(H5::H5File f5)
 std::string getChromosome(H5::H5File f5)
 {
     std::string mapped_chrom;  // Start and end map positions
+    std::string error_msg("No basecalling found.");  // Message when no basecalling is found.
+    H5::Exception::dontPrint();  // Disable error printing
     try {
         // Get the alignment start position
         H5::Group align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
@@ -102,10 +105,11 @@ std::string getChromosome(H5::H5File f5)
         std::cout << "Chromosome = " << chrom_buffer << std::endl;
         mapped_chrom = chrom_buffer;
     } catch (FileIException &error) {
-        error.printErrorStack();
+        std::cout << error_msg << std::endl;
     } catch (AttributeIException &error) {
-        error.printErrorStack();
+        std::cout << error_msg << std::endl;
     }
+
     return mapped_chrom;
 }
 
@@ -233,7 +237,9 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
 
         // Get the read name
+        // TODO: Below works for a single read. For multiple reads, it is read_name/Raw/Reads
         std::string signal_group_str = "/Raw/Reads";
+        std::cout << "Opening signal group..." << std::endl;
         H5::Group signal_group = f5.openGroup(signal_group_str);
         std::string read_name;
         read_name = signal_group.getObjnameByIdx(0);
@@ -265,6 +271,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::copy(f5signals_u16, f5signals_u16 + data_count, f5signals);
 
         // Get the block stride (window length) attribute
+        std::cout << "Opening basecall group..." << std::endl;
         H5::Group group_obj = f5.openGroup("/Analyses/Basecall_1D_000/Summary/basecall_1d_template");
         H5::Attribute block_stride_obj = group_obj.openAttribute("block_stride");
         H5::DataType bs_datatype= block_stride_obj.getDataType();
@@ -279,6 +286,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         seq_length_obj.read(sl_datatype, sl_buffer);
 
         // Get the raw signal basecall start position
+        std::cout << "Opening segmentation group..." << std::endl;
         H5::Group segm_group_obj = f5.openGroup("/Analyses/Segmentation_000/Summary/segmentation");
         H5::Attribute start_attr_obj = segm_group_obj.openAttribute("first_sample_template");
         H5::DataType st_datatype= start_attr_obj.getDataType();
