@@ -9,7 +9,6 @@ dependencies:
   - hdf5
   - htslib
   - samtools
-  - minimap2
   - swig
   - matplotlib
   - plotly=4.14
