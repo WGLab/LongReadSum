@@ -40,6 +40,7 @@ def plot(fast5_output, para_dict):
     # Plot the reads
     output_html_plots = {}
     for read_index in range(read_count):
+    # for read_index in range(3):
         # Create the figure
         fig = go.Figure()
 
@@ -52,7 +53,10 @@ def plot(fast5_output, para_dict):
         nth_read_skewness = fast5_output.getNthReadPearsonSkewnessCoeff(read_index)
         nth_read_kurtosis = fast5_output.getNthReadKurtosis(read_index)
         nth_read_sequence = fast5_output.getNthReadSequence(read_index)
-        sequence_length = len(nth_read_sequence)
+        sequence_length = len(nth_read_data)
+
+        # Check if sequence data is available
+        sequence_available = True if nth_read_sequence else False
 
         # Set up the output CSVs
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
@@ -61,22 +65,15 @@ def plot(fast5_output, para_dict):
         qc_writer.writerow(["Base", "Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
 
         # Loop through the data
-        # first_index = 19675
-        # last_index = 22000
         first_index = 0
-        #last_index = sequence_length
-        last_index = 1000
+        last_index = sequence_length
         start_index = 0
         sequence_list = list(nth_read_sequence)
         base_tick_values = []  # Append the last indices of the base signal to use for tick values
-        #for i in range(sequence_length):
-        cag_current = []
-        previous_repeat = 0
         for i in range(first_index, last_index):
             base_signals = nth_read_data[i]  # Get the base's signal
-
-            window_size = len(base_signals)
-            end_index = start_index + window_size
+            signal_length = len(base_signals)
+            end_index = start_index + signal_length
             base_tick_values.append(end_index)
 
             # Plot
@@ -90,14 +87,14 @@ def plot(fast5_output, para_dict):
                 opacity=0.5))
 
             # Update CSVs
-            base_value = sequence_list[i]
+            base_value = sequence_list[i] if sequence_available else ''
             signal_mean = nth_read_means[i]
             signal_median = nth_read_medians[i]
             signal_stds = nth_read_stds[i]
             signal_skewness = nth_read_skewness[i]
             signal_kurtosis = nth_read_kurtosis[i]
             raw_row = \
-                [base_value, base_signals, window_size,
+                [base_value, base_signals, signal_length,
                  signal_mean, signal_median, signal_stds,
                  signal_skewness, signal_kurtosis]
 
@@ -105,22 +102,6 @@ def plot(fast5_output, para_dict):
 
             # Update the index
             start_index = end_index
-
-            # # Track CAG repeats
-            # if not cag_current:
-            #     if base_value == 'C':
-            #         cag_current = 'C'
-            # elif cag_current == 'C':
-            #     if base_value == 'A':
-            #         cag_current = 'CA'
-            #     else:
-            #         cag_current = ''
-            # elif cag_current == 'CA':
-            #     if base_value == 'G':
-            #         cag_current = ''
-            #         if i-previous_repeat < 4:
-            #             print(i)
-            #         previous_repeat = i
 
         # Close CSVs
         qc_file.close()
@@ -130,23 +111,25 @@ def plot(fast5_output, para_dict):
         marker_size = para_dict["markersize"]
         fig.update_layout(
             title=nth_read_name,
-            xaxis_title="Base",
             yaxis_title="Signal",
             showlegend=False,
             font=dict(size=font_size)
         )
         fig.update_traces(marker={'size': marker_size})
 
-        # Set up X tick labels
-        x_tick_labels = sequence_list[first_index:last_index]
-
-        fig.update_xaxes(tickangle=0,
-                         tickmode='array',
-                         tickvals=base_tick_values,
-                         ticktext=x_tick_labels)
+        if sequence_available:
+            # Set up X tick labels
+            x_tick_labels = sequence_list[first_index:last_index]
+            fig.update_xaxes(title="Base",
+                             tickangle=0,
+                             tickmode='array',
+                             tickvals=base_tick_values,
+                             ticktext=x_tick_labels)
+        else:
+            fig.update_xaxes(title="Index")
 
         # Save image
-        image_filepath = os.path.join(out_path, nth_read_name + '_BaseSignal.png')
+        image_filepath = os.path.join(out_path, "img", nth_read_name + '_BaseSignal.png')
         fig.write_image(image_filepath)
         save_msg = "Plot image saved to: " + image_filepath
         logging.info(save_msg)

@@ -132,17 +132,6 @@ std::string getFileReadName(H5::H5File f5) {
 Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool single_read)
 {
     // Get the read name
-    // TODO: Below works for a single read. For multiple reads, it is read_name/Raw/Reads
-
-//        // Print all group names
-//        std::cout << "Opening root group..." << std::endl;
-//        H5::Group root_group = f5.openGroup("/");
-//        size_t num_objs = root_group.getNumObjs();
-//        std::string obj_name;
-//        for (size_t i=0; i < num_objs; i++) {
-//            obj_name = root_group.getObjnameByIdx(i);
-//            std::cout << obj_name << std::endl;
-//
     std::string sequence_data_str("");
     std::vector<std::vector<int>> basecall_signals;  // Holds signals across bases
     std::string mapped_chrom;
@@ -159,11 +148,11 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         signal_dataset_str = signal_group_str + "/Signal";
     }
 
-    std::cout << "Opening signal group " << signal_group_str << std::endl;
+    //std::cout << "Opening signal group " << signal_group_str << std::endl;
     H5::Group signal_group = f5.openGroup(signal_group_str);
 
     // Get the signal dataset
-    std::cout << "Opening dataset " << signal_dataset_str << std::endl;
+    //std::cout << "Opening dataset " << signal_dataset_str << std::endl;
     H5::DataSet signal_ds = f5.openDataSet(signal_dataset_str);
     H5::DataType mdatatype= signal_ds.getDataType();
     H5::DataSpace dataspace = signal_ds.getSpace();
@@ -172,30 +161,25 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
     int data_count = dims[0];
 
     // Store the signals in an array
-    uint16_t f5signals_u16 [data_count];
-    signal_ds.read(f5signals_u16, mdatatype);
+    int16_t f5signals_16 [data_count];
+    signal_ds.read(f5signals_16, mdatatype);
 
     // Cast signals to int
-    int* f5signals{};
-    f5signals = new int[data_count];
-    std::copy(f5signals_u16, f5signals_u16 + data_count, f5signals);
+    int f5signals [data_count];
+    for (int i = 0; i < data_count; i++) { f5signals[i] = (int) f5signals_16[i]; };
 
     // Get the sequence string if available
     std::string basecall_group("Basecall_1D_000");
     std::vector<std::string> fq = getFastq(f5, basecall_group);
     if (fq.empty()){
         // Return the raw signal only
-        std::vector<int> all_signals(*f5signals);
+        int n = sizeof(f5signals) / sizeof(f5signals[0]);
+        std::vector<int> all_signals(f5signals, f5signals + n);
         basecall_signals.push_back(all_signals);
 
     } else {
         // Access signal basecalling information
         sequence_data_str = fq[1];
-
-    //    // Format the read signal dataset name
-    //    std::ostringstream ss;
-    //    ss << signal_group_str << "/" << read_name << "/Signal";
-    //    std::string signal_dataset_str = ss.str();
 
         // Get the block stride (window length) attribute
         std::cout << "Opening basecall group..." << std::endl;
@@ -433,7 +417,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
             size_t num_objs = root_group.getNumObjs();
             for (size_t i=0; i < num_objs; i++) {
                 read_name = root_group.getObjnameByIdx(i);
-                std::cout << read_name << std::endl;
+                //std::cout << read_name << std::endl;
 
                 // Append the basecall signals to the output structure
                 //signal_group_str = "/" + read_name + "/Raw";

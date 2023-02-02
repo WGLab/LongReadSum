@@ -298,6 +298,7 @@ class ST_HTML_Generator:
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
+
         # Add the summary table section link
         url_index = 0
         self.html_writer.write('<li>')
