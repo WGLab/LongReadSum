@@ -47,6 +47,23 @@ conda activate lrst_py39
 make
 
 ```
+
+If you are using FAST5 files with VBZ compression, you will need to download and install the VBZ plugin corresponding to your architecture:
+https://github.com/nanoporetech/vbz_compression/releases
+
+For example:
+
+```
+wget https://github.com/nanoporetech/vbz_compression/releases/download/v1.0.1/ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
+tar -xf ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
+```
+
+Finally, add the plugin to your path:
+```
+export HDF5_PLUGIN_PATH=/full/path/to/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin
+```
+
+
 ## Running
 Activate the conda environment:
 
