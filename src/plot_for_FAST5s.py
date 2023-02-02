@@ -37,10 +37,16 @@ def plot(fast5_output, para_dict):
     table_str += "\n</tbody>\n</table>"
     lrst_global.plot_filenames["basic_st"]['detail'] = table_str
 
+    # Determine the read range
+    read_range = para_dict["read_range"]
+    if read_range:
+        start_read, end_read = read_range
+    else:
+        start_read, end_read = 1, read_count
+
     # Plot the reads
     output_html_plots = {}
-    for read_index in range(read_count):
-    # for read_index in range(3):
+    for read_index in range(start_read, end_read):
         # Create the figure
         fig = go.Figure()
 

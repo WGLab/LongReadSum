@@ -66,6 +66,14 @@ def get_common_param(margs):
             pat_split = margs.inputPattern.split("*")
             param_dict["input_files"].extend(
                 glob(os.path.join("*".join(pat_split[:-1]), "*"+pat_split[-1])))
+
+        # Read range
+        if not (margs.readRange == None or margs.readRange == ""):
+            read_range = margs.readRange
+            if len(read_range) == 2:
+                if (read_range[0] > 0) and (read_range[1] > read_range[0]):
+                    param_dict["read_range"] = read_range
+
         if len(param_dict["input_files"]) == 0:
             this_error_str += "No input file(s) can be found. \n"
         else:
@@ -414,6 +422,10 @@ common_grp_param.add_argument("--fontsize", type=int, default=14,
 common_grp_param.add_argument("--markersize", type=int, default=10,
                               help="Marker size for plots. Default: 10")
 
+common_grp_param.add_argument(
+    "-R", "--readRange", nargs="+", type=int, default=None,
+    help="Set a range of reads to analyze, e.g. -R 1 5.")
+
 # Misc. parameters
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
                                help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
@@ -468,7 +480,7 @@ fast5_signal_parser = subparsers.add_parser('f5s',
                                      parents=[parent_parser],
                                      help="FAST5 file input with signal statistics output",
                                      description="For example:\n"
-                                                 "python %(prog)s -i input.fast5 -o /output_directory/",
+                                                 "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
                                      formatter_class=RawTextHelpFormatter)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
