@@ -30,7 +30,6 @@ class ST_HTML_Generator:
         self.html_writer.write("<title>")
         self.html_writer.write(self.header_info)
         self.html_writer.write("</title>")
-
         self.html_writer.write('''<style  type="text/css">
  @media screen {
   div.summary {
@@ -211,11 +210,14 @@ class ST_HTML_Generator:
   margin-top: 0;
   border-top: 0;
   }
-
   
   p {
   padding-top: 0;
   margin-top: 0;
+  }
+  
+  li {
+  margin: 10px 0;
   }
       </style>''')
 
@@ -245,11 +247,11 @@ class ST_HTML_Generator:
                 '<a href="#lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['title'] + '</a>')
             _imki += 1;
             self.html_writer.write('</li>')
-        if True:  # self.more_input_files:
-            self.html_writer.write('<li>')
-            self.html_writer.write('<a href="#lrst' + str(_imki) + '">List of input files</a>')
-            _imki += 1;
-            self.html_writer.write('</li>')
+
+        self.html_writer.write('<li>')
+        self.html_writer.write('<a href="#lrst' + str(_imki) + '">List of input files</a>')
+        _imki += 1;
+        self.html_writer.write('</li>')
 
         self.html_writer.write("</ul>")
         self.html_writer.write('</div>')

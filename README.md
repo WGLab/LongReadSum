@@ -30,9 +30,10 @@ docker pull genomicslab/longreadsum
 
 On Unix/Linux:
 ```
-docker run -v local/inputs/:/inputs/ -it genomicslab/longreadsum bam -i /inputs/input.bam
+docker run -v C:/Users/Path/to/DataDirectory:/mnt/input/ -it genomicslab/longreadsum bam -i /mnt/input/input.bam
 ```
-Note that the `-v` command is required for Docker to find the input file. In the above BAM file example, the local directory `local/inputs/` containing the input file is mapped to a directory `/inputs/` in the Docker container. Thus, the input file is specified as `/inputs/input.bam`
+Note that the `-v` command is required for Docker to find the input file. Use a directory under `C:/Users/` to ensure volume files are mounted correctly. In the above BAM file example, the local directory `local/inputs/` containing the input file is mapped to a directory `/inputs/` in the Docker container. Thus, the input file is specified as `/inputs/input.bam`.
+
 
 # Installation using Anaconda
 First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:

@@ -67,12 +67,9 @@ def get_common_param(margs):
             param_dict["input_files"].extend(
                 glob(os.path.join("*".join(pat_split[:-1]), "*"+pat_split[-1])))
 
-        # Read range
-        if not (margs.readRange == None or margs.readRange == ""):
-            read_range = margs.readRange
-            if len(read_range) == 2:
-                if (read_range[0] > 0) and (read_range[1] > read_range[0]):
-                    param_dict["read_range"] = read_range
+        # Number of reads to sample
+        read_count = margs.readCount
+        param_dict["read_count"] = read_count
 
         if len(param_dict["input_files"]) == 0:
             this_error_str += "No input file(s) can be found. \n"
@@ -422,9 +419,10 @@ common_grp_param.add_argument("--fontsize", type=int, default=14,
 common_grp_param.add_argument("--markersize", type=int, default=10,
                               help="Marker size for plots. Default: 10")
 
+# Number of reads to sample
 common_grp_param.add_argument(
-    "-R", "--readRange", nargs="+", type=int, default=None,
-    help="Set a range of reads to analyze, e.g. -R 1 5.")
+    "-R", "--readCount", nargs="+", type=int, default=8,
+    help="Set the number of reads to randomly sample from the file. Default: 8.")
 
 # Misc. parameters
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,

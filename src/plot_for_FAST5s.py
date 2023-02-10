@@ -10,6 +10,7 @@ import logging
 import csv
 import numpy as np
 import plotly.graph_objs as go
+from random import sample
 
 
 def plot(fast5_output, para_dict):
@@ -37,16 +38,20 @@ def plot(fast5_output, para_dict):
     table_str += "\n</tbody>\n</table>"
     lrst_global.plot_filenames["basic_st"]['detail'] = table_str
 
-    # Determine the read range
-    read_range = para_dict["read_range"]
-    if read_range:
-        start_read, end_read = read_range
+    # Randomly sample a small set of reads if it is a large dataset
+    read_count_max = para_dict["read_count"] + 1
+    read_indices = []
+    if read_count_max <= read_count:
+        # No random sampling required
+        read_indices = list(range(1, read_count_max))
     else:
-        start_read, end_read = 1, read_count
+        # Randomly sample from the set
+        unsampled_indices = list(range(1, read_count))
+        read_indices = sample(unsampled_indices, read_count_max)
 
     # Plot the reads
     output_html_plots = {}
-    for read_index in range(start_read, end_read):
+    for read_index in read_indices:
         # Create the figure
         fig = go.Figure()
 
