@@ -30,9 +30,10 @@ docker pull genomicslab/longreadsum
 
 On Unix/Linux:
 ```
-docker run -v local/inputs/:/inputs/ -it genomicslab/longreadsum bam -i /inputs/input.bam
+docker run -v C:/Users/.../DataDirectory:/mnt/ -it genomicslab/longreadsum bam -i /mnt/input.bam -o /mnt/output
 ```
-Note that the `-v` command is required for Docker to find the input file. In the above BAM file example, the local directory `local/inputs/` containing the input file is mapped to a directory `/inputs/` in the Docker container. Thus, the input file is specified as `/inputs/input.bam`
+Note that the `-v` command is required for Docker to find the input file. Use a directory under `C:/Users/` to ensure volume files are mounted correctly. In the above example, the local directory `C:/Users/.../DataDirectory` containing the input file `input.bam` is mapped to a directory `/mnt/` in the Docker container. Thus, the input file and output directory arguments are relative to the `/mnt/` directory, but the output files will also be saved locally in `C:/Users/.../DataDirectory` under the specified subdirectory `output`.
+
 
 # Installation using Anaconda
 First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
@@ -47,6 +48,23 @@ conda activate lrst_py39
 make
 
 ```
+
+If you are using FAST5 files with VBZ compression, you will need to download and install the VBZ plugin corresponding to your architecture:
+https://github.com/nanoporetech/vbz_compression/releases
+
+For example:
+
+```
+wget https://github.com/nanoporetech/vbz_compression/releases/download/v1.0.1/ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
+tar -xf ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
+```
+
+Finally, add the plugin to your path:
+```
+export HDF5_PLUGIN_PATH=/full/path/to/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin
+```
+
+
 ## Running
 Activate the conda environment:
 
