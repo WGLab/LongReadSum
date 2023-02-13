@@ -49,6 +49,8 @@ make
 
 ```
 
+## VBZ compressed FAST5 files
+
 If you are using FAST5 files with VBZ compression, you will need to download and install the VBZ plugin corresponding to your architecture:
 https://github.com/nanoporetech/vbz_compression/releases
 
@@ -63,6 +65,8 @@ Finally, add the plugin to your path:
 ```
 export HDF5_PLUGIN_PATH=/full/path/to/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin
 ```
+
+## POD5 files
 
 If you are using POD5 files, you will need to download and install the POD5 library corresponding to your architecture:
 https://github.com/nanoporetech/pod5-file-format/releases
