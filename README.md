@@ -64,6 +64,18 @@ Finally, add the plugin to your path:
 export HDF5_PLUGIN_PATH=/full/path/to/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin
 ```
 
+If you are using POD5 files, you will need to download and install the POD5 library corresponding to your architecture:
+https://github.com/nanoporetech/pod5-file-format/releases
+
+For example:
+
+```
+cd LongReadSum
+wget https://github.com/nanoporetech/pod5-file-format/releases/download/0.1.5/lib_pod5-0.1.5-linux-x64.tar.gz
+tar -xf lib_pod5-0.1.5-linux-x64.tar.gz
+```
+
+This will install the library in `LongReadSum/lib` with headers located in `LongReadSum/include`
 
 ## Running
 Activate the conda environment:
