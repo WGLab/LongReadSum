@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install build-essential -y
 RUN wget https://github.com/nanoporetech/vbz_compression/releases/download/v1.0.1/ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
 RUN tar -xf ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
 
+# Install the POD5 library
+RUN wget https://github.com/nanoporetech/pod5-file-format/releases/download/0.1.5/lib_pod5-0.1.5-linux-x64.tar.gz
+RUN tar -xf lib_pod5-0.1.5-linux-x64.tar.gz
+
 # Create the environment
 RUN conda env create -f environment.yml
 
