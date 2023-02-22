@@ -39,15 +39,10 @@ def plot(fast5_output, para_dict):
     lrst_global.plot_filenames["basic_st"]['detail'] = table_str
 
     # Randomly sample a small set of reads if it is a large dataset
-    read_count_max = para_dict["read_count"] + 1
-    read_indices = []
-    if read_count_max <= read_count:
-        # No random sampling required
-        read_indices = list(range(1, read_count_max))
-    else:
-        # Randomly sample from the set
-        unsampled_indices = list(range(1, read_count))
-        read_indices = sample(unsampled_indices, read_count_max)
+    read_count_max = para_dict["read_count"]
+    read_sample_size = min(read_count_max, read_count)
+    unsampled_indices = list(range(0, read_sample_size))
+    read_indices = sample(unsampled_indices, read_sample_size)
 
     # Plot the reads
     output_html_plots = {}
