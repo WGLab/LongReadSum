@@ -8,6 +8,9 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+
+
 def setDefaultFontSize(font_size):
     """Set the default font size for matplotlib plots."""
     plt.rcParams.update({'font.size': font_size})
