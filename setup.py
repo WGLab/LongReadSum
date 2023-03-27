@@ -6,7 +6,6 @@ Compile the module and its dependencies.
 import os
 import glob
 import setuptools
-# from distutils.core import setup, Extension
 from setuptools import setup, Extension
 
 print("Running setup.py...")
@@ -23,9 +22,7 @@ print("header files: ")
 print(project_headers)
 
 # Set up the extension
-# include_dirs = ['include/', 'lib/hdf/HDF_Group/HDF5/1.12.2/include/']
-# include_dirs = ['/home/perdomoj/github/LongReadSum/include/', 'include/hdf5-1_12_1/']
-include_dirs = ['include', 'include/hdf5-1_12_1/']
+include_dirs = ['include']
 print("CWDS: ", os.getcwd())
 print("INCLUDE DIRS: ")
 print(include_dirs)
@@ -37,8 +34,6 @@ lrst_mod = Extension("_lrst",
                      library_dirs=['lib/hdf5-1_12_1/'],
                      include_dirs=include_dirs,
                      depends=project_headers)
-
-#library_dirs=['lib/hdf/HDF_Group/HDF5/1.12.2/lib/']
 
 # Set up the module
 setup(name = "longreadsum",
@@ -58,16 +53,14 @@ setup(name = "longreadsum",
       },
       )
 
+# Don't use setuptools:
+# https://stackoverflow.com/questions/68545064/python-commands-to-build-distribution-setup-py-build-vs-python-m-build
 
-# python3 -m build
-# pip install --editable .
-# longreadsum
-# python3 -m twine upload --repository testpypi dist/*
+# conda develop . --uninstall
+# conda develop .
 
-# docker pull quay.io/pypa/manylinux1_x86_64
-# docker run --rm -v $(pwd):/io quay.io/pypa/manylinux1_x86_64 /io/repair_wheel.sh /io/dist/longreadsum-1.0.1-cp39-cp39-linux_x86_64.whl
+# Not advisable to use conda develop: https://stackoverflow.com/questions/49474575/how-to-install-my-own-python-module-package-via-conda-and-watch-its-changes
 
-# TODO: Try the above steps using the Python 3.6 environment to compile the wheel for Python 3.6
-
-# Auditwheel error: cannot repair "dist/longreadsum-1.0.1-cp39-cp39-linux_x86_64.whl" to "manylinux_2_5_x86_64" ABI because of the presence of too-recent versioned symbols.
-# https://github.com/pypa/auditwheel
+# conda build .
+#  conda build -c bioconda -c conda-forge .
+# conda install conda-verify

@@ -1,11 +1,12 @@
-name: lrst_py36
+name: lrst_py39
 channels:
   - bioconda
   - anaconda
   - conda-forge
   - defaults
 dependencies:
-  - python=3.6
+  - python
+  - conda-build
   - hdf5
   - htslib
   - samtools
@@ -15,8 +16,6 @@ dependencies:
   - pytest
   - pytest-dependency
   - pip
-  - pip:
-          - kaleido
 
 # conda env create --file=environment.yml
 # conda activate lrst_py36
