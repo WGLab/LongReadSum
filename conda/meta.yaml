@@ -1,0 +1,63 @@
+{% set version = "1.0.1" %}
+
+package:
+  name: longreadsum
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  entry_points:
+    - longreadsum = src.__main__:main
+  files:
+#    - include/*.h
+#    - lib/*.so
+#    - lib/*.py
+    - src/*.py
+
+requirements:
+  build:
+    - make
+    - {{ compiler('cxx') }}
+    - swig
+  host:
+    - python >=3.7
+    - swig
+    - pip
+    - htslib
+    - hdf5
+    - samtools
+    - matplotlib
+    - plotly=4.14
+  run:
+    - python
+    - htslib
+    - hdf5
+    - samtools
+    - matplotlib
+    - plotly=4.14
+
+test:
+    commands:
+        - longreadsum --help
+about:
+  home: https://github.com/WGLab/LongReadSum
+  license: MIT
+  summary: 'Long read sequencing data quality control tool'
+  description: |
+    A fast and flexible QC tool for long read sequencing data.
+  dev_url: https://github.com/WGLab/LongReadSum
+
+#  doc_url: https://pypi.python.org/pypi/imagesize
+#  doc_source_url: https://github.com/shibukawa/imagesize_py/blob/master/README.rst
+
+# TODO:
+# Current error involves the .so file not being found by lrst.py:
+#    from lib import lrst
+#  File "/home/perdomoj/miniconda3/envs/lrst_py39/conda-bld/longreadsum_1679878461683/_test_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeh/lib/python3.11/site-packages/lib/lrst.py", line 13, in <module>
+#from . import _lrst
+#ImportError: cannot import name '_lrst' from 'lib'
