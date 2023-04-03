@@ -3,8 +3,8 @@ plot_for_BAM.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
-from src import lrst_global
-from src.utils import *
+from longreadsum import lrst_global
+from longreadsum.utils import *
 
 def plot_alignment_numbers(data, path):
     fig, axes = plt.subplots(figsize =(8, 6))

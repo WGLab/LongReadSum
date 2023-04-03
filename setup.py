@@ -12,7 +12,7 @@ print("Running setup.py...")
 
 # Get the project dependencies
 src_files = []
-project_dir = 'src/'
+project_dir = 'longreadsum/'
 project_src_files = []
 project_src_files.extend(glob.glob(project_dir + '*.cpp'))
 project_src_files.extend(glob.glob(project_dir + '*.cxx'))
@@ -31,16 +31,16 @@ lrst_mod = Extension("_lrst",
                      language='c++',
                      extra_compile_args=['-std=c++11'],
                      libraries=["rt", "pthread", "z", "dl", "m", "hts", "hdf5_cpp", "hdf5", "hdf5_hl_cpp", "hdf5_hl"],
-                     library_dirs=['lib/hdf5-1_12_1/'],
                      include_dirs=include_dirs,
-                     depends=project_headers)
+                     depends=project_headers, )
 
 # Set up the module
-setup(name = "longreadsum",
-      version = '1.0.1',
-      author      = "WGLab",
-      description = """A fast and flexible QC tool for long read sequencing data""",
+setup(name="longreadsum",
+      version='1.0.1',
+      author="WGLab",
+      description="""A fast and flexible QC tool for long read sequencing data""",
       ext_modules=[lrst_mod],
+      script_args=['build_ext', '--inplace', '--build-lib', 'lib'],
       py_modules=['lrst'],
       packages=setuptools.find_packages(),
       headers=project_headers,
@@ -48,7 +48,7 @@ setup(name = "longreadsum",
       test_suite='tests',
       entry_points={
           'console_scripts': [
-              'longreadsum = src.__main__:main'
+              'longreadsum = longreadsum.__main__:main'
           ]
       },
       )
@@ -64,3 +64,7 @@ setup(name = "longreadsum",
 # conda build .
 #  conda build -c bioconda -c conda-forge .
 # conda install conda-verify
+
+# Added build ext in place:
+# https://stackoverflow.com/questions/12901776/python-setup-py-develop-is-it-possible-to-create-egg-info-folder-not-in-so
+#

@@ -9,35 +9,38 @@ source:
 
 build:
   number: 0
-  noarch: python
-  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
-  entry_points:
-    - longreadsum = src.__main__:main
-  files:
-#    - include/*.h
+#  noarch: python  # Will not work due to the complied extension (https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/packages.html)
+#  script:
+#    - mkdir -p $PREFIX/lib  # Create the lib directory
+#    - mkdir -p $PREFIX/bin  # Create the bin directory
+#    - mkdir -p $SP_DIR
+#    - python setup.py install # SO should generate in $PREFIX/lib
+#    - echo "setup.py install complete"
+#    - cp longreadsum/*.py $SP_DIR/longreadsum  # Copy the source code to the site-packages directory
+#    - cp lib/*.so $SP_DIR/longreadsum  # Copy lib contents to site-packages
+#    - cp lib/*.py $SP_DIR/longreadsum
+#  entry_points:
+#    - longreadsum = longreadsum.__main__:main  # Creates the longreadsum script in $PREFIX/bin
+#  files:
 #    - lib/*.so
 #    - lib/*.py
-    - src/*.py
+#    - src/*.py
 
 requirements:
   build:
+    - python >=3.7
     - make
     - {{ compiler('cxx') }}
     - swig
-  host:
-    - python >=3.7
-    - swig
-    - pip
+    - setuptools >=38.6.0
     - htslib
     - hdf5
-    - samtools
-    - matplotlib
-    - plotly=4.14
+  host:
+    - python
   run:
     - python
     - htslib
     - hdf5
-    - samtools
     - matplotlib
     - plotly=4.14
 
@@ -55,9 +58,14 @@ about:
 #  doc_url: https://pypi.python.org/pypi/imagesize
 #  doc_source_url: https://github.com/shibukawa/imagesize_py/blob/master/README.rst
 
-# TODO:
-# Current error involves the .so file not being found by lrst.py:
-#    from lib import lrst
-#  File "/home/perdomoj/miniconda3/envs/lrst_py39/conda-bld/longreadsum_1679878461683/_test_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeh/lib/python3.11/site-packages/lib/lrst.py", line 13, in <module>
-#from . import _lrst
-#ImportError: cannot import name '_lrst' from 'lib'
+# swig -c++ -python -outdir $(LIB_DIR) -I$(INCL_DIR) -o $(SRC_DIR)/lrst_wrap.cxx $(SRC_DIR)/lrst.i
+# swig -c++ -python -outdir longreadsum -Iinclude -o longreadsum/lrst_wrap.cpp longreadsum/lrst.i
+#g++ -I$CONDA_PREFIX/include/python3.9 -I../include -L$CONDA_PREFIX/lib/python3.9 -shared -o _lrst.so -fPIC lrst_wrap.cpp
+
+# Why use python setup.py install instead of pip install?
+# https://discuss.python.org/t/the-difference-between-python-setup-py-build-ext-i-and-pip-install-e/3716/7
+# https://docs.conda.io/projects/conda-build/en/latest/user-guide/tutorials/build-pkgs.html
+
+#    - echo "Setup.py complete. Current directory: $(pwd)"
+#    - echo "Lib contents: $(ls $PREFIX/lib)"
+#    - echo "Local lib contents: $(ls lib)"

@@ -3,7 +3,7 @@ plot_for_FAST5s.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
-from src import lrst_global
+from longreadsum import lrst_global
 
 import os
 import logging

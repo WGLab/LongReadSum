@@ -3,7 +3,7 @@ generate_html.py: Generate the HTML file from our plot images.
 """
 
 import base64
-from src import lrst_global  # Contains our image filepaths
+from longreadsum import lrst_global  # Contains our image filepaths
 
 
 class ST_HTML_Generator:

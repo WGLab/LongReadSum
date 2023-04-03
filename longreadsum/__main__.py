@@ -3,7 +3,7 @@ __main__.py:
 Call the command-line interface.
 """
 
-from src import cli
+from longreadsum import cli
 
 
 def main():

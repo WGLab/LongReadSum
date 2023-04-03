@@ -11,11 +11,13 @@ import sys
 from glob import glob
 import argparse
 from argparse import RawTextHelpFormatter
-from src import generate_html
-from src import lrst_global
-from src.utils import *
+from longreadsum import generate_html
+from longreadsum import lrst_global
+from longreadsum.utils import *
 
-from lib import lrst
+# from lib import lrst
+from longreadsum import lrst
+# import lrst
 
 import faulthandler
 faulthandler.enable()

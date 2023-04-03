@@ -1,7 +1,7 @@
 import logging
 import os, itertools
 
-from src import lrst_global
+from longreadsum import lrst_global
 import matplotlib.pyplot as plt
 import numpy as np
 import plotly.graph_objs as go
