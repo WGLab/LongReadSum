@@ -27,7 +27,7 @@ RUN which python
 RUN make
 
 # Set up the HDF5 plugin path
-ENV HDF5_PLUGIN_PATH="/longreadsum/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin/"
+ENV HDF5_PLUGIN_PATH="/longreadsum/lib/"
 
 # The code to run when container is started:
 WORKDIR /
