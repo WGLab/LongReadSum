@@ -12,20 +12,25 @@ print("Running setup.py...")
 
 # Get the project dependencies
 src_files = []
-project_dir = 'longreadsum/'
+project_dir = 'src/'
 project_src_files = []
 project_src_files.extend(glob.glob(project_dir + '*.cpp'))
-project_src_files.extend(glob.glob(project_dir + '*.cxx'))
-
+# project_src_files.extend(glob.glob(project_dir + '*.cxx'))
 project_headers = glob.glob('include/*.h')
-print("header files: ")
-print(project_headers)
+
+# print("Project dir: ")
+# print(project_dir)
+#
+# print("working dir: ")
+# print(os.getcwd())
+#
+# # Print project source files
+# print("Project source files:")
+# for src_file in project_src_files:
+#     print("\t" + src_file)
 
 # Set up the extension
 include_dirs = ['include']
-print("CWDS: ", os.getcwd())
-print("INCLUDE DIRS: ")
-print(include_dirs)
 lrst_mod = Extension("_lrst",
                      sources=project_src_files,
                      language='c++',

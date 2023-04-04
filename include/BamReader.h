@@ -23,6 +23,7 @@
 
 // Type representing data for a single record in the BAM file
 typedef struct Bam1Record{
+    int num_mismatch;
     uint64_t qry_start_pos;
     uint64_t qry_end_pos;
     uint64_t qry_start_pos_rel;
@@ -168,11 +169,9 @@ public:
   ~BamReader();
   bool check_bam_status();
 
-  Bam1Record br;
-  //std::vector<Bam1Record> br_list;
+  Bam1Record current_bam_record;
 
   int read1RecordFromBam();
-  //int readBam(std::vector<Bam1Record> &br_list, int num_records, bool br_clear);
   int readBam(std::vector<Bam1Record> &br_list, int num_records=-1, bool br_clear=true);
   int resetBam(const char * bamfile);
   //int resetBam();
