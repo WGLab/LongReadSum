@@ -515,7 +515,7 @@ int BamReader::_read1RecordFromBam_(){
              qry_go_pos_rel += m_len;
              br.qry_end_pos = qry_go_pos;
              break;
-          case BAM_CINS:
+          case BAM_CINS: // I
              if (bamReadOp.get_w_pos_map_detail()) { _set_map_pos_detail(ref_go_pos, qry_go_pos, m_len, br, m_op, false, true, br.map_strand, br._len_original_read); }
              qry_go_pos += m_len;
              qry_go_pos_rel += m_len;

@@ -243,7 +243,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                         case 'N': case 'n':
                             output_qc->total_n_cnt += 1;                           break;
                         default:
-                            std::cout<<"Error!!! from "<< thread_id << " Unknown type of nucletides: "<< record_data->qry_seq[ _si ] << " for " <<  record_data->qry_name <<std::endl;
+                            std::cerr<<"Thread "<< thread_id << ": Unknown type of nucletides: "<< record_data->qry_seq[ _si ] << " for " <<  record_data->qry_name <<std::endl;
                     }
                 }
                 _t_gc_per = ( _t_c + _t_g)/( (record_data->qry_seq_len>0?record_data->qry_seq_len:-1)/100.0 );
@@ -264,12 +264,21 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                          case BAM_CMATCH: // M
                               match_this_read += record_data->cigar_len[_ci];
                               ref_thread_data.t_output_bam_.num_matched_bases += record_data->cigar_len[_ci];
+
+                              // Update the number of columns for the percent identity computation
+                              ref_thread_data.t_output_bam_.num_columns += record_data->cigar_len[_ci];
                               break;
                          case BAM_CINS:  // I
                               ref_thread_data.t_output_bam_.num_ins_bases += record_data->cigar_len[_ci];
+
+                              // Update the number of columns for the percent identity computation
+                              ref_thread_data.t_output_bam_.num_columns += record_data->cigar_len[_ci];
                               break;
                          case BAM_CDEL:   // D
                               ref_thread_data.t_output_bam_.num_del_bases += record_data->cigar_len[_ci];
+
+                              // Update the number of columns for the percent identity computation
+                              ref_thread_data.t_output_bam_.num_columns += record_data->cigar_len[_ci];
                               break;
                          case BAM_CREF_SKIP: // R
                               break;
@@ -286,9 +295,19 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                               //ref_thread_data.t_output_bam_.num_mismatched_bases += record_data->cigar_len[_ci];
                               break;
                          default:
-                              std::cout<<"ERROR!!! from "<< thread_id << " Unknown cigar "<< record_data->cigar_type[_ci] << record_data->cigar_len[_ci] << " for " <<  record_data->qry_name <<std::endl;
+                              std::cerr<<"Thread "<< thread_id << ": Unknown cigar "<< record_data->cigar_type[_ci] << record_data->cigar_len[_ci] << " for " <<  record_data->qry_name <<std::endl;
                     }
                 }
+
+                // Calculate percent identity
+                // = Number of matching bases / number of alignment columns
+                // = (num columns - NM) / num columns
+                // Get the number of columns
+                double num_columns_ = ref_thread_data.t_output_bam_.num_columns;
+                double num_mismatch_ = record_data->num_mismatch;
+                ref_thread_data.t_output_bam_.percent_identity = ((num_columns_ - num_mismatch_) / num_columns_) * 100.0;
+                //std::cout << "Percent identity = " << ref_thread_data.t_output_bam_.percent_identity << std::endl;
+
                 accuracy_perc_this_read = int( (double(match_this_read)/record_data->qry_seq_len)*100+0.5);
                 if ( accuracy_perc_this_read <0 || accuracy_perc_this_read>=PERCENTAGE_ARRAY_SIZE) {
                     std::cout<<"ERROR!!! #matched("<<match_this_read<<") is smaller than 0 or larger than total("<<record_data->qry_seq_len <<") for "<<  record_data->qry_name <<std::endl;
