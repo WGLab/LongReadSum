@@ -3,15 +3,17 @@ plot_for_FAST5s.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
-from src import lrst_global
-
 import os
 import logging
 import csv
 import numpy as np
 import plotly.graph_objs as go
 from random import sample
-
+\
+if __package__ == 'src':
+    from src import lrst_global
+else:
+    from longreadsum import lrst_global
 
 def plot(fast5_output, para_dict):
     """

@@ -9,7 +9,7 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include "ComFunction.h"
 
 BAM_Thread_data::BAM_Thread_data(Input_Para& ref_input_op, int p_thread_id, int p_batch_size=1000){
-   br_list.reserve(p_batch_size+1);
+   this->record_list.reserve(p_batch_size+1);
    _thread_id = p_thread_id;
    m_input_op = ref_input_op;
 }
@@ -127,28 +127,28 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
     uint64_t _t_a, _t_c, _t_g, _t_tu;
     double _t_gc_per;
     while (true){
-        ref_thread_data.br_list.clear();
+        ref_thread_data.record_list.clear();
         myMutex_readBam.lock();
 
         // Read the record into the thread pointer
-        ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
-        if (ref_thread_data.br_list.size() == 0 && !(read_i_bam < ref_input_op.num_input_files) ){
+        ref_bam_reader_ptr->readBam( ref_thread_data.record_list, BAM_Module::batch_size_of_record );
+        if (ref_thread_data.record_list.size() == 0 && !(read_i_bam < ref_input_op.num_input_files) ){
             myMutex_readBam.unlock();
             break;
         }
-        if ( ref_thread_data.br_list.size() < batch_size_of_record ){
+        if ( ref_thread_data.record_list.size() < batch_size_of_record ){
             if ( read_i_bam < ref_input_op.num_input_files ){ 
                std::cout<< "INFO: Open bam file="<< ref_input_op.input_files[read_i_bam] <<std::endl;
                ref_bam_reader_ptr->resetBam( ref_input_op.input_files[read_i_bam].c_str() );
-               if ( ref_thread_data.br_list.size() == 0 ){
-                  ref_bam_reader_ptr->readBam( ref_thread_data.br_list, BAM_Module::batch_size_of_record );
+               if ( ref_thread_data.record_list.size() == 0 ){
+                  ref_bam_reader_ptr->readBam( ref_thread_data.record_list, BAM_Module::batch_size_of_record );
                }
                read_i_bam++;
             }
         }
         myMutex_readBam.unlock();
 
-        if (ref_thread_data.br_list.size() == 0 ) { continue; }       
+        if (ref_thread_data.record_list.size() == 0 ) { continue; }
 
         // Count individual bases (mapped and unmapped) in BAM file records
         ref_thread_data.t_secondary_alignment.clear();
@@ -157,12 +157,14 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
         ref_thread_data.t_output_bam_.unmapped_long_read_info.resize();
         ref_thread_data.t_output_bam_.mapped_long_read_info.resize();
         ref_thread_data.t_output_bam_.long_read_info.resize();
-        for(record_data=ref_thread_data.br_list.begin(); record_data!=ref_thread_data.br_list.end(); record_data++){
+        for(record_data=ref_thread_data.record_list.begin(); record_data!=ref_thread_data.record_list.end(); record_data++){
             Basic_Seq_Statistics* output_qc = NULL;  // Output base QC data for either mapped or unmapped reads
             Basic_Seq_Quality_Statistics* output_quality_qc = NULL;  // Output base quality QC data
 
+            // Set the number of mismatches using the NM tag
+            ref_thread_data.t_output_bam_.num_mismatched_bases = record_data->num_mismatch;
+
             // The map flag indicates whether this record refers to unmapped or mapped data.
-            //
             if ( (record_data->map_flag)& BAM_FUNMAP ) {
                 // Unmapped data
                 output_qc = &( ref_thread_data.t_output_bam_.unmapped_long_read_info);
@@ -221,7 +223,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                 for (size_t _si=0; _si<record_data->qry_seq_len; _si++){
                     int _base_qual_int = int(record_data->qry_qual[_si]);
                     if ( _base_qual_int > MAX_BASE_QUALITY || _base_qual_int <0){
-                    std::cout<<"WARNINING!!! from "<< thread_id << " The base quality is not in [0,"<< MAX_BASE_QUALITY <<"]: " << int(record_data->qry_qual[_si]) << " at " << _si << " for " <<  record_data->qry_name  <<std::endl;
+                    std::cerr << "Thread "<< thread_id << ": The base quality is not in [0,"<< MAX_BASE_QUALITY <<"]: " << int(record_data->qry_qual[_si]) << " at " << _si << " for " <<  record_data->qry_name  <<std::endl;
                     }else{
                         output_quality_qc->base_quality_distribution[_base_qual_int ] += 1;
                         if ( output_quality_qc->min_base_quality==MoneDefault || _base_qual_int < output_quality_qc->min_base_quality){
@@ -241,7 +243,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                         case 'N': case 'n':
                             output_qc->total_n_cnt += 1;                           break;
                         default:
-                            std::cout<<"Error!!! from "<< thread_id << " Unknown type of nucletides: "<< record_data->qry_seq[ _si ] << " for " <<  record_data->qry_name <<std::endl;
+                            std::cerr<<"Thread "<< thread_id << ": Unknown type of nucletides: "<< record_data->qry_seq[ _si ] << " for " <<  record_data->qry_name <<std::endl;
                     }
                 }
                 _t_gc_per = ( _t_c + _t_g)/( (record_data->qry_seq_len>0?record_data->qry_seq_len:-1)/100.0 );
@@ -249,7 +251,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                     if ( int(_t_gc_per+0.5) < PERCENTAGE_ARRAY_SIZE){
                      output_qc->read_gc_content_count[ int(_t_gc_per+0.5) ] += 1;
                     }else{
-                     std::cout<<"ERROR!!! GC (%) content("<<_t_gc_per<<") is larger than total("<<PERCENTAGE_ARRAY_SIZE <<") for "<<  record_data->qry_name <<std::endl;
+                     std::cerr<<"GC (%) content("<<_t_gc_per<<") is larger than total("<<PERCENTAGE_ARRAY_SIZE <<") for "<<  record_data->qry_name <<std::endl;
                     }
                 }
             }
@@ -262,12 +264,21 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                          case BAM_CMATCH: // M
                               match_this_read += record_data->cigar_len[_ci];
                               ref_thread_data.t_output_bam_.num_matched_bases += record_data->cigar_len[_ci];
+
+                              // Update the number of columns for the percent identity computation
+                              ref_thread_data.t_output_bam_.num_columns += record_data->cigar_len[_ci];
                               break;
                          case BAM_CINS:  // I
                               ref_thread_data.t_output_bam_.num_ins_bases += record_data->cigar_len[_ci];
+
+                              // Update the number of columns for the percent identity computation
+                              ref_thread_data.t_output_bam_.num_columns += record_data->cigar_len[_ci];
                               break;
                          case BAM_CDEL:   // D
                               ref_thread_data.t_output_bam_.num_del_bases += record_data->cigar_len[_ci];
+
+                              // Update the number of columns for the percent identity computation
+                              ref_thread_data.t_output_bam_.num_columns += record_data->cigar_len[_ci];
                               break;
                          case BAM_CREF_SKIP: // R
                               break;
@@ -280,12 +291,23 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                          case BAM_CPAD:  // P
                               break;
                          case BAM_CDIFF: // X
-                              ref_thread_data.t_output_bam_.num_mismatched_bases += record_data->cigar_len[_ci];
+                              // Below is replaced with the NM tag in BAMReader.cpp
+                              //ref_thread_data.t_output_bam_.num_mismatched_bases += record_data->cigar_len[_ci];
                               break;
                          default:
-                              std::cout<<"ERROR!!! from "<< thread_id << " Unknown cigar "<< record_data->cigar_type[_ci] << record_data->cigar_len[_ci] << " for " <<  record_data->qry_name <<std::endl;
+                              std::cerr<<"Thread "<< thread_id << ": Unknown cigar "<< record_data->cigar_type[_ci] << record_data->cigar_len[_ci] << " for " <<  record_data->qry_name <<std::endl;
                     }
                 }
+
+                // Calculate percent identity
+                // = Number of matching bases / number of alignment columns
+                // = (num columns - NM) / num columns
+                // Get the number of columns
+                double num_columns_ = ref_thread_data.t_output_bam_.num_columns;
+                double num_mismatch_ = record_data->num_mismatch;
+                ref_thread_data.t_output_bam_.percent_identity = ((num_columns_ - num_mismatch_) / num_columns_) * 100.0;
+                //std::cout << "Percent identity = " << ref_thread_data.t_output_bam_.percent_identity << std::endl;
+
                 accuracy_perc_this_read = int( (double(match_this_read)/record_data->qry_seq_len)*100+0.5);
                 if ( accuracy_perc_this_read <0 || accuracy_perc_this_read>=PERCENTAGE_ARRAY_SIZE) {
                     std::cout<<"ERROR!!! #matched("<<match_this_read<<") is smaller than 0 or larger than total("<<record_data->qry_seq_len <<") for "<<  record_data->qry_name <<std::endl;

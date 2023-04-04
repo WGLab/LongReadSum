@@ -137,6 +137,10 @@ public:
    int64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
    int64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
+   // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
+   int64_t num_columns = ZeroDefault; // the number of columns
+   double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
+
    std::vector<int64_t> accuracy_per_read;
 
    Basic_Seq_Statistics mapped_long_read_info;

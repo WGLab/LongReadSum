@@ -1,0 +1,43 @@
+{% set version = "1.0.1" %}
+
+package:
+  name: longreadsum
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - python >=3.7
+    - make
+    - {{ compiler('cxx') }}
+    - swig
+    - setuptools >=38.6.0
+    - htslib
+    - hdf5=1.12.1
+  host:
+    - python
+  run:
+    - python
+    - htslib
+    - hdf5=1.12.1
+    - matplotlib
+    - plotly=4.14
+
+test:
+    commands:
+        - longreadsum --help
+about:
+  home: https://github.com/WGLab/LongReadSum
+  license: MIT
+  summary: 'Long read sequencing data quality control tool'
+  description: |
+    A fast and flexible QC tool for long read sequencing data.
+  dev_url: https://github.com/WGLab/LongReadSum
+  doc_url: https://github.com/WGLab/LongReadSum#readme
+#  doc_url: https://pypi.python.org/pypi/imagesize
+#  doc_source_url: https://github.com/shibukawa/imagesize_py/blob/master/README.rst

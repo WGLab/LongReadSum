@@ -1,11 +1,18 @@
+import os
 import logging
-import os, itertools
-
-from src import lrst_global
-import matplotlib.pyplot as plt
 import numpy as np
+import itertools
+
+import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
+
+if __package__ == 'src':
+    from src import lrst_global
+else:
+    from longreadsum import lrst_global
+
+logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 
 
 def setDefaultFontSize(font_size):

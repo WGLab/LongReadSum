@@ -3,8 +3,12 @@ plot_for_FA.py:
 Use the formatted statistics from our C++ module output text files to generate summary plots in image format.
 """
 
-from src import lrst_global
-from src.utils import *
+if __package__ == 'src':
+    from src import lrst_global
+    from src.utils import *
+else:
+    from longreadsum import lrst_global
+    from longreadsum.utils import *
 
 
 def generate_bs( fa_output, para_dict ):

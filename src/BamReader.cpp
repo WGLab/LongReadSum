@@ -5,14 +5,14 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 
 */
 
-#include "BamReader.h"
-#include <htslib/sam.h>
-
-#include "ComFunction.h"
 
 #include <iostream>
 #include <sstream>
 #include <fstream>
+#include <htslib/sam.h>
+
+#include "BamReader.h"
+#include "ComFunction.h"
 
 int BamReadOption::set_repdict1(const std::string & input_pattern, std::string str_delimiters){
     RepeatRegion repeat_region;  // Where the repeat region will be stored
@@ -239,7 +239,7 @@ int BamReader::openBam(const char * bamfile){
   
    in_bam = sam_open(bamfile, "rb");
    if (NULL == in_bam){
-      std::cout<< "Error! Cannot open sam file ("<<bamfile<< ")." << std::endl;
+      std::cerr<< "Cannot open SAM file ("<<bamfile<< ")." << std::endl;
       bam_status = BAM_FAILED;
       init();
       return BAM_FAILED;
@@ -270,7 +270,7 @@ int BamReader::resetBam(const char * bamfile){
    destroy();
    init();
    Bam1Record br1;
-   br = br1;
+   this->current_bam_record = br1;
    //br_list.clear();
    return openBam(bamfile);
 }
@@ -322,7 +322,7 @@ int BamReader::read1RecordFromBam(){
 }
 
 int BamReader::reset_Bam1Record(){
-   return reset_Bam1Record(br);
+   return reset_Bam1Record(this->current_bam_record);
 }
 int BamReader::reset_Bam1Record(Bam1Record & br){
    br.cigar_len.clear();
@@ -369,8 +369,18 @@ void BamReader::_set_map_pos_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, in
 }
 
 int BamReader::_read1RecordFromBam_(){
-   reset_Bam1Record(br);
-   
+   reset_Bam1Record(this->current_bam_record);
+
+   Bam1Record & br = this->current_bam_record;
+
+   // Get the number of mismatched bases using the MD tag
+   uint8_t *nmTag = bam_aux_get(bam_one_alignment, "NM");
+   if (nmTag != NULL) {
+      br.num_mismatch = bam_aux2i(nmTag);
+   } else {
+      br.num_mismatch = -1;
+   }
+
    br.qry_name = bam_get_qname(bam_one_alignment);
    br.map_flag = bam_1alignment_core->flag;
    if (!bamReadOp.check_unmap(br.map_flag)){
@@ -505,7 +515,7 @@ int BamReader::_read1RecordFromBam_(){
              qry_go_pos_rel += m_len;
              br.qry_end_pos = qry_go_pos;
              break;
-          case BAM_CINS:
+          case BAM_CINS: // I
              if (bamReadOp.get_w_pos_map_detail()) { _set_map_pos_detail(ref_go_pos, qry_go_pos, m_len, br, m_op, false, true, br.map_strand, br._len_original_read); }
              qry_go_pos += m_len;
              qry_go_pos_rel += m_len;
@@ -543,7 +553,7 @@ int BamReader::_read1RecordFromBam_(){
           default:
              fprintf(stderr, "Unknow cigar %d:%d\n", m_op, m_len);
       }   
-   } 
+   }
   
    if (br.qry_end_pos>0){ // to include br.qry_end_pos
       br.qry_end_pos = br.qry_end_pos - 1;
@@ -565,7 +575,7 @@ int BamReader::readBam(std::vector<Bam1Record> &br_list, int num_records, bool b
    t_num_records = 0;
    while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
        if ((sam_ret=_read1RecordFromBam_())==0){
-          br_list.push_back(br);
+          br_list.push_back(this->current_bam_record);
           t_num_records += 1;
           if (num_records>0 && t_num_records>=num_records){
              break;
@@ -621,7 +631,7 @@ std::string BamReader::Bam1Record_toString(Bam1Record & br){
 }
 
 std::string BamReader::Bam1Record_toString(){
-   return Bam1Record_toString(br);
+   return Bam1Record_toString(this->current_bam_record);
 }
 
 
