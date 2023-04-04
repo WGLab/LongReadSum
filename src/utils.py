@@ -7,7 +7,10 @@ import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-from longreadsum import lrst_global
+if __package__ == 'src':
+    from src import lrst_global
+else:
+    from longreadsum import lrst_global
 
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 

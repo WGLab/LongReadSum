@@ -52,19 +52,3 @@ setup(name="longreadsum",
           ]
       },
       )
-
-# Don't use setuptools:
-# https://stackoverflow.com/questions/68545064/python-commands-to-build-distribution-setup-py-build-vs-python-m-build
-
-# conda develop . --uninstall
-# conda develop .
-
-# Not advisable to use conda develop: https://stackoverflow.com/questions/49474575/how-to-install-my-own-python-module-package-via-conda-and-watch-its-changes
-
-# conda build .
-#  conda build -c bioconda -c conda-forge .
-# conda install conda-verify
-
-# Added build ext in place:
-# https://stackoverflow.com/questions/12901776/python-setup-py-develop-is-it-possible-to-create-egg-info-folder-not-in-so
-#
