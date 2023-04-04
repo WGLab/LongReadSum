@@ -16,7 +16,23 @@ from longreadsum import lrst_global
 from longreadsum.utils import *
 
 # from lib import lrst
-from longreadsum import lrst
+# try:
+#     from lib import lrst
+# except Exception as e:
+#     print(e)
+
+# try:
+#     import lrst
+# except Exception as e:
+#     print(e)
+
+import lrst
+
+# try:
+#     from longreadsum import lrst
+# except Exception as e:
+#     print(e)
+
 # import lrst
 
 import faulthandler

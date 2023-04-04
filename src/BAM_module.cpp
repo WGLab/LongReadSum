@@ -280,7 +280,8 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_in
                          case BAM_CPAD:  // P
                               break;
                          case BAM_CDIFF: // X
-                              ref_thread_data.t_output_bam_.num_mismatched_bases += record_data->cigar_len[_ci];
+                              // Below is replaced with the NM tag in BAMReader.cpp
+                              //ref_thread_data.t_output_bam_.num_mismatched_bases += record_data->cigar_len[_ci];
                               break;
                          default:
                               std::cout<<"ERROR!!! from "<< thread_id << " Unknown cigar "<< record_data->cigar_type[_ci] << record_data->cigar_len[_ci] << " for " <<  record_data->qry_name <<std::endl;

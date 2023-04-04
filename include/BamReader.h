@@ -2,6 +2,7 @@
 #define BAMREADER_H_
 
 #include <htslib/sam.h>
+#include <htslib/bgzf.h>
 
 #include <iostream>
 #include <sstream>

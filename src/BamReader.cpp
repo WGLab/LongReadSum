@@ -543,7 +543,15 @@ int BamReader::_read1RecordFromBam_(){
           default:
              fprintf(stderr, "Unknow cigar %d:%d\n", m_op, m_len);
       }   
-   } 
+   }
+
+   // Get the number of mismatched bases using the MD tag
+   uint8_t *nmTag = bam_aux_get(bam_one_alignment, "NM");
+   if (nmTag != NULL) {
+      br.num_mismatch = bam_aux2i(nmTag);
+   } else {
+      br.num_mismatch = -1;
+   }
   
    if (br.qry_end_pos>0){ // to include br.qry_end_pos
       br.qry_end_pos = br.qry_end_pos - 1;

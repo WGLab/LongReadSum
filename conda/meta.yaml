@@ -9,22 +9,6 @@ source:
 
 build:
   number: 0
-#  noarch: python  # Will not work due to the complied extension (https://docs.conda.io/projects/conda/en/latest/user-guide/concepts/packages.html)
-#  script:
-#    - mkdir -p $PREFIX/lib  # Create the lib directory
-#    - mkdir -p $PREFIX/bin  # Create the bin directory
-#    - mkdir -p $SP_DIR
-#    - python setup.py install # SO should generate in $PREFIX/lib
-#    - echo "setup.py install complete"
-#    - cp longreadsum/*.py $SP_DIR/longreadsum  # Copy the source code to the site-packages directory
-#    - cp lib/*.so $SP_DIR/longreadsum  # Copy lib contents to site-packages
-#    - cp lib/*.py $SP_DIR/longreadsum
-#  entry_points:
-#    - longreadsum = longreadsum.__main__:main  # Creates the longreadsum script in $PREFIX/bin
-#  files:
-#    - lib/*.so
-#    - lib/*.py
-#    - src/*.py
 
 requirements:
   build:
@@ -34,13 +18,13 @@ requirements:
     - swig
     - setuptools >=38.6.0
     - htslib
-    - hdf5
+    - hdf5=1.12.1
   host:
     - python
   run:
     - python
     - htslib
-    - hdf5
+    - hdf5=1.12.1
     - matplotlib
     - plotly=4.14
 
@@ -54,18 +38,6 @@ about:
   description: |
     A fast and flexible QC tool for long read sequencing data.
   dev_url: https://github.com/WGLab/LongReadSum
-
+  doc_url: https://github.com/WGLab/LongReadSum#readme
 #  doc_url: https://pypi.python.org/pypi/imagesize
 #  doc_source_url: https://github.com/shibukawa/imagesize_py/blob/master/README.rst
-
-# swig -c++ -python -outdir $(LIB_DIR) -I$(INCL_DIR) -o $(SRC_DIR)/lrst_wrap.cxx $(SRC_DIR)/lrst.i
-# swig -c++ -python -outdir longreadsum -Iinclude -o longreadsum/lrst_wrap.cpp longreadsum/lrst.i
-#g++ -I$CONDA_PREFIX/include/python3.9 -I../include -L$CONDA_PREFIX/lib/python3.9 -shared -o _lrst.so -fPIC lrst_wrap.cpp
-
-# Why use python setup.py install instead of pip install?
-# https://discuss.python.org/t/the-difference-between-python-setup-py-build-ext-i-and-pip-install-e/3716/7
-# https://docs.conda.io/projects/conda-build/en/latest/user-guide/tutorials/build-pkgs.html
-
-#    - echo "Setup.py complete. Current directory: $(pwd)"
-#    - echo "Lib contents: $(ls $PREFIX/lib)"
-#    - echo "Local lib contents: $(ls lib)"

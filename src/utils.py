@@ -1,12 +1,13 @@
+import os
 import logging
-import os, itertools
-
-from longreadsum import lrst_global
-import matplotlib.pyplot as plt
 import numpy as np
+import itertools
+
+import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+from longreadsum import lrst_global
 
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 
