@@ -23,3 +23,7 @@ cp -r "${SRC_DIR}"/src/*.py "${PREFIX}"/lib/longreadsum
 # Copy the SWIG generated library to the lib directory
 cp -r "${SRC_DIR}"/lib/*.so "${PREFIX}"/lib
 cp -r "${SRC_DIR}"/lib/*.py "${PREFIX}"/lib
+
+echo "Lib contents: "
+ls -l "${PREFIX}"/lib
+

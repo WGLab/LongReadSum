@@ -14,10 +14,14 @@ from os.path import dirname, abspath
 lib_dir = os.path.join(os.environ['CONDA_PREFIX'], "lib")
 sys.path.append(lib_dir)
 
+print("Library path: {}".format(lib_dir))
+print("Library contents: {}".format(os.listdir(lib_dir)))
+
 # Set the HDF5 plugin path
 parent_dir = dirname(dirname(abspath(__file__)))
 os.environ['HDF5_PLUGIN_PATH'] = os.path.join(parent_dir, "lib")
 
+print("HDF5_PLUGIN_PATH: {}".format(os.environ['HDF5_PLUGIN_PATH']))
 
 # Import the command-line interface
 from longreadsum import cli
