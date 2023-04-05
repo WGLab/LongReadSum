@@ -11,6 +11,7 @@ from os.path import dirname, abspath
 
 
 # Set the library path
+# lib_dir = os.path.join(os.environ['CONDA_PREFIX'], "lib")
 lib_dir = os.path.join(os.environ['CONDA_PREFIX'], "lib")
 sys.path.append(lib_dir)
 
