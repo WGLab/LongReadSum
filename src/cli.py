@@ -19,8 +19,8 @@ if __package__ == 'src':
     from src import lrst_global
     from src.utils import *
 else:
-    # import lrst
-    from longreadsum import lrst
+    import lrst
+    # from longreadsum import lrst
     from longreadsum import generate_html
     from longreadsum import lrst_global
     from longreadsum.utils import *
