@@ -6,7 +6,7 @@ package:
 
 source:
   git_url: https://github.com/WGLab/LongReadSum.git
-  git_rev: 44406202ce8d529e5e126cd257517f0cab03ba0e
+  git_rev: 5bb3be15bfe385484f2947b1126a5c3753dad9e8
 #  git-tag: test-bioconda
 #  sha256: 44406202ce8d529e5e126cd257517f0cab03ba0e
 #  git_tag: v{{ version }}
