@@ -14,7 +14,7 @@ from argparse import RawTextHelpFormatter
 
 from lib import lrst
 from src import generate_html
-from src.utils import *
+from src.plot_utils import *
 
 # # Print the package
 # if __package__ == 'src':
