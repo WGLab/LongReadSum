@@ -6,7 +6,8 @@
 #export C_INCLUDE_PATH=${C_INCLUDE_PATH}:${PREFIX}/include
 #export CPLUS_INCLUDE_PATH=${CPLUS_INCLUDE_PATH}:${PREFIX}/include
 #export LIBRARY_PATH=${LIBRARY_PATH}:${PREFIX}/lib
-#export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib
+
 #export LDFLAGS="$LDFLAGS -Wl,-rpath,$PREFIX/lib"
 
 # Generate the SWIG files
@@ -19,19 +20,27 @@ python setup.py install --single-version-externally-managed --record=record.txt 
 cp "${SRC_DIR}"/longreadsum "${PREFIX}"/bin
 chmod +x "$PREFIX"/bin/longreadsum
 
-# Copy the lib files to the lib directory
-mkdir -p "${PREFIX}"/lib/longreadsum  # Create the longreadsum lib directory
-cp -r "${SRC_DIR}"/src/*.py "${PREFIX}"/lib/longreadsum
+# Create the src directory
+mkdir -p "${PREFIX}"/src  # Create the longreadsum src directory
+
+# Copy the lib files to the src directory
+cp -r "${SRC_DIR}"/src/*.py "${PREFIX}"/src
+#mkdir -p "${PREFIX}"/lib/longreadsum  # Create the longreadsum lib directory
+#cp -r "${SRC_DIR}"/src/*.py "${PREFIX}"/lib/longreadsum
 
 # Copy the SWIG generated library to the lib directory
 #cp -r "${SRC_DIR}"/lib/*.so "${PREFIX}"/lib/longreadsum
-cp -r "${SRC_DIR}"/lib/*.py "${PREFIX}"/lib/longreadsum
+cp -r "${SRC_DIR}"/lib/*.py "${PREFIX}"/lib
 #cp -r "${SRC_DIR}"/lib/*.so "${PREFIX}"/lib
-cp -r "${SRC_DIR}"/lib/*.so "${PREFIX}"/lib/longreadsum
+cp -r "${SRC_DIR}"/lib/*.so "${PREFIX}"/lib
 #cp -r "${SRC_DIR}"/lib/*.py "${PREFIX}"/lib
+
+echo "Bin contents: "
+ls -l "${PREFIX}"/bin
 
 echo "Lib contents: "
 ls -l "${PREFIX}"/lib
 
-echo "Longreadsum lib contents: "
-ls -l "${PREFIX}"/lib/longreadsum
+echo "Src contents: "
+ls -l "${PREFIX}"/src
+#ls -l "${PREFIX}"/lib/longreadsum
