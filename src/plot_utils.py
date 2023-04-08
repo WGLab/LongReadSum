@@ -21,17 +21,9 @@ def setDefaultFontSize(font_size):
 
 
 def fmt(x):
-    if abs(x) >= 1e7:
-        return f'{x:.3E}'
-
-    elif abs(x) >= 1e3 or float(x).is_integer():
-        return f'{x:,.0f}'
-
-    elif abs(x) < 0.01:
-        return f'{x:.3E}'
-
-    else:
-        return f'{x:.4}'
+    """Format numbers for plots."""
+    format_x = np.format_float_scientific(x, exp_digits=4)
+    return format_x
 
 
 def wrap(s):
