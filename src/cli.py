@@ -13,7 +13,6 @@ import lrst
 import generate_html
 from plot_utils import *
 
-
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 
