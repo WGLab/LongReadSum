@@ -1,4 +1,4 @@
-{% set version = "1.0.2" %}
+{% set version = "1.0.2.beta" %}
 
 package:
   name: longreadsum
@@ -6,26 +6,29 @@ package:
 
 source:
   git_url: https://github.com/WGLab/LongReadSum.git
-  git_tag: v{{ version }}
+  git_rev: 8197fee3e967661a9247fb4951ba486525922436
+
 
 build:
   number: 0
 
 requirements:
   build:
-    - python >=3.7
+    - python
     - make
     - {{ compiler('cxx') }}
     - swig
-    - setuptools >=38.6.0
-    - htslib
-    - hdf5=1.12.1
+    - setuptools
+    - hdf5
+    - htslib>=1.9
   host:
     - python
+    - hdf5
+    - htslib>=1.9
   run:
     - python
-    - htslib
-    - hdf5=1.12.1
+    - hdf5
+    - htslib>=1.9
     - matplotlib
     - plotly=4.14
 
@@ -40,5 +43,3 @@ about:
     A fast and flexible QC tool for long read sequencing data.
   dev_url: https://github.com/WGLab/LongReadSum
   doc_url: https://github.com/WGLab/LongReadSum#readme
-#  doc_url: https://pypi.python.org/pypi/imagesize
-#  doc_source_url: https://github.com/shibukawa/imagesize_py/blob/master/README.rst

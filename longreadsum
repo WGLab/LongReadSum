@@ -1,31 +1,10 @@
-#!/usr/bin/env python
+#!/bin/bash
 
-"""
-__main__.py:
-Call the command-line interface.
-"""
+# Add the library path to the LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib
 
-import os
-import sys
-from os.path import dirname, abspath
+# Change to the root directory
+cd "${PREFIX}"
 
-
-# Set the library path
-lib_dir = os.path.join(os.environ['CONDA_PREFIX'], "lib")
-sys.path.append(lib_dir)
-
-# Set the HDF5 plugin path
-parent_dir = dirname(dirname(abspath(__file__)))
-os.environ['HDF5_PLUGIN_PATH'] = os.path.join(parent_dir, "lib")
-
-
-# Import the command-line interface
-from longreadsum import cli
-
-
-def main():
-    cli.main()
-
-
-if __name__ == '__main__':
-    main()
+# Run the entry point
+python src/entry_point.py "$@"

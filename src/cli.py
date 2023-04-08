@@ -12,17 +12,23 @@ import argparse
 import faulthandler
 from argparse import RawTextHelpFormatter
 
-# Print the package
-if __package__ == 'src':
-    from lib import lrst
-    from src import generate_html
-    from src import lrst_global
-    from src.utils import *
-else:
-    import lrst
-    from longreadsum import generate_html
-    from longreadsum import lrst_global
-    from longreadsum.utils import *
+# from lib import lrst
+import lrst
+import generate_html
+from plot_utils import *
+
+# # Print the package
+# if __package__ == 'src':
+#     from lib import lrst
+#     from src import generate_html
+#     from src import lrst_global
+#     from src.utils import *
+# else:
+#     # import lrst
+#     from lib import lrst
+#     from longreadsum import generate_html
+#     from longreadsum import lrst_global
+#     from longreadsum.utils import *
 
 faulthandler.enable()
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)

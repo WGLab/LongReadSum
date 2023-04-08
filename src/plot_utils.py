@@ -10,7 +10,7 @@ from plotly.subplots import make_subplots
 if __package__ == 'src':
     from src import lrst_global
 else:
-    from longreadsum import lrst_global
+    import lrst_global
 
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 
