@@ -12,9 +12,10 @@ import argparse
 import faulthandler
 from argparse import RawTextHelpFormatter
 
-from lib import lrst
-from src import generate_html
-from src.plot_utils import *
+# from lib import lrst
+import lrst
+import generate_html
+from plot_utils import *
 
 # # Print the package
 # if __package__ == 'src':

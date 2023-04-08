@@ -13,7 +13,7 @@ from random import sample
 if __package__ == 'src':
     from src import lrst_global
 else:
-    from longreadsum import lrst_global
+    import lrst_global
 
 def plot(fast5_output, para_dict):
     """

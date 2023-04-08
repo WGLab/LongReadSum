@@ -1,1 +1,10 @@
-#!/usr/bin/env python"""__main__.py:Call the command-line interface."""import osimport sysfrom os.path import dirname, abspath# Set the library path# lib_dir = os.path.join(os.environ['CONDA_PREFIX'], "lib")lib_dir = os.path.join(os.environ['CONDA_PREFIX'], "lib")sys.path.append(lib_dir)print("Library path: {}".format(lib_dir))print("Library contents: {}".format(os.listdir(lib_dir)))# Set the HDF5 plugin pathparent_dir = dirname(dirname(abspath(__file__)))os.environ['HDF5_PLUGIN_PATH'] = os.path.join(parent_dir, "lib")# sys.path.append(os.path.join(parent_dir, "lib"))  # Testprint("HDF5_PLUGIN_PATH: {}".format(os.environ['HDF5_PLUGIN_PATH']))# Import the command-line interfacefrom src import clidef main():    cli.main()if __name__ == '__main__':    main()#     from longreadsum import cli#   File "/home/perdomoj/miniconda3/envs/lrst_py39/conda-bld/longreadsum_1680674950038/_test_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeh/lib/longreadsum/cli.py", line 22, in <module>#     import lrst#   File "/home/perdomoj/miniconda3/envs/lrst_py39/conda-bld/longreadsum_1680674950038/_test_env_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placehold_placeh/lib/lrst.py", line 12, in <module>#     import _lrst# ModuleNotFoundError: No module named '_lrst'
+#!/bin/bash
+
+# Add the library path to the LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib
+
+# Change to the root directory
+cd "${PREFIX}"
+
+# Run the entry point
+python src/entry_point.py "$@"

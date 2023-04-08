@@ -7,7 +7,7 @@ import base64
 if __package__ == 'src':
     from src import lrst_global  # Contains our image filepaths
 else:
-    from longreadsum import lrst_global  # Contains our image filepaths
+    import lrst_global  # Contains our image filepaths
 
 
 class ST_HTML_Generator:

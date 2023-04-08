@@ -7,6 +7,9 @@ package:
 source:
   path: ..
 #  git_url: https://github.com/WGLab/LongReadSum.git
+#  git_rev: 4a9465d3e8ed585837d43347234b8682e53730ce
+#  path: ..
+#  git_url: https://github.com/WGLab/LongReadSum.git
 #  git_rev: f16b80c5b74d6dc789668ed7b6d97cbab2082e44
 #  git-tag: test-bioconda
 #  sha256: 44406202ce8d529e5e126cd257517f0cab03ba0e
@@ -18,19 +21,21 @@ build:
 
 requirements:
   build:
-    - python >=3.7
+    - python
     - make
     - {{ compiler('cxx') }}
     - swig
-    - setuptools >=38.6.0
-    - htslib
-    - hdf5=1.12.1
+    - setuptools
+    - hdf5
+    - htslib>=1.9
   host:
     - python
+    - hdf5
+    - htslib>=1.9
   run:
     - python
-    - htslib
-    - hdf5=1.12.1
+    - hdf5
+    - htslib>=1.9
     - matplotlib
     - plotly=4.14
 
@@ -47,3 +52,6 @@ about:
   doc_url: https://github.com/WGLab/LongReadSum#readme
 #  doc_url: https://pypi.python.org/pypi/imagesize
 #  doc_source_url: https://github.com/shibukawa/imagesize_py/blob/master/README.rst
+# hdf5=1.12
+# samtools=1.9
+#    - htslib=1.6

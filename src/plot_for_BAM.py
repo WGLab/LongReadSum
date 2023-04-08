@@ -7,8 +7,8 @@ if __package__ == 'src':
     from src import lrst_global
     from src.utils import *
 else:
-    from longreadsum import lrst_global
-    from longreadsum.utils import *
+    import lrst_global
+    from utils import *
 
 def plot_alignment_numbers(data, path):
     fig, axes = plt.subplots(figsize =(8, 6))
