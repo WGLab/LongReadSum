@@ -4,8 +4,8 @@
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib
 
 # Show all files in src/
-echo "Files in src/"
-ls -l "${PREFIX}"/src
+echo "Files in lib/ with .py extension:"
+ls -l "${PREFIX}"/lib/*.py
 
 # Run the entry point.py file
-python "${PREFIX}"/src/entry_point.py "$@"
+python "${PREFIX}"/lib/entry_point.py "$@"
