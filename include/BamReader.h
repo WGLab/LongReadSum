@@ -51,12 +51,24 @@ typedef struct Bam1Record{
 } Bam1Record;
 
 class BamReadOption{
+
+private:
+   std::map<std::string, std::map<std::string, RepeatRegion> >::iterator chr_dit;
+   std::map<std::string, RepeatRegion>::iterator pos_it;
+   bool ovlp_region;
+   uint64_t ovlp_max_start;
+   uint64_t ovlp_min_end;
+
+   std::ostringstream _c_oss_chr;
+   std::ostringstream _c_oss_pos;
+   std::string _c_line;
+
    bool m_w_qry_seq;
    bool m_w_qry_qual;
 
    //bool m_w_map_detail;
    bool m_w_pos_map_detail;
-   //char * m_w_ref_seq;  
+   //char * m_w_ref_seq;
    //uint64_t m_w_ref_seq_len;
 
    bool m_w_unmap;
@@ -71,20 +83,6 @@ class BamReadOption{
    uint8_t map_quality_thr;
 
 public:
-   std::map<std::string, std::map<std::string, RepeatRegion> > repdict;
-
-private:
-   std::map<std::string, std::map<std::string, RepeatRegion> >::iterator chr_dit;
-   std::map<std::string, RepeatRegion>::iterator pos_it;
-   bool ovlp_region;
-   uint64_t ovlp_max_start;
-   uint64_t ovlp_min_end;
-
-   std::ostringstream _c_oss_chr;
-   std::ostringstream _c_oss_pos;
-   std::string _c_line;
-
-public:
    uint8_t data_type; 
    uint8_t get_map_quality_thr();
    int set_map_quality_thr(uint8_t p_map_quality_thr);
@@ -97,6 +95,7 @@ public:
    bool get_w_pos_map_detail();
    //char get_ref_char_at_pos(uint64_t m_pos);
    uint64_t get_min_read_len(){return min_read_len;}
+   std::map<std::string, std::map<std::string, RepeatRegion> > repdict;
 
    int set_min_read_len(uint64_t _min_read_len){ min_read_len = _min_read_len; return 0; }
    int set_w_unmap(bool m_unmap);
@@ -158,9 +157,6 @@ class BamReader{
 
 public:
   static const char m_cigar_str[];
-
-  std::mutex myMutex_readBam;
-
   BamReadOption bamReadOp;
 
   BamReader(const char * bamfile);

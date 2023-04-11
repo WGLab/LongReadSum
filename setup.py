@@ -15,8 +15,8 @@ src_files = []
 project_dir = 'src/'
 project_src_files = []
 project_src_files.extend(glob.glob(project_dir + '*.cpp'))
-project_headers = glob.glob('include/*.h')
 
+project_headers = glob.glob('include/*.h')
 print("Project dir: ")
 print(project_dir)
 
@@ -27,6 +27,11 @@ print(os.getcwd())
 print("Project source files:")
 for src_file in project_src_files:
     print("\t" + src_file)
+
+# Print project headers
+print("Project headers:")
+for header in project_headers:
+    print("\t" + header)
 
 # Set up the extension
 include_dirs = ['include']
