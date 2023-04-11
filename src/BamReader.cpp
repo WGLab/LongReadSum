@@ -266,6 +266,7 @@ BamReader::BamReader(){
    init();
 }
 
+// Destroy the bam reader and create a new one with the given bam file
 int BamReader::resetBam(const char * bamfile){
    destroy();
    init();
@@ -304,9 +305,10 @@ bool BamReader::check_bam_status(){
    }
 }
 
+// Read one record from the bam file
 int BamReader::read1RecordFromBam(){
    if (!check_bam_status()){
-      std::cout<< "No bam opened or Open bam failed." << std::endl;
+      std::cerr << "Unable to read BAM record" << std::endl;
       return 1;
    } 
  
@@ -324,6 +326,8 @@ int BamReader::read1RecordFromBam(){
 int BamReader::reset_Bam1Record(){
    return reset_Bam1Record(this->current_bam_record);
 }
+
+// Clear the BAM record structure
 int BamReader::reset_Bam1Record(Bam1Record & br){
    br.cigar_len.clear();
    br.cigar_type.clear();
@@ -369,9 +373,9 @@ void BamReader::_set_map_pos_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, in
 }
 
 int BamReader::_read1RecordFromBam_(){
-   reset_Bam1Record(this->current_bam_record);
-
-   Bam1Record & br = this->current_bam_record;
+    // Update the BAM record with a new instance
+    Bam1Record br;
+    this->current_bam_record = br;
 
    // Get the number of mismatched bases using the MD tag
    uint8_t *nmTag = bam_aux_get(bam_one_alignment, "NM");
@@ -408,8 +412,8 @@ int BamReader::_read1RecordFromBam_(){
    if ( !( br.map_flag & BAM_FUNMAP ) ){
       br.map_chr = hdr->target_name[bam_1alignment_core->tid];
    }else{ br.map_chr = ""; }
-   
-   br.qry_seq_len = bam_1alignment_core->l_qseq;
+
+   br.qry_seq_len = bam_1alignment_core->l_qseq;  // Get the sequence length
    if ( br.map_flag & BAM_FSECONDARY ){
       size_t cal_len = bam_cigar2qlen(bam_1alignment_core->n_cigar, bam_get_cigar(bam_one_alignment));
       if ( cal_len > br.qry_seq_len){ br.qry_seq_len = cal_len; }
@@ -563,24 +567,25 @@ int BamReader::_read1RecordFromBam_(){
    return 0;
 }
 
-int BamReader::readBam(std::vector<Bam1Record> &br_list, int num_records, bool br_clear){
+int BamReader::readBam(std::vector<Bam1Record> &record_list, int num_records, bool clear_records){
    if (!check_bam_status()){
       std::cout<< "No bam opened or Open bam failed." << std::endl;
       return 1;
    }
-   if ( br_clear){
-      br_list.clear();
+   if (clear_records){
+      record_list.clear();
    }
    int sam_ret;
    t_num_records = 0;
    while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
-       if ((sam_ret=_read1RecordFromBam_())==0){
-          br_list.push_back(this->current_bam_record);
-          t_num_records += 1;
-          if (num_records>0 && t_num_records>=num_records){
-             break;
-          }
-       }
+        // sam_read1 returns 0 if success
+        if ((sam_ret=_read1RecordFromBam_())==0){
+            record_list.push_back(this->current_bam_record);
+            t_num_records += 1;
+            if (num_records>0 && t_num_records>=num_records){
+                break;
+            }
+        }
    }
 
    return 0;

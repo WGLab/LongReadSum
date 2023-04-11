@@ -23,12 +23,12 @@
 
 // Type representing data for a single record in the BAM file
 typedef struct Bam1Record{
-    int num_mismatch;
-    uint64_t qry_start_pos;
-    uint64_t qry_end_pos;
-    uint64_t qry_start_pos_rel;
-    uint64_t qry_seq_len;
-    uint64_t _len_original_read;
+    int num_mismatch = -1;
+    uint64_t qry_start_pos = 0;
+    uint64_t qry_end_pos = 0;
+    uint64_t qry_start_pos_rel = 0;
+    uint64_t qry_seq_len = 0;
+    uint64_t _len_original_read = 0;
     uc8string qry_qual;
     std::string qry_name;
     std::string qry_seq;

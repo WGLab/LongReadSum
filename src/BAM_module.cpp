@@ -20,7 +20,7 @@ BAM_Thread_data::~BAM_Thread_data(){
 
 
 // Calculate statistics computations on a thread for the next N set of records from the BAM file
-void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_params, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment, std::mutex& bam_mutex, std::mutex& output_mutex){
+void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_params, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment, std::mutex& bam_mutex, std::mutex& output_mutex, size_t &file_index){
     std::vector<Bam1Record>::iterator record_data;
     uint64_t match_this_read;
     double accuracy_perc_this_read;
@@ -33,7 +33,6 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_
         bam_mutex.lock();
 
         // Read the record into the thread pointer
-        size_t file_index = 0;
         size_t file_count = input_params.num_input_files;
         size_t records_per_thread = BAM_Module::records_per_thread;
         ref_bam_reader_ptr->readBam( ref_thread_data.record_list, records_per_thread );
@@ -42,14 +41,20 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_
             bam_mutex.unlock();
             break;
         }
+
+        // Read a new file if the current file is exhausted of records
+        // Print the record list size and records per thread
+        std::cout << "Thread " << thread_id << " record list size: " << ref_thread_data.record_list.size() << " records per thread: " << records_per_thread << std::endl;
         if ( ref_thread_data.record_list.size() < records_per_thread ){
+            std::cout << "File index: " << file_index << " File count: " << file_count << std::endl;
+            std::cout << "Completed processing file: " << input_params.input_files[file_index] << std::endl;
+            file_index += 1;
             if ( file_index < file_count ){
-               std::cout<< "INFO: Open bam file="<< input_params.input_files[file_index] <<std::endl;
-               ref_bam_reader_ptr->resetBam( input_params.input_files[file_index].c_str() );
-               if ( ref_thread_data.record_list.size() == 0 ){
-                  ref_bam_reader_ptr->readBam( ref_thread_data.record_list, records_per_thread );
-               }
-               file_index++;
+                std::cout<< "Open BAM file: " << input_params.input_files[file_index] <<std::endl;
+                ref_bam_reader_ptr->resetBam( input_params.input_files[file_index].c_str() );
+                if ( ref_thread_data.record_list.size() == 0 ){
+                    ref_bam_reader_ptr->readBam( ref_thread_data.record_list, records_per_thread );
+                }
             }
         }
         bam_mutex.unlock();
@@ -214,12 +219,13 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_
                 ref_thread_data.t_output_bam_.percent_identity = ((num_columns_ - num_mismatch_) / num_columns_) * 100.0;
                 //std::cout << "Percent identity = " << ref_thread_data.t_output_bam_.percent_identity << std::endl;
 
-                accuracy_perc_this_read = int( (double(match_this_read)/record_data->qry_seq_len)*100+0.5);
-                if ( accuracy_perc_this_read <0 || accuracy_perc_this_read>=PERCENTAGE_ARRAY_SIZE) {
-                    std::cout<<"ERROR!!! #matched("<<match_this_read<<") is smaller than 0 or larger than total("<<record_data->qry_seq_len <<") for "<<  record_data->qry_name <<std::endl;
+                // Calculate accuracy percentage if non-zero matches
+                if (match_this_read > 0) {
+                    accuracy_perc_this_read = int( (double(match_this_read)/record_data->qry_seq_len) * 100+0.5);
                 } else {
-                    ref_thread_data.t_output_bam_.accuracy_per_read[ int(accuracy_perc_this_read) ] += 1;
+                    accuracy_perc_this_read = 0;
                 }
+                ref_thread_data.t_output_bam_.accuracy_per_read[ int(accuracy_perc_this_read) ] += 1;
             }
         }
         output_mutex.lock();
@@ -253,7 +259,7 @@ int BAM_Module::calculateStatistics( Output_BAM& t_output_bam_info){
                 std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
 
                 // Push the next N records onto a thread for statistics computations
-                m_threads.push_back(std::thread((BAM_Module::BAM_do_thread), _bam_reader_ptr, std::ref(m_input_op), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_bam_info), std::ref(secondary_alignment), std::ref(supplementary_alignment), std::ref(this->bam_mutex), std::ref(this->output_mutex)));
+                m_threads.push_back(std::thread((BAM_Module::BAM_do_thread), _bam_reader_ptr, std::ref(m_input_op), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_bam_info), std::ref(secondary_alignment), std::ref(supplementary_alignment), std::ref(this->bam_mutex), std::ref(this->output_mutex), std::ref(this->file_index)));
          }
 
          std::cout<<"INFO: join threads"<<std::endl<<std::flush;
@@ -311,7 +317,7 @@ BAM_Module::BAM_Module(Input_Para& _m_input){
            std::cerr << "Cannot open bam file="<< _m_input.input_files[this->file_index] <<std::endl;
            exit_code = 3;
        } else {
-           std::cout << "INFO: Open bam file="<< _m_input.input_files[this->file_index] <<" " << this->file_index<<"/"<<_m_input.num_input_files <<std::endl;
+           std::cout << "Opened file " << this->file_index+1 << "/" <<_m_input.num_input_files << ": " << _m_input.input_files[this->file_index] << std::endl;
            _bam_reader_ptr->bamReadOp.set_w_supplementary(true);
            _bam_reader_ptr->bamReadOp.set_w_secondary(true);
            _bam_reader_ptr->bamReadOp.set_min_read_len(1);
@@ -319,7 +325,6 @@ BAM_Module::BAM_Module(Input_Para& _m_input){
            _bam_reader_ptr->bamReadOp.set_w_unmap(true);
            _bam_reader_ptr->bamReadOp.set_w_qry_qual(true);
            _bam_reader_ptr->bamReadOp.set_w_map_detail(false);
-           this->file_index = 1;
        }
    }
 }
