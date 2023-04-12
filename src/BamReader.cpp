@@ -229,6 +229,25 @@ std::map<std::string, RepeatRegion>::iterator BamReadOption::get_pos_it(){
 
 const char BamReader::m_cigar_str[] = "MIDNSHP=XB";
 
+int BamReader::getNumberOfRecords(const char * bamfile){
+    htsFile* bam_file = hts_open(bamfile, "r"); // open the BAM file for reading
+    bam_hdr_t* header = sam_hdr_read(bam_file); // read the BAM header
+    bam1_t* record = bam_init1(); // allocate memory for a single record
+
+    int record_count = 0;
+    while (sam_read1(bam_file, header, record) >= 0) {
+        // process the record here, if needed
+        record_count++;
+    }
+
+    bam_destroy1(record); // free the memory for the record
+    bam_hdr_destroy(header); // free the memory for the header
+    hts_close(bam_file); // close the BAM file
+
+    std::cout << "Number of records: " << record_count << std::endl;
+    return record_count;
+}
+
 int BamReader::openBam(const char * bamfile){
    if (!isExpectedLength(in_bam_file, (char*)bamfile, CHAR_SIZE)) { return BAM_FAILED;}
 
@@ -246,9 +265,11 @@ int BamReader::openBam(const char * bamfile){
    }
    hdr = sam_hdr_read(in_bam);
    bam_status = BAM_OPEN;
+
    return 0;
 }
 
+// Create a new bam reader with the given bam file
 BamReader::BamReader(const char * bamfile){
    openBam(bamfile);
 }
@@ -567,28 +588,40 @@ int BamReader::_read1RecordFromBam_(){
    return 0;
 }
 
-int BamReader::readBam(std::vector<Bam1Record> &record_list, int num_records, bool clear_records){
-   if (!check_bam_status()){
-      std::cout<< "No bam opened or Open bam failed." << std::endl;
-      return 1;
-   }
-   if (clear_records){
-      record_list.clear();
-   }
-   int sam_ret;
-   t_num_records = 0;
-   while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
+// Read a batch of records from the bam file
+//int BamReader::readBam(std::vector<Bam1Record> &record_list, int batch_size, bool clear_records){
+int BamReader::readBam(){
+    if (!check_bam_status()){
+        std::cout<< "No bam opened or Open bam failed." << std::endl;
+        return 1;
+    }
+
+   // Clear the record list if a new file is opened
+    this->record_list.clear();
+//   if (clear_records){
+////      record_list.clear();
+//   }
+
+    this->t_num_records = 0;  // Reset the number of records
+    while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
         // sam_read1 returns 0 if success
-        if ((sam_ret=_read1RecordFromBam_())==0){
-            record_list.push_back(this->current_bam_record);
+        if ((_read1RecordFromBam_())==0){
+            this->record_list.push_back(this->current_bam_record);
             t_num_records += 1;
-            if (num_records>0 && t_num_records>=num_records){
-                break;
-            }
+
+//            // If the number of records reaches the batch size, break
+//            if (batch_size > 0 && t_num_records >= batch_size){
+//                break;
+//            }
         }
    }
 
    return 0;
+}
+
+// Get the list of records
+std::vector<Bam1Record> BamReader::getRecordList() {
+   return this->record_list;
 }
 
 std::string BamReader::Min_Bam1Record_toString(Bam1Record & br){

@@ -131,54 +131,65 @@ public:
 };
 
 class BamReader{
-  void init();
-  void destroy();
+    private:
+        void init();
+        void destroy();
 
-  int bam_status;
+        int bam_status;
 
-  char in_bam_file[CHAR_SIZE];
-  samFile * in_bam;
-  bam_hdr_t * hdr;
-  bam1_t * bam_one_alignment;
-  bam1_core_t * bam_1alignment_core;
-  
-  int _read1RecordFromBam_();
+        char in_bam_file[CHAR_SIZE];
+        samFile * in_bam;
+        bam_hdr_t * hdr;
+        bam1_t * bam_one_alignment;
+        bam1_core_t * bam_1alignment_core;
 
-  uint64_t ref_go_pos;
-  uint64_t qry_go_pos;
-  uint64_t qry_go_pos_rel;
+        int _read1RecordFromBam_();
 
-  void _set_map_pos_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, int mlen, Bam1Record & br, uint8_t m_op, bool ref_add, bool qry_add, const uint16_t m_map_strand, const uint64_t m_len_original_read);
-  //void _set_map_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, int mlen, Bam1Record & br, uint8_t m_op, bool ref_add, bool qry_add, const uint16_t m_map_strand, const uint64_t m_len_read);
+        uint64_t ref_go_pos;
+        uint64_t qry_go_pos;
+        uint64_t qry_go_pos_rel;
 
-  int t_num_records;
+        void _set_map_pos_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, int mlen, Bam1Record & br, uint8_t m_op, bool ref_add, bool qry_add, const uint16_t m_map_strand, const uint64_t m_len_original_read);
+        //void _set_map_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, int mlen, Bam1Record & br, uint8_t m_op, bool ref_add, bool qry_add, const uint16_t m_map_strand, const uint64_t m_len_read);
 
-  std::string _bam_file_str;
+        int t_num_records;
 
-public:
-  static const char m_cigar_str[];
-  BamReadOption bamReadOp;
+        std::string _bam_file_str;
 
-  BamReader(const char * bamfile);
-  BamReader();
-  int openBam(const char * bamfile);
-  ~BamReader();
-  bool check_bam_status();
+    public:
+        std::vector<Bam1Record> record_list;  // Vector of individual BAM file records
 
-  Bam1Record current_bam_record;
+        static const char m_cigar_str[];
+        BamReadOption bamReadOp;
 
-  int read1RecordFromBam();
-  int readBam(std::vector<Bam1Record> &br_list, int num_records=-1, bool br_clear=true);
-  int resetBam(const char * bamfile);
-  //int resetBam();
-  std::string get_bam_file();
-  int reset_Bam1Record();
-  int reset_Bam1Record(Bam1Record & br);
+        BamReader(const char * bamfile);
+        BamReader();
+        int openBam(const char * bamfile);
+        ~BamReader();
+        bool check_bam_status();
 
-  static std::string Bam1Record_toString(Bam1Record & br);
-  std::string Bam1Record_toString();
-  static std::string Basic_Bam1Record_toString(Bam1Record & br);
-  static std::string Min_Bam1Record_toString(Bam1Record & br);
+        Bam1Record current_bam_record;
+
+        int read1RecordFromBam();
+
+        // Get the number of records in the bam file
+        int getNumberOfRecords(const char * bamfile);
+        int readBam();
+
+//        int readBam(std::vector<Bam1Record> &br_list, int num_records=-1, bool br_clear=true);
+        int resetBam(const char * bamfile);
+        //int resetBam();
+        std::string get_bam_file();
+        int reset_Bam1Record();
+        int reset_Bam1Record(Bam1Record & br);
+
+        // Get the record list
+        std::vector<Bam1Record> getRecordList();
+
+        static std::string Bam1Record_toString(Bam1Record & br);
+        std::string Bam1Record_toString();
+        static std::string Basic_Bam1Record_toString(Bam1Record & br);
+        static std::string Min_Bam1Record_toString(Bam1Record & br);
 };
 
 
