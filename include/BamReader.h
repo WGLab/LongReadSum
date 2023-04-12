@@ -142,9 +142,6 @@ class BamReader{
         bam_hdr_t * hdr;
         bam1_t * bam_one_alignment;
         bam1_core_t * bam_1alignment_core;
-
-        int _read1RecordFromBam_();
-
         uint64_t ref_go_pos;
         uint64_t qry_go_pos;
         uint64_t qry_go_pos_rel;
@@ -158,6 +155,8 @@ class BamReader{
 
     public:
         std::vector<Bam1Record> record_list;  // Vector of individual BAM file records
+        std::vector<Bam1Record> readNextNRecords(int n);
+        int readNextRecord(Bam1Record& br);
 
         static const char m_cigar_str[];
         BamReadOption bamReadOp;
@@ -170,13 +169,8 @@ class BamReader{
 
         Bam1Record current_bam_record;
 
-        int read1RecordFromBam();
-
         // Get the number of records in the bam file
         int getNumberOfRecords(const char * bamfile);
-        int readBam();
-
-//        int readBam(std::vector<Bam1Record> &br_list, int num_records=-1, bool br_clear=true);
         int resetBam(const char * bamfile);
         //int resetBam();
         std::string get_bam_file();

@@ -22,7 +22,7 @@ BAM_Thread_data::~BAM_Thread_data(){
 
 
 // Calculate statistics computations on a thread for the next N set of records from the BAM file
-void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_params, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment, std::mutex& bam_mutex, std::mutex& output_mutex, size_t &file_index){
+void BAM_Module::BAM_do_thread(BamReader& bam_reader, Input_Para& input_params, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment, std::mutex& bam_mutex, std::mutex& output_mutex, size_t &file_index){
     std::vector<Bam1Record>::iterator record_data;
     uint64_t match_this_read;
     double accuracy_perc_this_read;
@@ -39,7 +39,7 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_
 //        size_t records_per_thread = BAM_Module::records_per_thread;
 //
 //        // Read a batch of records in the BAM file into the record list
-//        ref_bam_reader_ptr->readBam( ref_thread_data.record_list, records_per_thread );
+//        refbam_reader->readBam( ref_thread_data.record_list, records_per_thread );
 //
 //
 //
@@ -63,9 +63,9 @@ void BAM_Module::BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& input_
 //            // Read a new file if the current file is exhausted of records
 //            if ( file_index < file_count ){
 //                std::cout<< "Open BAM file: " << input_params.input_files[file_index] <<std::endl;
-//                ref_bam_reader_ptr->resetBam( input_params.input_files[file_index].c_str() );
+//                refbam_reader->resetBam( input_params.input_files[file_index].c_str() );
 //                if ( ref_thread_data.record_list.size() == 0 ){
-//                    ref_bam_reader_ptr->readBam( ref_thread_data.record_list, records_per_thread );
+//                    refbam_reader->readBam( ref_thread_data.record_list, records_per_thread );
 //
 //                    // Continue if there are no records for this file
 //                    if (ref_thread_data.record_list.size() == 0 )
@@ -281,7 +281,7 @@ int BAM_Module::calculateStatistics( Output_BAM& t_output_bam_info){
 
             // Print the number of records
             std::string filepath(m_input_op.input_files[this->file_index]);
-            int record_count = _bam_reader_ptr->getNumberOfRecords(filepath.c_str());
+            int record_count = bam_reader->getNumberOfRecords(filepath.c_str());
             std::cout << "INFO: Number of records = " << record_count << std::endl;
 
             std::cout<<"INFO: Processing file "<< filepath << std::endl;
@@ -291,24 +291,21 @@ int BAM_Module::calculateStatistics( Output_BAM& t_output_bam_info){
             int batch_size = std::ceil((double)record_count / (double)thread_count);
             std::cout << "INFO: Number of records per thread = " << batch_size << std::endl;
 
-            // Open the BAM file
-            _bam_reader_ptr->resetBam(filepath.c_str());
-
-            // Read the BAM file
-            _bam_reader_ptr->readBam();
-
             // Create a vector of threads
             std::vector<std::thread> thread_vector;
+
+            // Update the BAM file
+            bam_reader->resetBam(filepath.c_str());
 
             // Calculate statistics in batches
             for (int thread_index=0; thread_index<thread_count; thread_index++){
                 std::cout<<"INFO: generate thread "<<thread_index<<std::endl<<std::flush;
 //                thread_data_vector.push_back(new BAM_Thread_data(m_input_op, _i_t, batch_size));
 //                std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
-                std::thread t((BAM_Module::batchStatistics), _bam_reader_ptr, std::ref(m_input_op),std::ref(t_output_bam_info), std::ref(this->bam_mutex), std::ref(this->output_mutex));
+                std::thread t((BAM_Module::batchStatistics), std::ref(bam_reader), batch_size, std::ref(m_input_op),std::ref(t_output_bam_info), std::ref(this->bam_mutex), std::ref(this->output_mutex));
                 thread_vector.push_back(std::move(t));
                 // Push the next N records onto a thread for statistics computations
-//                m_threads.push_back(std::thread((BAM_Module::BAM_do_thread), _bam_reader_ptr, std::ref(m_input_op), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_bam_info), std::ref(secondary_alignment), std::ref(supplementary_alignment)));
+//                m_threads.push_back(std::thread((BAM_Module::BAM_do_thread), bam_reader, std::ref(m_input_op), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_bam_info), std::ref(secondary_alignment), std::ref(supplementary_alignment)));
             }
 
             // Join the threads in thread_vector
@@ -321,33 +318,40 @@ int BAM_Module::calculateStatistics( Output_BAM& t_output_bam_info){
    return exit_code;
 }
 
-void BAM_Module::batchStatistics(BamReader* bam_reader, Input_Para& input_params, Output_BAM& ref_output, std::mutex& bam_mutex, std::mutex& output_mutex)
+void BAM_Module::batchStatistics(BamReader& bam_reader, int batch_size, Input_Para& input_params, Output_BAM& ref_output, std::mutex& bam_mutex, std::mutex& output_mutex)
 {
-    BAM_Thread_data ref_thread_data(input_params, 0, 0);
 
-    // Loop through each record
-    std::vector<Bam1Record> record_list = bam_reader->getRecordList();
-    for (auto& record : record_list){
-        // Get the record data
-        Bam1RecordData* record_data = record.getRecordData();
+    // Create a vector of BAM records
+    std::vector<Bam1Record> record_list;
 
-        // Get the record alignment
-        Bam1Alignment* record_alignment = record.getAlignment();
+    // Read the next N records in the BAM file
+    record_list = bam_reader->readNextNRecords(batch_size);
 
-        // Get the record sequence
-        Bam1Sequence* record_sequence = record.getSequence();
+    // Create the output structure
+    Output_BAM thread_data;
 
-        // Get the record cigar
-        Bam1Cigar* record_cigar = record.getCigar();
-
-        // Get the record quality
-        Bam1Quality* record_quality = record.getQuality();
-
-        // Get the record tags
-        Bam1Tags* record_tags = record.getTags();
-
-        // Get the re
-    }
+//    // Loop through each record
+//    for (auto& record : record_list){
+//        // Get the record data
+//        Bam1RecordData* record_data = record.getRecordData();
+//
+//        // Get the record alignment
+//        Bam1Alignment* record_alignment = record.getAlignment();
+//
+//        // Get the record sequence
+//        Bam1Sequence* record_sequence = record.getSequence();
+//
+//        // Get the record cigar
+//        Bam1Cigar* record_cigar = record.getCigar();
+//
+//        // Get the record quality
+//        Bam1Quality* record_quality = record.getQuality();
+//
+//        // Get the record tags
+//        Bam1Tags* record_tags = record.getTags();
+//
+//        // Get the re
+//    }
 }
 
 BAM_Module::BAM_Module(Input_Para& _m_input){
@@ -356,33 +360,36 @@ BAM_Module::BAM_Module(Input_Para& _m_input){
    exit_code = 0;
    this->file_index = 0;
 
-   _bam_reader_ptr = NULL;
+   bam_reader = NULL;
    if ( this->file_index >= _m_input.num_input_files ){
       std::cerr << "No input BAM are find. #input_files="<< _m_input.num_input_files <<std::endl;
       exit_code = 2;
    } else {
-       // Open the BAM file
-       std::string filepath(_m_input.input_files[this->file_index]);
-        _bam_reader_ptr = new BamReader(filepath.c_str() );
-       if (!_bam_reader_ptr->check_bam_status()){
-           std::cerr << "Cannot open bam file="<< filepath <<std::endl;
-           exit_code = 3;
-       } else {
-           std::cout << "Opened file " << this->file_index+1 << "/" <<_m_input.num_input_files << ": " << _m_input.input_files[this->file_index] << std::endl;
-           _bam_reader_ptr->bamReadOp.set_w_supplementary(true);
-           _bam_reader_ptr->bamReadOp.set_w_secondary(true);
-           _bam_reader_ptr->bamReadOp.set_min_read_len(1);
-           _bam_reader_ptr->bamReadOp.set_w_qry_seq(true);
-           _bam_reader_ptr->bamReadOp.set_w_unmap(true);
-           _bam_reader_ptr->bamReadOp.set_w_qry_qual(true);
-           _bam_reader_ptr->bamReadOp.set_w_map_detail(false);
-       }
+        // Open the BAM file
+        std::string filepath(_m_input.input_files[this->file_index]);
+
+        // Create a new reader object
+        this->bam_reader = BamReader(filepath.c_str());
+//        bam_reader = new BamReader(filepath.c_str() );
+        if (!this->bam_reader->check_bam_status()){
+            std::cerr << "Cannot open bam file="<< filepath <<std::endl;
+            exit_code = 3;
+        } else {
+            std::cout << "Opened file " << this->file_index+1 << "/" <<_m_input.num_input_files << ": " << _m_input.input_files[this->file_index] << std::endl;
+            bam_reader->bamReadOp.set_w_supplementary(true);
+            bam_reader->bamReadOp.set_w_secondary(true);
+            bam_reader->bamReadOp.set_min_read_len(1);
+            bam_reader->bamReadOp.set_w_qry_seq(true);
+            bam_reader->bamReadOp.set_w_unmap(true);
+            bam_reader->bamReadOp.set_w_qry_qual(true);
+            bam_reader->bamReadOp.set_w_map_detail(false);
+        }
    }
 }
 
 BAM_Module::~BAM_Module(){
-   if (_bam_reader_ptr!=NULL){
-       delete _bam_reader_ptr;
+   if (bam_reader!=NULL){
+       delete bam_reader;
    }
-   _bam_reader_ptr = NULL;
+   bam_reader = NULL;
 }

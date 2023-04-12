@@ -37,16 +37,16 @@ public:
 
     Input_Para m_input_op;
 
-    BamReader* _bam_reader_ptr;
+    BamReader bam_reader;
     std::vector<std::thread> m_threads;
 
 
     int exit_code;  // Exit code for error handling
 
-    static void BAM_do_thread(BamReader* ref_bam_reader_ptr, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment, std::mutex& bam_mutex, std::mutex& output_mutex, size_t &file_index);
+    static void BAM_do_thread(BamReader& bam_reader, Input_Para& ref_input_op, int thread_id, BAM_Thread_data& ref_thread_data, Output_BAM& ref_output, std::map<std::string, bool>& ref_secondary_alignment, std::map<std::string, bool>& ref_supplementary_alignment, std::mutex& bam_mutex, std::mutex& output_mutex, size_t &file_index);
 
     int calculateStatistics( Output_BAM& t_output_bam_info);
-    static void batchStatistics(BamReader* bam_reader, Input_Para& input_params, Output_BAM& ref_output, std::mutex& bam_mutex, std::mutex& output_mutex);
+    static void batchStatistics(BamReader* bam_reader, int batch_size, Input_Para& input_params, Output_BAM& ref_output, std::mutex& bam_mutex, std::mutex& output_mutex);
 
     BAM_Module(Input_Para& _m_input);
     ~BAM_Module();

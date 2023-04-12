@@ -326,24 +326,6 @@ bool BamReader::check_bam_status(){
    }
 }
 
-// Read one record from the bam file
-int BamReader::read1RecordFromBam(){
-   if (!check_bam_status()){
-      std::cerr << "Unable to read BAM record" << std::endl;
-      return 1;
-   } 
- 
-   int failed = 2;
-   while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
-      if (_read1RecordFromBam_()==0){
-          failed = 0;
-          break;
-      }
-   }
- 
-   return failed;
-}
-
 int BamReader::reset_Bam1Record(){
    return reset_Bam1Record(this->current_bam_record);
 }
@@ -393,11 +375,7 @@ void BamReader::_set_map_pos_detail(uint64_t ref_go_pos, uint64_t qry_go_pos, in
    }
 }
 
-int BamReader::_read1RecordFromBam_(){
-    // Update the BAM record with a new instance
-    Bam1Record br;
-    this->current_bam_record = br;
-
+int BamReader::readNextRecord(Bam1Record& br){
    // Get the number of mismatched bases using the MD tag
    uint8_t *nmTag = bam_aux_get(bam_one_alignment, "NM");
    if (nmTag != NULL) {
@@ -588,40 +566,33 @@ int BamReader::_read1RecordFromBam_(){
    return 0;
 }
 
-// Read a batch of records from the bam file
-//int BamReader::readBam(std::vector<Bam1Record> &record_list, int batch_size, bool clear_records){
-int BamReader::readBam(){
-    if (!check_bam_status()){
-        std::cout<< "No bam opened or Open bam failed." << std::endl;
-        return 1;
-    }
-
-   // Clear the record list if a new file is opened
-    this->record_list.clear();
-//   if (clear_records){
-////      record_list.clear();
-//   }
-
-    this->t_num_records = 0;  // Reset the number of records
-    while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
-        // sam_read1 returns 0 if success
-        if ((_read1RecordFromBam_())==0){
-            this->record_list.push_back(this->current_bam_record);
-            t_num_records += 1;
-
-//            // If the number of records reaches the batch size, break
-//            if (batch_size > 0 && t_num_records >= batch_size){
-//                break;
-//            }
-        }
-   }
-
-   return 0;
-}
-
 // Get the list of records
 std::vector<Bam1Record> BamReader::getRecordList() {
    return this->record_list;
+}
+
+// Read the next N records from the bam file
+std::vector<Bam1Record> BamReader::readNextNRecords(int n){
+    int read_records = 0;
+    std::vector<Bam1Record> record_list;
+    while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
+        Bam1Record br;
+        int success = readNextRecord(br);
+        if (success==0){
+            record_list.push_back(br);
+        } else {
+            std::cerr << "Error reading record " << read_records << std::endl;
+            break;
+        }
+        read_records += 1;
+
+        // If the number of records reaches the batch size, break
+        if (read_records >= n){
+            std::cout << "Read " << read_records << " records." << std::endl;
+            break;
+        }
+    }
+    return record_list;
 }
 
 std::string BamReader::Min_Bam1Record_toString(Bam1Record & br){
