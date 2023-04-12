@@ -15,7 +15,7 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 %}
 
 typedef long int int64_t;
-%apply long int { int64_t };
+// %apply long int { int64_t };
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>
