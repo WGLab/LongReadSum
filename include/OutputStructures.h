@@ -8,6 +8,7 @@ Define the output structures for each module.
 
 #include <string>
 #include <vector>
+#include <stdint.h>
 
 #define MAX_READ_LENGTH 10485760
 #define MAX_MAP_QUALITY 256
