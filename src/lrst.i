@@ -14,18 +14,15 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 #include "ModuleCaller.h"
 %}
 
-typedef long int int64_t;
+// typedef long int int64_t;
 // %apply long int { int64_t };
+%apply long long { int64_t };  // Maps int64_t to long long in Python
+%apply unsigned long long { uint64_t };  // Maps uint64_t to unsigned long long in Python
+%apply long { long int };  // Maps long int to long in Python
+
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>
-
-namespace std{
-  %template(IntVector) vector<int>;
-  %template(DoubleVector) vector<double>;
-  %template(Int64Vector) vector<int64_t>;
-  %template(Int2DVector) vector<vector<int>>;
-};
 
 // These are the header functions wrapped by our lrst module (Like an 'import')
 %include "InputStructure.h"  // Contains InputPara for passing parameters to C++
