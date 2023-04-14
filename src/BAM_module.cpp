@@ -70,6 +70,7 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
     }
     // Print the output data results
     std::cout << "INFO: Number of primary alignments = " << final_output.num_primary_alignment << std::endl;
+    std::cout << "INFO: Number of mismatched bases = " << final_output.num_mismatched_bases << std::endl;
     return exit_code;
 }
 
@@ -82,14 +83,14 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
 
     // Read the next N records
     Output_BAM record_output;
-    reader.readNextRecords(batch_size, record_output);
-    bam_mutex.unlock();
+    int exit_code = reader.readNextRecords(batch_size, record_output, bam_mutex);
     int record_count = record_output.num_primary_alignment;
 
     if (record_count > 0) {
         // Update the final output
         output_mutex.lock();
         final_output.num_primary_alignment += record_output.num_primary_alignment;
+        final_output.num_mismatched_bases  += record_output.num_mismatched_bases;
         output_mutex.unlock();
         std::cout << "Processed " << record_count << " records" << std::endl;
     }

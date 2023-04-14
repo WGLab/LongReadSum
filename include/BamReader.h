@@ -33,7 +33,7 @@ class HTSReader {
         bool reading_complete = false;
 
         // Read the next batch of records from the BAM file
-        int readNextRecords(int batch_size, Output_BAM & output_data);
+        int readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex);
 
         // Return if the reader has finished reading the BAM file
         bool hasNextRecord();

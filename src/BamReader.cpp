@@ -18,27 +18,29 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 HTSReader::HTSReader(const std::string & bam_file_name){
     this->bam_file = hts_open(bam_file_name.c_str(), "r");
     this->header = sam_hdr_read(this->bam_file);
-    this->record = bam_init1();
 }
 
 // HTSReader destructor
 HTSReader::~HTSReader(){
-    bam_destroy1(this->record);
     bam_hdr_destroy(this->header);
     hts_close(this->bam_file);
 }
 
 // HTSReader::getNumberOfRecords
-int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data){
+int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex){
     int record_count = 0;
     int exit_code = 0;
     while ((record_count < batch_size) && (exit_code >= 0)) {
+        // Create a record object
+        bam1_t* record = bam_init1();
 
-        // read the next record
-        exit_code = sam_read1(this->bam_file, this->header, this->record);
+        // read the next record in a thread-safe manner
+        read_mutex.lock();
+        exit_code = sam_read1(this->bam_file, this->header, record);
+        read_mutex.unlock();
+
         if (exit_code < 0) {
             this->reading_complete = true;
-            std::cout << "Reached end of file" << std::endl;
             break; // error or EOF
         }
 
@@ -47,11 +49,20 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data){
             continue; // skip secondary and supplementary alignments
         }
 
+        // Update the number of primary alignments
+        output_data.num_primary_alignment++;
+
+        // Update the number of mismatches
+        uint8_t *nmTag = bam_aux_get(record, "NM");
+        output_data.num_mismatched_bases += bam_aux2i(nmTag);
+
         // process the record here, if needed
+
+        // Delete the record object
+        bam_destroy1(record);
+
         record_count++;
     }
-    // Update the output data
-    output_data.num_primary_alignment = record_count;
 
     return 0;
 }
