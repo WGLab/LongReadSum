@@ -34,7 +34,7 @@ lrst_mod = Extension("_lrst",
                      sources=project_src_files,
                      language='c++',
                      extra_compile_args=['-std=c++11'],
-                     libraries=["rt", "pthread", "z", "dl", "m", "hts", "hdf5_cpp", "hdf5", "hdf5_hl_cpp", "hdf5_hl"],
+                     libraries=["hts", "hdf5_cpp", "hdf5", "hdf5_hl_cpp", "hdf5_hl"],
                      include_dirs=include_dirs,
                      depends=project_headers, )
 
