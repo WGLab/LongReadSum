@@ -225,9 +225,11 @@ def bam_module(margs):
 
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
+            logging.info("Added input file: " + str(_ipf))
 
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
+        logging.info("Completed wtih exit_code: " + str(exit_code))
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")

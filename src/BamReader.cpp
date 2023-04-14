@@ -14,6 +14,53 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include "BamReader.h"
 #include "ComFunction.h"
 
+// HTSReader constructor
+HTSReader::HTSReader(const std::string & bam_file_name){
+    this->bam_file = hts_open(bam_file_name.c_str(), "r");
+    this->header = sam_hdr_read(this->bam_file);
+    this->record = bam_init1();
+}
+
+// HTSReader destructor
+HTSReader::~HTSReader(){
+    bam_destroy1(this->record);
+    bam_hdr_destroy(this->header);
+    hts_close(this->bam_file);
+}
+
+// HTSReader::getNumberOfRecords
+int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data){
+    int record_count = 0;
+    int exit_code = 0;
+    while ((record_count < batch_size) && (exit_code >= 0)) {
+
+        // read the next record
+        exit_code = sam_read1(this->bam_file, this->header, this->record);
+        if (exit_code < 0) {
+            this->reading_complete = true;
+            std::cout << "Reached end of file" << std::endl;
+            break; // error or EOF
+        }
+
+        // check if the record is a primary alignment
+        if (record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FSUPPLEMENTARY) {
+            continue; // skip secondary and supplementary alignments
+        }
+
+        // process the record here, if needed
+        record_count++;
+    }
+    // Update the output data
+    output_data.num_primary_alignment = record_count;
+
+    return 0;
+}
+
+// Return if the file has any more records
+bool HTSReader::hasNextRecord(){
+    return !this->reading_complete;
+}
+
 int BamReadOption::set_repdict1(const std::string & input_pattern, std::string str_delimiters){
     RepeatRegion repeat_region;  // Where the repeat region will be stored
     _c_oss_chr.str("");
@@ -226,9 +273,6 @@ std::map<std::string, RepeatRegion>::iterator BamReadOption::get_pos_it(){
    return pos_it;
 }
 
-
-const char BamReader::m_cigar_str[] = "MIDNSHP=XB";
-
 int BamReader::getNumberOfRecords(const char * bamfile){
     htsFile* bam_file = hts_open(bamfile, "r"); // open the BAM file for reading
     bam_hdr_t* header = sam_hdr_read(bam_file); // read the BAM header
@@ -270,7 +314,7 @@ int BamReader::openBam(const char * bamfile){
 }
 
 // Create a new bam reader with the given bam file
-BamReader::BamReader(const char * bamfile){
+BamReader::BamReader(char * bamfile){
    openBam(bamfile);
 }
 
@@ -572,23 +616,23 @@ std::vector<Bam1Record> BamReader::getRecordList() {
 }
 
 // Read the next N records from the bam file
-std::vector<Bam1Record> BamReader::readNextNRecords(int n){
+std::vector<Bam1Record> BamReader::readNextNRecords(int n, std::vector<Bam1Record> & record_list){
     int read_records = 0;
-    std::vector<Bam1Record> record_list;
     while (sam_read1(in_bam, hdr, bam_one_alignment)>=0){
         Bam1Record br;
         int success = readNextRecord(br);
         if (success==0){
             record_list.push_back(br);
+//            std::cout << "Read record success = " << success << std::endl;
         } else {
-            std::cerr << "Error reading record " << read_records << std::endl;
+//            std::cerr << "Error reading record " << read_records << std::endl;
             break;
         }
         read_records += 1;
 
         // If the number of records reaches the batch size, break
         if (read_records >= n){
-            std::cout << "Read " << read_records << " records." << std::endl;
+//            std::cout << "Read " << read_records << " records." << std::endl;
             break;
         }
     }

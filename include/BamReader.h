@@ -11,6 +11,7 @@
 #include <mutex>
 
 #include "ComStruct.h"
+#include "OutputStructures.h"
 
 #define BAM_UN_OPEN 1
 #define BAM_FAILED 2
@@ -20,6 +21,26 @@
 #define DNASEQ 1
 #define RNASEQ 2
 
+// Class representing an HTSlib BAM file
+class HTSReader {
+    public:
+        htsFile* bam_file; // open the BAM file for reading
+        bam_hdr_t* header; // read the BAM header
+        bam1_t* record;
+        int record_count = 0;
+
+        // Bool for whether the reading is complete
+        bool reading_complete = false;
+
+        // Read the next batch of records from the BAM file
+        int readNextRecords(int batch_size, Output_BAM & output_data);
+
+        // Return if the reader has finished reading the BAM file
+        bool hasNextRecord();
+
+        HTSReader(const std::string &bam_file_name);
+        ~HTSReader();
+};
 
 // Type representing data for a single record in the BAM file
 typedef struct Bam1Record{
@@ -155,16 +176,12 @@ class BamReader{
 
     public:
         std::vector<Bam1Record> record_list;  // Vector of individual BAM file records
-        std::vector<Bam1Record> readNextNRecords(int n);
+        std::vector<Bam1Record> readNextNRecords(int n, std::vector<Bam1Record> & record_list);
         int readNextRecord(Bam1Record& br);
 
-        static const char m_cigar_str[];
+        const char * m_cigar_str = "MIDNSHP=XB";
         BamReadOption bamReadOp;
-
-        BamReader(const char * bamfile);
-        BamReader();
         int openBam(const char * bamfile);
-        ~BamReader();
         bool check_bam_status();
 
         Bam1Record current_bam_record;
@@ -184,8 +201,10 @@ class BamReader{
         std::string Bam1Record_toString();
         static std::string Basic_Bam1Record_toString(Bam1Record & br);
         static std::string Min_Bam1Record_toString(Bam1Record & br);
+        BamReader(char * bamfile);
+        BamReader();
+        ~BamReader();
 };
-
 
 #endif
 
