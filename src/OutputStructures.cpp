@@ -94,28 +94,24 @@ void Basic_Seq_Statistics::reset(){
    gc_cnt = ZeroDefault; 
 }
 
-void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_count[ _i_ ] += t_seq_st.read_length_count[ _i_ ];
-   }
-   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-      read_gc_content_count[ _i_ ] += t_seq_st.read_gc_content_count[ _i_ ];
-   }
-   total_num_reads += t_seq_st.total_num_reads ;
-   total_num_bases += t_seq_st.total_num_bases ;
-
-   if ( longest_read_length < t_seq_st.longest_read_length){
-      longest_read_length = t_seq_st.longest_read_length;
+void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
+    // Update the longest read length
+   if ( longest_read_length < basic_qc.longest_read_length){
+      longest_read_length = basic_qc.longest_read_length;
    }
 
-   total_a_cnt += t_seq_st.total_a_cnt ;
-   total_c_cnt += t_seq_st.total_c_cnt ;
-   total_g_cnt += t_seq_st.total_g_cnt ;
-   total_tu_cnt += t_seq_st.total_tu_cnt ;
-   total_n_cnt += t_seq_st.total_n_cnt ;
+    // Update base counts
+    total_a_cnt += basic_qc.total_a_cnt;
+    total_c_cnt += basic_qc.total_c_cnt;
+    total_g_cnt += basic_qc.total_g_cnt;
+    total_tu_cnt += basic_qc.total_tu_cnt;
+    total_n_cnt += basic_qc.total_n_cnt;
 
    // Add read lengths
-   this->read_lengths.insert(this->read_lengths.end(), t_seq_st.read_lengths.begin(), t_seq_st.read_lengths.end());
+   this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
+
+   // Add GC content
+   this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
 }
 
 // Calculates NXX scores and GC content for BAM files
@@ -148,7 +144,7 @@ void Basic_Seq_Statistics::global_sum(){
             this->gc_cnt = g_c / a_tu_g_c;
 
             // Sort the read lengths in descending order
-            std::vector<int> _read_lengths = this->read_lengths;
+            std::vector<int64_t> _read_lengths = this->read_lengths;
             std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
 
             // Get the max read length
@@ -204,11 +200,11 @@ void Basic_Seq_Statistics::global_sum_no_gc(){
         int _total_num_bases = this->total_num_bases;
 
         // Sort the read lengths in descending order
-        std::vector<int> _read_lengths = this->read_lengths;
-        std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
+        std::vector<int64_t> _read_lengths = this->read_lengths;
+        std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int64_t>());
 
         // Get the max read length
-        int max_read_length = _read_lengths.at(0);
+        int64_t max_read_length = _read_lengths.at(0);
         this->longest_read_length = max_read_length;
 
         // Get the median read length
@@ -406,48 +402,47 @@ void Output_BAM::reset(){
    seq_quality_info.reset();
 }
 
+// TODO: Complete setting all metrics
 void Output_BAM::add(Output_BAM& t_output_bam){
-    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-        map_quality_distribution[ _i_ ] += t_output_bam.map_quality_distribution[ _i_ ];
-    }
-    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-        accuracy_per_read[ _i_ ] += t_output_bam.accuracy_per_read[ _i_ ];
-    }
+//    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
+//        map_quality_distribution[ _i_ ] += t_output_bam.map_quality_distribution[ _i_ ];
+//    }
+//    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
+//        accuracy_per_read[ _i_ ] += t_output_bam.accuracy_per_read[ _i_ ];
+//    }
 
-    num_primary_alignment += t_output_bam.num_primary_alignment ;
-    num_secondary_alignment += t_output_bam.num_secondary_alignment ;
-    num_reads_with_secondary_alignment += t_output_bam.num_reads_with_secondary_alignment ;
-    num_supplementary_alignment += t_output_bam.num_supplementary_alignment;
-    num_reads_with_supplementary_alignment += t_output_bam.num_reads_with_supplementary_alignment;
-    num_reads_with_both_secondary_supplementary_alignment += t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
+    num_primary_alignment += t_output_bam.num_primary_alignment;
+    num_secondary_alignment += t_output_bam.num_secondary_alignment;
+//    num_reads_with_secondary_alignment += t_output_bam.num_reads_with_secondary_alignment ;
+//    num_supplementary_alignment += t_output_bam.num_supplementary_alignment;
+//    num_reads_with_supplementary_alignment += t_output_bam.num_reads_with_supplementary_alignment;
+//    num_reads_with_both_secondary_supplementary_alignment += t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
 
     forward_alignment += t_output_bam.forward_alignment;
     reverse_alignment += t_output_bam.reverse_alignment;
-
-    if ( min_map_quality < 0 || min_map_quality > t_output_bam.min_map_quality){
-      min_map_quality = t_output_bam.min_map_quality;
-    }
-    if ( max_map_quality < t_output_bam.max_map_quality ){
-      max_map_quality =  t_output_bam.max_map_quality;
-    }
-
-    num_matched_bases += t_output_bam.num_matched_bases;
-    num_mismatched_bases += t_output_bam.num_mismatched_bases;
-    num_ins_bases += t_output_bam.num_ins_bases;
-    num_del_bases += t_output_bam.num_del_bases;
-    num_clip_bases += t_output_bam.num_clip_bases;
+//
+//    if ( min_map_quality < 0 || min_map_quality > t_output_bam.min_map_quality){
+//      min_map_quality = t_output_bam.min_map_quality;
+//    }
+//    if ( max_map_quality < t_output_bam.max_map_quality ){
+//      max_map_quality =  t_output_bam.max_map_quality;
+//    }
+//
+//    num_matched_bases += t_output_bam.num_matched_bases;
+//    num_mismatched_bases += t_output_bam.num_mismatched_bases;
+//    num_ins_bases += t_output_bam.num_ins_bases;
+//    num_del_bases += t_output_bam.num_del_bases;
+//    num_clip_bases += t_output_bam.num_clip_bases;
 
     mapped_long_read_info.add(t_output_bam.mapped_long_read_info);
     unmapped_long_read_info.add(t_output_bam.unmapped_long_read_info);
-    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
-
-    long_read_info.add(t_output_bam.mapped_long_read_info);
-    long_read_info.add(t_output_bam.unmapped_long_read_info);
-    seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-    seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
-
-    // Add read lengths
+//    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
+//    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
+//
+//    long_read_info.add(t_output_bam.mapped_long_read_info);
+//    long_read_info.add(t_output_bam.unmapped_long_read_info);
+//    seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
+//    seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 }
 
 void Output_BAM::global_sum(){

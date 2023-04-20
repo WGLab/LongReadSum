@@ -274,8 +274,10 @@ void SeqTxt_Module::SeqTxt_do_thread(std::ifstream* file_stream, Input_Para& ref
             // Store the read length
             seqtxt_statistics->long_read_info.read_lengths.push_back(sequence_base_count);
 
-           if ( seqtxt_statistics->long_read_info.longest_read_length < ref_thread_data.stored_records[read_ss_i].sequence_length_template){
-               seqtxt_statistics->long_read_info.longest_read_length = ref_thread_data.stored_records[read_ss_i].sequence_length_template;
+            // Update the longest read length
+            int64_t current_read_length = (int64_t) ref_thread_data.stored_records[read_ss_i].sequence_length_template;
+           if ( seqtxt_statistics->long_read_info.longest_read_length < current_read_length){
+               seqtxt_statistics->long_read_info.longest_read_length = current_read_length;
            }
            seqtxt_statistics->long_read_info.read_length_count[ ref_thread_data.stored_records[read_ss_i].sequence_length_template<MAX_READ_LENGTH?ref_thread_data.stored_records[read_ss_i].sequence_length_template:(MAX_READ_LENGTH-1) ] += 1;
 

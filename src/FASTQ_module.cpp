@@ -44,7 +44,7 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
             read_name = seq->name.s;
             read_seq = seq->seq.s;
             raw_read_qual = seq->qual.s;
-            if ((uint64_t)read_len > long_read_info.longest_read_length)
+            if (read_len > long_read_info.longest_read_length)
             {
                 long_read_info.longest_read_length = read_len;
             }
@@ -247,15 +247,15 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
             output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
             // Sort the read lengths in descending order
-            std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
-            std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int>());
+            std::vector<int64_t> read_lengths = output_data.long_read_info.read_lengths;
+            std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int64_t>());
 
             // Get the max read length
-            int max_read_length = read_lengths.at(0);
+            int64_t max_read_length = read_lengths.at(0);
             output_data.long_read_info.longest_read_length = max_read_length;
 
             // Get the median read length
-            int median_read_length = read_lengths[read_lengths.size() / 2];
+            int64_t median_read_length = read_lengths[read_lengths.size() / 2];
             output_data.long_read_info.median_read_length = median_read_length;
 
             // Get the mean read length

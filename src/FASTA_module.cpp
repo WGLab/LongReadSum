@@ -23,7 +23,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
     kseq_t *seq;
     char *read_seq;
     char *read_name;
-    int read_len;
+    int64_t read_len;
     double read_gc_cnt;
 
     Basic_Seq_Statistics &long_read_info = py_output_fa.long_read_info;
@@ -39,13 +39,13 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             if (read_len == 0) {continue;}
             read_name = seq->name.s;
             read_seq = seq->seq.s;
-            if ((uint64_t)read_len > long_read_info.longest_read_length)
+            if ((int64_t)read_len > long_read_info.longest_read_length)
             {
                 long_read_info.longest_read_length = read_len;
             }
             long_read_info.total_num_reads += 1;
             long_read_info.total_num_bases += read_len;
-            if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
+            if (read_len < (int64_t) long_read_info.read_length_count.size()) {
                 long_read_info.read_length_count[read_len] += 1;
             } else {
                 long_read_info.read_length_count.resize(read_len + 1000, 0);
@@ -76,7 +76,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             }
             read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
             long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-            fprintf(read_details_fp, "%s\t%d\t%.2f\n", read_name, read_len, read_gc_cnt);
+            fprintf(read_details_fp, "%s\t%ld\t%.2f\n", read_name, read_len, read_gc_cnt);
         }
 
         kseq_destroy(seq);

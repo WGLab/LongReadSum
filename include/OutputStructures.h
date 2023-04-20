@@ -36,7 +36,7 @@ public:
    int64_t total_num_reads = ZeroDefault; // total number of long reads
    int64_t total_num_bases = ZeroDefault; // total number of bases
 
-   uint64_t longest_read_length = ZeroDefault; // the length of longest reads
+   int64_t longest_read_length = ZeroDefault; // the length of longest reads
    int64_t n50_read_length = MoneDefault;      // N50
    int64_t n95_read_length = MoneDefault;      // N95
    int64_t n05_read_length = MoneDefault;      // N05;
@@ -57,7 +57,7 @@ public:
    std::vector<int64_t> read_gc_content_count;
 
    //
-   std::vector<int> read_lengths;  // Length of reads
+   std::vector<int64_t> read_lengths;  // Length of reads
 
    void reset();
    void add(Basic_Seq_Statistics &t_seq_st);
@@ -214,7 +214,7 @@ public:
     Basic_Seq_Quality_Statistics seq_quality_info;
 
     // Signal data section
-    int read_count;
+    int64_t read_count;
     int base_count;
     std::vector<Base_Signals> read_base_signals;
 

@@ -82,15 +82,16 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
     cout_mutex.unlock();
 
     // Read the next N records
-    Output_BAM record_output;
+    Output_BAM record_output;  // Output for the current batch
     int exit_code = reader.readNextRecords(batch_size, record_output, bam_mutex);
     int record_count = record_output.num_primary_alignment;
 
     if (record_count > 0) {
         // Update the final output
         output_mutex.lock();
-        final_output.num_primary_alignment += record_output.num_primary_alignment;
-        final_output.num_mismatched_bases  += record_output.num_mismatched_bases;
+        final_output.add(record_output);
+//        final_output.num_primary_alignment += record_output.num_primary_alignment;
+//        final_output.num_mismatched_bases  += record_output.num_mismatched_bases;
         output_mutex.unlock();
         std::cout << "Processed " << record_count << " records" << std::endl;
     }
