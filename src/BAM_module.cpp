@@ -68,9 +68,17 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
             }
         }
     }
+
+    // Calculate the global sums across all records
+    std::cout << "INFO: Calculating across all records" << std::endl;
+    final_output.global_sum();
+
     // Print the output data results
     std::cout << "INFO: Number of primary alignments = " << final_output.num_primary_alignment << std::endl;
     std::cout << "INFO: Number of mismatched bases = " << final_output.num_mismatched_bases << std::endl;
+
+    // Print the number of reads
+    std::cout << "INFO: Number of reads = " << final_output.mapped_long_read_info.total_num_reads << std::endl;
     return exit_code;
 }
 
@@ -86,6 +94,9 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
     int exit_code = reader.readNextRecords(batch_size, record_output, bam_mutex);
     int record_count = record_output.num_primary_alignment;
 
+    int record_count2 = record_output.mapped_long_read_info.total_num_reads;
+
+
     if (record_count > 0) {
         // Update the final output
         output_mutex.lock();
@@ -93,6 +104,7 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
 //        final_output.num_primary_alignment += record_output.num_primary_alignment;
 //        final_output.num_mismatched_bases  += record_output.num_mismatched_bases;
         output_mutex.unlock();
+        std::cout << "TEST Read count = " << record_count2 << std::endl;
         std::cout << "Processed " << record_count << " records" << std::endl;
     }
 }

@@ -107,15 +107,24 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
     total_tu_cnt += basic_qc.total_tu_cnt;
     total_n_cnt += basic_qc.total_n_cnt;
 
-   // Add read lengths
-   this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
+    // Update total number of bases
+    this->total_num_bases += basic_qc.total_num_bases;
 
-   // Add GC content
-   this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
+    // Update read counts
+    this->total_num_reads += basic_qc.total_num_reads;
+
+    // Add read lengths
+    this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
+
+    // Add GC content
+    this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
 }
 
 // Calculates NXX scores and GC content for BAM files
 void Basic_Seq_Statistics::global_sum(){
+    // Print the size of the read length vector
+    std::cout << "GLOBALSUM: Read length vector size: " << this->read_lengths.size() << std::endl;
+
     if (this->read_lengths.empty()) {
         this->gc_cnt = 0;
         this->longest_read_length = 0;
@@ -439,8 +448,8 @@ void Output_BAM::add(Output_BAM& t_output_bam){
 //    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
 //    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 //
-//    long_read_info.add(t_output_bam.mapped_long_read_info);
-//    long_read_info.add(t_output_bam.unmapped_long_read_info);
+    long_read_info.add(t_output_bam.mapped_long_read_info);
+    long_read_info.add(t_output_bam.unmapped_long_read_info);
 //    seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
 //    seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
 }

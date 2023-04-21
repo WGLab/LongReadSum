@@ -31,6 +31,12 @@ HTSReader::~HTSReader(){
 int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex){
     int record_count = 0;
     int exit_code = 0;
+
+    // Set up the basic and quality statistics objects
+    Basic_Seq_Statistics *basic_qc;
+    Basic_Seq_Quality_Statistics *quality_qc;
+
+    // Loop through the records
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
         bam1_t* record = bam_init1();
@@ -52,10 +58,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             bam_destroy1(record);
             continue;
         }
-
-        // Set up the basic and quality statistics objects
-        Basic_Seq_Statistics *basic_qc;
-        Basic_Seq_Quality_Statistics *quality_qc;
 
         // Determine if this is an unmapped read
         if (record->core.flag & BAM_FUNMAP) {
@@ -105,9 +107,12 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
             // Update the number of mapped bases
             output_data.num_primary_alignment++;
+//            std::cout << "Updated primary count: " << output_data.num_primary_alignment << std::endl;
 
             // Update read length statistics
             basic_qc->total_num_reads++;  // Update the total number of reads
+//            std::cout << "Updated count: " << basic_qc->total_num_reads << std::endl;
+
             int64_t read_length = (int64_t) record->core.l_qseq;
             basic_qc->total_num_bases += read_length;  // Update the total number of bases
             basic_qc->read_lengths.push_back(read_length);
@@ -151,6 +156,10 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // Update the GC content histogram
             basic_qc->read_gc_content_count.push_back(percent_gc);
         }
+
+//        // Print the long read info total number of reads
+//        std::cout << "[LRI] Total number of reads: " << basic_qc->total_num_reads << std::endl;
+//        std::cout << "[MAIN LRI] Total number of reads: " << output_data.mapped_long_read_info.total_num_reads << std::endl;
 
         // process the record here, if needed
 

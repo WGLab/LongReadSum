@@ -7,12 +7,52 @@ import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-if __package__ == 'src':
-    from src import lrst_global
-else:
-    import lrst_global
-
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+
+
+# Return the default image path
+def getDefaultImageFolder():
+    return 'img/'
+
+
+# Return the default image suffix
+def getDefaultImageSuffix():
+    return '.png'
+
+
+# Return a dictionary of default plot filenames
+def getDefaultPlotFilenames():
+    default_image_path = getDefaultImageFolder()
+    default_image_suf = getDefaultImageSuffix()
+
+    plot_filenames = {  # for fq/fa
+        "read_length_distr": {'file': default_image_path + "read_length_distr" + default_image_suf,
+                              'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
+        "map_st": {'file': default_image_path + "map_st" + default_image_suf, 'title': "Map Information",
+                   'description': "Read Mapping Statistics"},
+        "err_st": {'file': default_image_path + "err_st" + default_image_suf,
+                   'title': "Base Alignment and Error Statistics",
+                   'description': "Base Alignment and Error Statistics"},
+        "read_length_st": {'file': default_image_path + "read_length_st" + default_image_suf,
+                           'title': "Read Length Statistics", 'description': "Read Length Statistics"},
+        "base_st": {'file': default_image_path + "base_st" + default_image_suf, 'title': "Base Count Statistics",
+                    'description': "Base Count Statistics", 'summary': ""},
+        "basic_info": {'file': default_image_path + "basic_info" + default_image_suf, 'title': "Basic Statistics",
+                       'description': "Basic Statistics", 'summary': ""},
+        "read_length_hist": {'file': default_image_path + "read_length_hist" + default_image_suf,
+                             'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
+
+        "base_quality": {'file': default_image_path + "base_quality" + default_image_suf,
+                         'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
+
+        "read_avg_base_quality": {'file': default_image_path + "read_avg_base_quality" + default_image_suf,
+                                  'title': "Read Base Quality Histogram", 'description': "Read Base Quality Histogram"},
+
+        "pos_quality": {'file': default_image_path + "pos_quality" + default_image_suf,
+                        'title': "Base Position Quality", 'description': "Base Position Quality"},
+    }
+
+    return plot_filenames
 
 
 def setDefaultFontSize(font_size):
@@ -22,7 +62,14 @@ def setDefaultFontSize(font_size):
 
 def fmt(x):
     """Format numbers for plots."""
-    format_x = np.format_float_scientific(x, exp_digits=4)
+    abs_x = abs(x)
+    if x == 0:
+        format_x = '0'
+    elif abs_x >= 1e7 or abs_x < 1e-3:
+        format_x = np.format_float_scientific(x, exp_digits=3)
+    else:
+        format_x = "{:,}".format(round(x))
+
     return format_x
 
 

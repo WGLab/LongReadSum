@@ -4,23 +4,20 @@ generate_html.py: Generate the HTML file from our plot images.
 
 import base64
 
-if __package__ == 'src':
-    from src import lrst_global  # Contains our image filepaths
-else:
-    import lrst_global  # Contains our image filepaths
-
 
 class ST_HTML_Generator:
-    def __init__(self, para_list, static=True):
+    def __init__(self, para_list, plot_filepaths, static=True):
         self.image_key_list = para_list[0]  # List of statistics variables to look for
         self.header_info = para_list[1]  # The webpage's title
         self.input_para = para_list[2]  # List of the input parameters used for these statistics
         self.static = static  # Static vs. dynamic webpage boolean
+        self.plot_filepaths = plot_filepaths
+        self.prg_name = self.input_para["prg_name"]  # Program name
 
         if len(self.input_para["input_files"]) > 1:
-            self.more_input_files = True;
+            self.more_input_files = True
         else:
-            self.more_input_files = False;
+            self.more_input_files = False
 
     def generate_header(self):
         if self.static:
@@ -231,7 +228,7 @@ class ST_HTML_Generator:
          <div id="header_title">{} Report</div>
          <div id="header_filename">
              <script> document.write(new Date().toLocaleDateString()); </script>
-      '''.format(lrst_global.prg_name))
+      '''.format(self.prg_name))
         # for _af in self.input_para["input_files"]:
         #   self.html_writer.write( "<br/>"+_af);
         # self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
@@ -247,8 +244,9 @@ class ST_HTML_Generator:
         _imki = 0
         for _imk in self.image_key_list:
             self.html_writer.write('<li>')
+
             self.html_writer.write(
-                '<a href="#lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['title'] + '</a>')
+                '<a href="#lrst' + str(_imki) + '">' + self.plot_filepaths[_imk]['title'] + '</a>')
             _imki += 1;
             self.html_writer.write('</li>')
 
@@ -266,21 +264,21 @@ class ST_HTML_Generator:
         for _imk in self.image_key_list:
             self.html_writer.write('<div class="module">')
             self.html_writer.write(
-                '<h2 id="lrst' + str(_imki) + '">' + lrst_global.plot_filenames[_imk]['description'] + '</h2><p>')
+                '<h2 id="lrst' + str(_imki) + '">' + self.plot_filepaths[_imk]['description'] + '</h2><p>')
             # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'"
             # alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
 
-            if 'dynamic' in lrst_global.plot_filenames[_imk] and self.static == False:
-                self.html_writer.write(lrst_global.plot_filenames[_imk]['dynamic'])
+            if 'dynamic' in self.plot_filepaths[_imk] and self.static == False:
+                self.html_writer.write(self.plot_filepaths[_imk]['dynamic'])
 
             else:
                 if _imk == "basic_st":
-                    self.html_writer.write(lrst_global.plot_filenames["basic_st"]['detail'])
+                    self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
                 else:
                     m_image_file = open(
-                        self.input_para["output_folder"] + '/' + lrst_global.plot_filenames[_imk]['file'], 'rb');
+                        self.input_para["output_folder"] + '/' + self.plot_filepaths[_imk]['file'], 'rb');
                     self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
-                        m_image_file.read()).decode('utf-8') + '" alt="' + lrst_global.plot_filenames[_imk][
+                        m_image_file.read()).decode('utf-8') + '" alt="' + self.plot_filepaths[_imk][
                                                'description'] + '" width="800" height="600"/></p>')
                     m_image_file.close()
 
@@ -309,7 +307,7 @@ class ST_HTML_Generator:
         url_index = 0
         self.html_writer.write('<li>')
         self.html_writer.write(
-            '<a href="#lrst' + str(url_index) + '">' + lrst_global.plot_filenames["basic_st"]['title'] + '</a>')
+            '<a href="#lrst' + str(url_index) + '">' + self.plot_filepaths["basic_st"]['title'] + '</a>')
         url_index += 1
 
         # Add the read plot section list
@@ -336,8 +334,8 @@ class ST_HTML_Generator:
         url_index = 0
         self.html_writer.write('<div class="module">')
         self.html_writer.write(
-            '<h2 id="lrst' + str(url_index) + '">' + lrst_global.plot_filenames["basic_st"]['description'] + '</h2><p>')
-        self.html_writer.write(lrst_global.plot_filenames["basic_st"]['detail'])
+            '<h2 id="lrst' + str(url_index) + '">' + self.plot_filepaths["basic_st"]['description'] + '</h2><p>')
+        self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
         url_index += 1
 
         # Add the read plot section
@@ -367,7 +365,7 @@ class ST_HTML_Generator:
     def generate_end(self):
         self.html_writer.write(
             '<div class="footer"> Generated by <a href="https://github.com/WGLab/{}">{}</a> </div>'.format(
-                lrst_global.prg_name, lrst_global.prg_name))
+                self.prg_name, self.prg_name))
 
         self.html_writer.write("</body>")
         self.html_writer.write("</html>")
