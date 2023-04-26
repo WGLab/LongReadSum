@@ -412,46 +412,55 @@ void Output_BAM::reset(){
 }
 
 // TODO: Complete setting all metrics
-void Output_BAM::add(Output_BAM& t_output_bam){
+void Output_BAM::add(Output_BAM& output_data){
 //    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-//        map_quality_distribution[ _i_ ] += t_output_bam.map_quality_distribution[ _i_ ];
+//        map_quality_distribution[ _i_ ] += output_data.map_quality_distribution[ _i_ ];
 //    }
 //    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-//        accuracy_per_read[ _i_ ] += t_output_bam.accuracy_per_read[ _i_ ];
+//        accuracy_per_read[ _i_ ] += output_data.accuracy_per_read[ _i_ ];
 //    }
 
-    num_primary_alignment += t_output_bam.num_primary_alignment;
-    num_secondary_alignment += t_output_bam.num_secondary_alignment;
-//    num_reads_with_secondary_alignment += t_output_bam.num_reads_with_secondary_alignment ;
-//    num_supplementary_alignment += t_output_bam.num_supplementary_alignment;
-//    num_reads_with_supplementary_alignment += t_output_bam.num_reads_with_supplementary_alignment;
-//    num_reads_with_both_secondary_supplementary_alignment += t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
+    num_primary_alignment += output_data.num_primary_alignment;
+    num_secondary_alignment += output_data.num_secondary_alignment;
+//    num_reads_with_secondary_alignment += output_data.num_reads_with_secondary_alignment ;
+    num_supplementary_alignment += output_data.num_supplementary_alignment;
+    
+    // Update the supplementary alignment information
+    this->reads_with_supplementary.insert( output_data.reads_with_supplementary.begin(), output_data.reads_with_supplementary.end() );
+    this->num_reads_with_supplementary_alignment = this->reads_with_supplementary.size();
 
-    forward_alignment += t_output_bam.forward_alignment;
-    reverse_alignment += t_output_bam.reverse_alignment;
-//
-//    if ( min_map_quality < 0 || min_map_quality > t_output_bam.min_map_quality){
-//      min_map_quality = t_output_bam.min_map_quality;
-//    }
-//    if ( max_map_quality < t_output_bam.max_map_quality ){
-//      max_map_quality =  t_output_bam.max_map_quality;
-//    }
-//
-//    num_matched_bases += t_output_bam.num_matched_bases;
-//    num_mismatched_bases += t_output_bam.num_mismatched_bases;
-//    num_ins_bases += t_output_bam.num_ins_bases;
-//    num_del_bases += t_output_bam.num_del_bases;
-//    num_clip_bases += t_output_bam.num_clip_bases;
+    // Update the secondary alignment information
+    this->reads_with_secondary.insert( output_data.reads_with_secondary.begin(), output_data.reads_with_secondary.end() );
+    this->num_reads_with_secondary_alignment = this->reads_with_secondary.size();
 
-    mapped_long_read_info.add(t_output_bam.mapped_long_read_info);
-    unmapped_long_read_info.add(t_output_bam.unmapped_long_read_info);
-//    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-//    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
+//    num_reads_with_supplementary_alignment += output_data.num_reads_with_supplementary_alignment;
+//    num_reads_with_both_secondary_supplementary_alignment += output_data.num_reads_with_both_secondary_supplementary_alignment;
+
+    forward_alignment += output_data.forward_alignment;
+    reverse_alignment += output_data.reverse_alignment;
 //
-    long_read_info.add(t_output_bam.mapped_long_read_info);
-    long_read_info.add(t_output_bam.unmapped_long_read_info);
-//    seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-//    seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
+//    if ( min_map_quality < 0 || min_map_quality > output_data.min_map_quality){
+//      min_map_quality = output_data.min_map_quality;
+//    }
+//    if ( max_map_quality < output_data.max_map_quality ){
+//      max_map_quality =  output_data.max_map_quality;
+//    }
+//
+    num_matched_bases += output_data.num_matched_bases;
+    num_mismatched_bases += output_data.num_mismatched_bases;
+    num_ins_bases += output_data.num_ins_bases;
+    num_del_bases += output_data.num_del_bases;
+    num_clip_bases += output_data.num_clip_bases;
+
+    mapped_long_read_info.add(output_data.mapped_long_read_info);
+    unmapped_long_read_info.add(output_data.unmapped_long_read_info);
+//    mapped_seq_quality_info.add(output_data.mapped_seq_quality_info);
+//    unmapped_seq_quality_info.add(output_data.unmapped_seq_quality_info);
+//
+    long_read_info.add(output_data.mapped_long_read_info);
+    long_read_info.add(output_data.unmapped_long_read_info);
+//    seq_quality_info.add(output_data.mapped_seq_quality_info);
+//    seq_quality_info.add(output_data.unmapped_seq_quality_info);
 }
 
 void Output_BAM::global_sum(){
@@ -462,6 +471,14 @@ void Output_BAM::global_sum(){
 
     long_read_info.global_sum();
     seq_quality_info.global_sum();
+
+    // Loop through each read and check if it is in both the secondary and supplementary sets
+    for ( auto it = this->reads_with_secondary.begin(); it != this->reads_with_secondary.end(); ++it ){
+        std::string read_id = it->first;
+        if ( this->reads_with_supplementary.find( read_id ) != this->reads_with_supplementary.end() ){
+            this->num_reads_with_both_secondary_supplementary_alignment++;
+        }
+    }
 
     if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
     if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }

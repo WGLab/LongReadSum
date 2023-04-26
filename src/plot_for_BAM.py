@@ -48,8 +48,8 @@ def plot_errors(bam_output, path):
 def generate_bs(bam_output, plot_filepaths):
     plot_filepaths["basic_st"] = {};
     plot_filepaths["basic_st"]['file'] = ""
-    plot_filepaths["basic_st"]['title'] = "Basic statistics"
-    plot_filepaths["basic_st"]['description'] = "BAM: Basic statistics"
+    plot_filepaths["basic_st"]['title'] = "Basic Statistics"
+    plot_filepaths["basic_st"]['description'] = "BAM: Basic Statistics"
 
     table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n</thead>"
     table_str += "\n<tbody>"

@@ -50,8 +50,11 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
          while (reader.hasNextRecord()){
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
+                cout_mutex.lock();
                 std::cout<<"INFO: Generated thread "<< thread_index+1 <<std::endl;
+                cout_mutex.unlock();
 
+                // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
                 thread_vector.push_back(std::move(t));
             }
@@ -93,18 +96,13 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
     Output_BAM record_output;  // Output for the current batch
     int exit_code = reader.readNextRecords(batch_size, record_output, bam_mutex);
     int record_count = record_output.num_primary_alignment;
-
-    int record_count2 = record_output.mapped_long_read_info.total_num_reads;
-
+    //int record_count = record_output.mapped_long_read_info.total_num_reads;
 
     if (record_count > 0) {
         // Update the final output
         output_mutex.lock();
         final_output.add(record_output);
-//        final_output.num_primary_alignment += record_output.num_primary_alignment;
-//        final_output.num_mismatched_bases  += record_output.num_mismatched_bases;
         output_mutex.unlock();
-        std::cout << "TEST Read count = " << record_count2 << std::endl;
         std::cout << "Processed " << record_count << " records" << std::endl;
     }
 }

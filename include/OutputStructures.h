@@ -8,6 +8,7 @@ Define the output structures for each module.
 
 #include <string>
 #include <vector>
+#include <map>
 
 #define MAX_READ_LENGTH 10485760
 #define MAX_MAP_QUALITY 256
@@ -116,45 +117,51 @@ public:
 class Output_BAM : public Output_FQ
 {
 public:
-   int64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
-   int64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
-   int64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
-   int64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
-   int64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
-   int64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+    int64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
+    int64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
+    int64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
+    int64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
+    int64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
+    int64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
 
-   int64_t forward_alignment = ZeroDefault;
-   int64_t reverse_alignment = ZeroDefault;
+    // Map of reads with supplementary alignments
+    std::map<std::string, bool> reads_with_supplementary;
 
-   std::vector<int64_t> map_quality_distribution;
-   int min_map_quality = MoneDefault; // the minimum mapping quality
-   int max_map_quality = MoneDefault; // the maximum mapping quality
+    // Map of reads with secondary alignments
+    std::map<std::string, bool> reads_with_secondary;
 
-   // Similar to Output_FA: below are for mapped.
-   int64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
-   int64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
-   int64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
-   int64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
-   int64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
+    int64_t forward_alignment = ZeroDefault;
+    int64_t reverse_alignment = ZeroDefault;
 
-   // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
-   int64_t num_columns = ZeroDefault; // the number of columns
-   double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
+    std::vector<int64_t> map_quality_distribution;
+    int min_map_quality = MoneDefault; // the minimum mapping quality
+    int max_map_quality = MoneDefault; // the maximum mapping quality
 
-   std::vector<int64_t> accuracy_per_read;
+    // Similar to Output_FA: below are for mapped.
+    int64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
+    int64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
+    int64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
+    int64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
+    int64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
-   Basic_Seq_Statistics mapped_long_read_info;
-   Basic_Seq_Statistics unmapped_long_read_info;
+    // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
+    int64_t num_columns = ZeroDefault; // the number of columns
+    double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
 
-   Basic_Seq_Quality_Statistics mapped_seq_quality_info;
-   Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+    std::vector<int64_t> accuracy_per_read;
 
-   void reset();
-   void add(Output_BAM &t_output_bam);
-   void global_sum();
+    Basic_Seq_Statistics mapped_long_read_info;
+    Basic_Seq_Statistics unmapped_long_read_info;
 
-   Output_BAM();
-   ~Output_BAM();
+    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
+    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+
+    void reset();
+    void add(Output_BAM &t_output_bam);
+    void global_sum();
+
+    Output_BAM();
+    ~Output_BAM();
 };
 
 

@@ -251,7 +251,7 @@ class ST_HTML_Generator:
             self.html_writer.write('</li>')
 
         self.html_writer.write('<li>')
-        self.html_writer.write('<a href="#lrst' + str(_imki) + '">List of input files</a>')
+        self.html_writer.write('<a href="#lrst' + str(_imki) + '">Input File List</a>')
         _imki += 1;
         self.html_writer.write('</li>')
 
