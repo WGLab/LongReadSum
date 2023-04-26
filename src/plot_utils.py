@@ -149,33 +149,26 @@ def bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitl
 
 
 def histogram(data, path, font_size):
-    """Plot a histogram."""
+    """Plot the read length histograms."""
     annotation_size = 10  # Annotation font size
-    mat = data.read_length_count
-    mean, median, n50 = int(data.mean_read_length), data.median_read_length, data.n50_read_length
+    mean, median, n50 = data.mean_read_length, data.median_read_length, data.n50_read_length
 
-    mat = np.array(mat)[:, np.newaxis]
-    mat = mat[:data.longest_read_length + 1]
-    bin_size = 1000
-    mat_full = np.vstack([mat, np.zeros(bin_size - len(mat) % bin_size)[:, np.newaxis]])
-    mat_full = mat_full.ravel()
+    # Read the read lengths array in float64 format
+    read_lengths = np.array(data.read_lengths, dtype=np.float64)
 
-    lengths = np.arange(0, len(mat_full))
+    # Calculate a histogram of read lengths
+    hist, edges = np.histogram(read_lengths, bins=10)
 
-    binsize = 1000
-    hist, bins = np.histogram(lengths, weights=mat_full, bins=np.arange(0, len(lengths) + 1, bin_size))
-    log_hist, log_bins = np.histogram(np.log10(lengths + 1), weights=mat_full, bins=len(lengths) // binsize)
-
+    # Create a figure with two subplots
     fig = make_subplots(
         rows=2, cols=1,
         subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.3)
-    fig.update_layout(showlegend=False, autosize=True)
+    fig.update_layout(showlegend=False, autosize=False)
 
-    xd = bins[1:]
-    customdata = np.dstack((bins[:-1], bins[1:], hist))[0, :, :]
-    yd = hist
-    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
-                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
+    customdata = np.dstack((edges[:-1], edges[1:], hist))[0, :, :]
+    fig.add_trace(go.Bar(x=edges, y=hist, customdata=customdata,
+                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata['
+                                       '2]:.0f}<extra></extra>',
                          marker_color='#36a5c7'), row=1, col=1)
 
     fig.add_vline(mean, line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
@@ -185,8 +178,13 @@ def histogram(data, path, font_size):
     fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
                   annotation_textangle=90, row=1, col=1)
 
-    xd = log_bins[1:]
-    customdata = np.dstack((np.power(10, log_bins)[:-1], np.power(10, log_bins)[1:], log_hist))[0, :, :]
+    # Log histogram
+    # Get the log10 histogram of read lengths
+    read_lengths_log = np.log10(read_lengths, out=np.zeros_like(read_lengths), where=(read_lengths != 0))
+    log_hist, log_edges = np.histogram(read_lengths_log, bins=len(edges))
+
+    xd = log_edges
+    customdata = np.dstack((np.power(10, log_edges)[:-1], np.power(10, log_edges)[1:], log_hist))[0, :, :]
     yd = log_hist
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
                          hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
@@ -200,19 +198,20 @@ def histogram(data, path, font_size):
                   annotation_textangle=90, row=2, col=1)
     fig.update_annotations(font=dict(color="white"))
 
+    # Set tick value range for the log scale
+    tick_vals = list(range(0, 5))
     fig.update_xaxes(
+        range=[0, 5],
         tickmode='array',
-        tickvals=list(range(0, 12)),
-        ticktext=['0'] + ['{:,}'.format(10 ** x) for x in range(1, 12)],
-        ticks="outside", row=2, col=1)
+        tickvals=tick_vals,
+        ticktext=['{:,}'.format(10 ** x) for x in tick_vals],
+        ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
 
     fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1)
-    fig.update_xaxes(ticks="outside", title_text='Read Length (Log scale)', title_standoff=0, row=2, col=1)
     fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
 
     # Set font sizes
-    fig.update_layout(showlegend=False, autosize=True,
-                      font=dict(size=font_size))
+    fig.update_layout(font=dict(size=font_size), autosize=True)
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False)
@@ -231,7 +230,8 @@ def base_quality(data, path, font_size):
 
     customdata = np.dstack((xd, yd))[0, :, :]
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
-                         hovertemplate='Base Quality: %{customdata[0]:.0f}<br>Base Counts:%{customdata[1]:.0f}<extra></extra>',
+                         hovertemplate='Base Quality: %{customdata[0]:.0f}<br>Base Counts:%{customdata['
+                                       '1]:.0f}<extra></extra>',
                          marker_color='#36a5c7'))
 
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff=0)
