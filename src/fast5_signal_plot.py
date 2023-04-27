@@ -9,11 +9,12 @@ import csv
 import numpy as np
 import plotly.graph_objs as go
 from random import sample
-\
+
 if __package__ == 'src':
-    from src import lrst_global
+    from src.plot_utils import *
 else:
-    import lrst_global
+    from plot_utils import *
+
 
 def plot(fast5_output, para_dict):
     """
@@ -22,10 +23,11 @@ def plot(fast5_output, para_dict):
     out_path = para_dict["output_folder"]
 
     # Set up the global variable with HTML titles
-    lrst_global.plot_filenames["basic_st"] = {}
-    lrst_global.plot_filenames["basic_st"]['file'] = ""
-    lrst_global.plot_filenames["basic_st"]['title'] = "Summary Table"
-    lrst_global.plot_filenames["basic_st"]['description'] = "FAST5: Basic statistics"
+    plot_filepaths = getDefaultPlotFilenames()
+    plot_filepaths["basic_st"] = {}
+    plot_filepaths["basic_st"]['file'] = ""
+    plot_filepaths["basic_st"]['title'] = "Summary Table"
+    plot_filepaths["basic_st"]['description'] = "FAST5: Basic statistics"
 
     # Get values
     read_count = fast5_output.getReadCount()
@@ -38,7 +40,7 @@ def plot(fast5_output, para_dict):
     table_str += int_str_for_format.format("#Total Reads", read_count)
     table_str += int_str_for_format.format("#Total Bases", total_base_count)
     table_str += "\n</tbody>\n</table>"
-    lrst_global.plot_filenames["basic_st"]['detail'] = table_str
+    plot_filepaths["basic_st"]['detail'] = table_str
 
     # Randomly sample a small set of reads if it is a large dataset
     read_count_max = para_dict["read_count"]

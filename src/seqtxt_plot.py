@@ -4,10 +4,8 @@ Use the formatted statistics from our C++ module output text files to generate s
 """
 
 if __package__ == 'src':
-    from src import lrst_global
     from src.plot_utils import *
 else:
-    import lrst_global
     from plot_utils import *
 
 def generate_bs( output_statistics, para_dict ):

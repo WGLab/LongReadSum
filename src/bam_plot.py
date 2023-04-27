@@ -45,8 +45,8 @@ def plot_errors(bam_output, path):
     bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='h')
 
 
-def generate_bs(bam_output, plot_filepaths):
-    plot_filepaths["basic_st"] = {};
+def create_summary_table(bam_output, plot_filepaths):
+    plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
     plot_filepaths["basic_st"]['title'] = "Basic Statistics"
     plot_filepaths["basic_st"]['description'] = "BAM: Basic Statistics"
@@ -100,8 +100,8 @@ def plot(bam_output, para_dict):
     # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
 
-    # Create table
-    generate_bs(bam_output, plot_filepaths)
+    # Create the summary table
+    create_summary_table(bam_output, plot_filepaths)
 
     # Generate plots
     plot_alignment_numbers(bam_output, get_image_path('map_st'))
@@ -115,7 +115,7 @@ def plot(bam_output, para_dict):
     plot_basic_info([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info],
                     get_image_path('basic_info'), categories=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
 
-    plot_filepaths['read_length_hist']['dynamic'] = histogram(bam_output.long_read_info,
+    plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(bam_output.long_read_info,
                                                               get_image_path('read_length_hist'),
                                                               font_size)
     plot_filepaths['base_quality']['dynamic'] = base_quality(bam_output.seq_quality_info,

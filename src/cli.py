@@ -141,11 +141,11 @@ def fq_module(margs):
         fq_output = lrst.Output_FQ()
         exit_code = lrst.callFASTQModule(input_para, fq_output)
         if exit_code == 0:
-            create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
+            plot_filepaths = create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality",
-                      "read_avg_base_quality"], "FASTQ QC", param_dict], static=static)
+                      "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=static)
                 fq_html_gen.generate_st_html()
 
             logging.info("Completed.")
@@ -186,13 +186,13 @@ def fa_module(margs):
             logging.info("QC generated.")
             logging.info("Generating output files...")
             from src import fasta_plot
-            fasta_plot.fa_plot(fa_output, param_dict)
+            plot_filepaths = fasta_plot.plot(fa_output, param_dict)
 
             # TODO: Unused 'static' variable results in redundant function call
             for static in [True, False]:
                 fa_html_gen = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"], "FASTA QC",
-                     param_dict], static=True)
+                     param_dict], plot_filepaths, static=True)
                 fa_html_gen.generate_st_html()
 
         else:
