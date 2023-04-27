@@ -9,7 +9,7 @@ Class for calling FAST5 statistics modules.
 #include <string>
 #include <algorithm>
 
-#include "SeqTxt_module.h"
+#include "seqtxt_module.h"
 #include "ComFunction.h"
 
 

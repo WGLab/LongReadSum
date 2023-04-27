@@ -11,7 +11,7 @@ FASTA_module.cpp:
 #include <sys/stat.h>
 #include <iostream>
 #include "kseq.h"
-#include "FASTA_module.h"
+#include "fasta_module.h"
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 

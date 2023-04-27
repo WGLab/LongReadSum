@@ -9,9 +9,9 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 %{
 #include <string>
 #include <vector>
-#include "InputStructure.h"
-#include "OutputStructures.h"
-#include "ModuleCaller.h"
+#include "input_parameters.h"
+#include "output_data.h"
+#include "module_caller.h"
 %}
 
 typedef long int int64_t;
@@ -28,6 +28,6 @@ namespace std{
 };
 
 // These are the header functions wrapped by our lrst module (Like an 'import')
-%include "InputStructure.h"  // Contains InputPara for passing parameters to C++
-%include "OutputStructures.h"  // Contains data structures for storing statistics for each file type
-%include "ModuleCaller.h"  // Functions for calling the C++ statistics computation modules
+%include "input_parameters.h"  // Contains InputPara for passing parameters to C++
+%include "output_data.h"  // Contains data structures for storing statistics for each file type
+%include "module_caller.h"  // Functions for calling the C++ statistics computation modules

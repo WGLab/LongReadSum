@@ -76,7 +76,7 @@ public:
 class Basic_Seq_Quality_Statistics
 {
 public:
-   std::vector<int64_t> base_quality_distribution;
+   std::vector<int> base_quality_distribution;
    std::vector<int64_t> read_average_base_quality_distribution;
    int min_base_quality = MoneDefault; // minimum base quality;
    int max_base_quality = MoneDefault; // maximum base quality;

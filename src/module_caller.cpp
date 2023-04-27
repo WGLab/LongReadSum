@@ -1,10 +1,10 @@
 #include <iostream>
-#include "ModuleCaller.h"
-#include "BAM_module.h"
-#include "SeqTxt_module.h"
-#include "FASTQ_module.h"
-#include "FASTA_module.h"
-#include "FAST5_module.h"
+#include "module_caller.h"
+#include "bam_module.h"
+#include "seqtxt_module.h"
+#include "fastq_module.h"
+#include "fasta_module.h"
+#include "fast5_module.h"
 
 int callBAMModule(Input_Para &_input_data, Output_BAM &py_output_bam)
 {

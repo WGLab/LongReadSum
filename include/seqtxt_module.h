@@ -1,8 +1,8 @@
 #ifndef SeqTxt_MODULE_H_
 #define SeqTxt_MODULE_H_
 
-#include "InputStructure.h"
-#include "OutputStructures.h"
+#include "input_parameters.h"
+#include "output_data.h"
 
 #include <string>
 #include <fstream>

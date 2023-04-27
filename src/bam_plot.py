@@ -89,7 +89,7 @@ def generate_bs(bam_output, plot_filepaths):
     plot_filepaths["basic_st"]['detail'] = table_str
 
 
-def bam_plot(bam_output, para_dict):
+def plot(bam_output, para_dict):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
     get_image_path = lambda x: os.path.join(out_path, plot_filepaths[x]['file'])

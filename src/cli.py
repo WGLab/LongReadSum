@@ -185,8 +185,8 @@ def fa_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_FA
-            plot_for_FA.fa_plot(fa_output, param_dict)
+            from src import fasta_plot
+            fasta_plot.fa_plot(fa_output, param_dict)
 
             # TODO: Unused 'static' variable results in redundant function call
             for static in [True, False]:
@@ -232,8 +232,8 @@ def bam_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_BAM
-            plot_filepaths = plot_for_BAM.bam_plot(bam_output, param_dict)
+            from src import bam_plot
+            plot_filepaths = bam_plot.plot(bam_output, param_dict)
 
             for static in [True, False]:
                 bam_html_gen = generate_html.ST_HTML_Generator(
@@ -281,8 +281,8 @@ def seqtxt_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_SeqTxt
-            plot_for_SeqTxt.plot(seqtxt_output, param_dict)
+            from src import seqtxt_plot
+            seqtxt_plot.plot(seqtxt_output, param_dict)
             for static in [True, False]:
                 if margs.seq == 0:
                     f5_html_gen = generate_html.ST_HTML_Generator(
@@ -370,8 +370,8 @@ def fast5_signal_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_FAST5s
-            dynamic_plots = plot_for_FAST5s.plot(fast5_output, param_dict)
+            from src import fast5_signal_plot
+            dynamic_plots = fast5_signal_plot.plot(fast5_output, param_dict)
 
             # Generate a dynamic HTML file
             fast5_html_obj = generate_html.ST_HTML_Generator(

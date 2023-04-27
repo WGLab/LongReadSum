@@ -21,7 +21,7 @@ Class for calling FAST5 statistics modules.
 #include <sys/stat.h>
 #include <iostream>
 
-#include "FAST5_module.h"
+#include "fast5_module.h"
 #include "ComFunction.h"
 #include "H5Cpp.h"
 
@@ -651,7 +651,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     fprintf(read_summary_fp, "base quality\tnumber of bases\n");
                     for (int baseq = 0; baseq <= 60; baseq++)
                     {
-                        fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+                        fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
                     }
 
                     fprintf(read_summary_fp, "\n\n");

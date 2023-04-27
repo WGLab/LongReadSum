@@ -12,7 +12,7 @@
 // https://github.com/lh3/seqtk
 #include "kseq.h"
 #include "kseq.h"
-#include "FASTQ_module.h"
+#include "fastq_module.h"
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
@@ -311,7 +311,7 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
             fprintf(read_summary_fp, "base quality\tnumber of bases\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
             }
 
             fprintf(read_summary_fp, "\n\n");

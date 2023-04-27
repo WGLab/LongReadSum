@@ -3,8 +3,8 @@
 #include <math.h>  // sqrt
 #include <iostream>
 
-#include "OutputStructures.h"
-#include "BasicStatistics.h"
+#include "output_data.h"
+#include "basic_statistics.h"
 
 // Base class for storing error output.
 Output_Info::Output_Info(){
@@ -122,9 +122,6 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
 
 // Calculates NXX scores and GC content for BAM files
 void Basic_Seq_Statistics::global_sum(){
-    // Print the size of the read length vector
-    std::cout << "GLOBALSUM: Read length vector size: " << this->read_lengths.size() << std::endl;
-
     if (this->read_lengths.empty()) {
         this->gc_cnt = 0;
         this->longest_read_length = 0;
@@ -411,18 +408,9 @@ void Output_BAM::reset(){
    seq_quality_info.reset();
 }
 
-// TODO: Complete setting all metrics
 void Output_BAM::add(Output_BAM& output_data){
-//    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-//        map_quality_distribution[ _i_ ] += output_data.map_quality_distribution[ _i_ ];
-//    }
-//    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-//        accuracy_per_read[ _i_ ] += output_data.accuracy_per_read[ _i_ ];
-//    }
-
     num_primary_alignment += output_data.num_primary_alignment;
     num_secondary_alignment += output_data.num_secondary_alignment;
-//    num_reads_with_secondary_alignment += output_data.num_reads_with_secondary_alignment ;
     num_supplementary_alignment += output_data.num_supplementary_alignment;
     
     // Update the supplementary alignment information
@@ -433,19 +421,14 @@ void Output_BAM::add(Output_BAM& output_data){
     this->reads_with_secondary.insert( output_data.reads_with_secondary.begin(), output_data.reads_with_secondary.end() );
     this->num_reads_with_secondary_alignment = this->reads_with_secondary.size();
 
-//    num_reads_with_supplementary_alignment += output_data.num_reads_with_supplementary_alignment;
-//    num_reads_with_both_secondary_supplementary_alignment += output_data.num_reads_with_both_secondary_supplementary_alignment;
-
     forward_alignment += output_data.forward_alignment;
     reverse_alignment += output_data.reverse_alignment;
-//
-//    if ( min_map_quality < 0 || min_map_quality > output_data.min_map_quality){
-//      min_map_quality = output_data.min_map_quality;
-//    }
-//    if ( max_map_quality < output_data.max_map_quality ){
-//      max_map_quality =  output_data.max_map_quality;
-//    }
-//
+
+    // Update the base quality vector
+    for (int i=0; i<MAX_READ_QUALITY; i++){
+        this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
+    }
+
     num_matched_bases += output_data.num_matched_bases;
     num_mismatched_bases += output_data.num_mismatched_bases;
     num_ins_bases += output_data.num_ins_bases;
@@ -454,13 +437,9 @@ void Output_BAM::add(Output_BAM& output_data){
 
     mapped_long_read_info.add(output_data.mapped_long_read_info);
     unmapped_long_read_info.add(output_data.unmapped_long_read_info);
-//    mapped_seq_quality_info.add(output_data.mapped_seq_quality_info);
-//    unmapped_seq_quality_info.add(output_data.unmapped_seq_quality_info);
-//
+
     long_read_info.add(output_data.mapped_long_read_info);
     long_read_info.add(output_data.unmapped_long_read_info);
-//    seq_quality_info.add(output_data.mapped_seq_quality_info);
-//    seq_quality_info.add(output_data.unmapped_seq_quality_info);
 }
 
 void Output_BAM::global_sum(){

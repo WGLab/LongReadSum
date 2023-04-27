@@ -1,5 +1,5 @@
-#ifndef BAMREADER_H_
-#define BAMREADER_H_
+#ifndef HTSREADER_H_
+#define HTSREADER_H_
 
 #include <htslib/sam.h>
 #include <htslib/bgzf.h>
@@ -11,7 +11,7 @@
 #include <mutex>
 
 #include "ComStruct.h"
-#include "OutputStructures.h"
+#include "output_data.h"
 
 #define BAM_UN_OPEN 1
 #define BAM_FAILED 2

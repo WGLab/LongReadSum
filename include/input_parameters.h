@@ -1,10 +1,10 @@
 /*
-Python_to_CXX_class.h:
+input_parameters.h:
 Define the Python bindings from our C++ modules
 */
 
-#ifndef PYTHON_TO_CXX_CLASS_H
-#define PYTHON_TO_CXX_CLASS_H
+#ifndef INPUT_PARAMETERS_H
+#define INPUT_PARAMETERS_H
 
 #include <string>
 #define MAX_INPUT_FILES 2048
@@ -12,7 +12,7 @@ Define the Python bindings from our C++ modules
 
 /*
 Input_Para:
-Python-invoked C++ class
+Define the input parameters for the program
 */
 class Input_Para{
 public: 

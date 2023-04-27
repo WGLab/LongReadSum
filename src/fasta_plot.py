@@ -5,10 +5,10 @@ Use the formatted statistics from our C++ module output text files to generate s
 
 if __package__ == 'src':
     from src import lrst_global
-    from src.utils import *
+    from src.plot_utils import *
 else:
     import lrst_global
-    from utils import *
+    from plot_utils import *
 
 
 def generate_bs( fa_output, para_dict ):
