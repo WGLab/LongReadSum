@@ -16,6 +16,10 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 
 typedef long int int64_t;
 
+%apply long long { int64_t };  // Maps int64_t to long long in Python
+%apply unsigned long long { uint64_t };  // Maps uint64_t to unsigned long long in Python
+%apply long { long int };  // Maps long int to long in Python
+
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>
