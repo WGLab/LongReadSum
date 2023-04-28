@@ -7,8 +7,8 @@
 #include <iostream>
 #include <sstream>
 #include <fstream>
-
 #include <mutex>
+#include <stdint.h>
 
 #include "ComStruct.h"
 #include "output_data.h"
