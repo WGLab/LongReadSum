@@ -148,4 +148,4 @@ def plot(fast5_output, para_dict):
         dynamic_html = fig.to_html(full_html=False)
         output_html_plots.update({nth_read_name: dynamic_html})
 
-    return output_html_plots
+    return output_html_plots, plot_filepaths

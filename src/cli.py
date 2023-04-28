@@ -328,11 +328,11 @@ def fast5_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            create_base_quality_plots(fast5_output, param_dict, "FAST5: Basic statistics")
+            plot_filepaths = create_base_quality_plots(fast5_output, param_dict, "FAST5: Basic statistics")
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality",
-                      "read_avg_base_quality"], "FAST5 QC", param_dict], static=static)
+                      "read_avg_base_quality"], "FAST5 QC", param_dict], plot_filepaths, static=static)
                 fast5_html_obj.generate_st_html()
         else:
             logging.error("QC did not generate.")
@@ -371,11 +371,11 @@ def fast5_signal_module(margs):
             logging.info("QC generated.")
             logging.info("Generating output files...")
             from src import fast5_signal_plot
-            dynamic_plots = fast5_signal_plot.plot(fast5_output, param_dict)
+            dynamic_plots, plot_filepaths = fast5_signal_plot.plot(fast5_output, param_dict)
 
             # Generate a dynamic HTML file
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [[], "FAST5 signal QC", param_dict], static=False)
+                [[], "FAST5 signal QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_st_html(signal_plots=dynamic_plots)
         else:
             logging.error("QC did not generate.")
