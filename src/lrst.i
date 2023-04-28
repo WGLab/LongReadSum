@@ -24,12 +24,10 @@ typedef long int int64_t;
 %include <stdint.i>
 %include <std_vector.i>
 
-namespace std{
-    %template(IntVector) vector<int>;
-    %template(DoubleVector) vector<double>;
-    %template(Int64Vector) vector<int64_t>;
-    %template(Int2DVector) vector<vector<int>>;
-};
+%template(IntVector) std::vector<int>;
+%template(DoubleVector) std::vector<double>;
+%template(Int64Vector) std::vector<int64_t>;
+%template(Int2DVector) std::vector<std::vector<int>>;
 
 // These are the header functions wrapped by our lrst module (Like an 'import')
 %include "input_parameters.h"  // Contains InputPara for passing parameters to C++
