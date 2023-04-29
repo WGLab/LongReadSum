@@ -35,41 +35,35 @@ public:
 class Basic_Seq_Statistics
 {
 public:
-   int64_t total_num_reads = ZeroDefault; // total number of long reads
-   int64_t total_num_bases = ZeroDefault; // total number of bases
+    int64_t total_num_reads = ZeroDefault; // total number of long reads
+    int64_t total_num_bases = ZeroDefault; // total number of bases
+    int64_t longest_read_length = ZeroDefault; // the length of longest reads
+    int64_t n50_read_length = MoneDefault;      // N50
+    int64_t n95_read_length = MoneDefault;      // N95
+    int64_t n05_read_length = MoneDefault;      // N05;
+    double mean_read_length = MoneDefault;      // mean of read length
+    std::vector<int> NXX_read_length;       // NXX_read_length[50] means N50 read length
+    int64_t median_read_length = MoneDefault;   // median of read length
 
-   int64_t longest_read_length = ZeroDefault; // the length of longest reads
-   int64_t n50_read_length = MoneDefault;      // N50
-   int64_t n95_read_length = MoneDefault;      // N95
-   int64_t n05_read_length = MoneDefault;      // N05;
-   double mean_read_length = MoneDefault;      // mean of read length
-   std::vector<int64_t> nx_read_length;        // deprecated
-   std::vector<int64_t> NXX_read_length;       // NXX_read_length[50] means N50 read length
-   int64_t median_read_length = MoneDefault;   // median of read length
+    int64_t total_a_cnt = ZeroDefault;  // A content
+    int64_t total_c_cnt = ZeroDefault;  // C content
+    int64_t total_g_cnt = ZeroDefault;  // G content
+    int64_t total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
+    int64_t total_n_cnt = ZeroDefault;  // N content
+    double gc_cnt = ZeroDefault;        // GC ratio
+    std::vector<int> read_gc_content_count;  // GC content distribution
+    std::vector<int> read_length_count;  // Read length distribution (TODO: Replace usages with read_lengths)
+    std::vector<int> read_lengths;  // Length of reads
 
-   int64_t total_a_cnt = ZeroDefault;  // A content
-   int64_t total_c_cnt = ZeroDefault;  // C content
-   int64_t total_g_cnt = ZeroDefault;  // G content
-   int64_t total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
-   int64_t total_n_cnt = ZeroDefault;  // N content
-   double gc_cnt = ZeroDefault;        // GC ratio
-
-   std::vector<int64_t> read_length_count;
-
-   std::vector<int64_t> read_gc_content_count;
-
-   //
-   std::vector<int64_t> read_lengths;  // Length of reads
-
-   void reset();
-   void add(Basic_Seq_Statistics &t_seq_st);
-   void global_sum();
+    void reset();
+    void add(Basic_Seq_Statistics &t_seq_st);
+    void global_sum();
     void global_sum_no_gc();
-   void resize();
+    void resize();
 
-   Basic_Seq_Statistics();
-   Basic_Seq_Statistics(const Basic_Seq_Statistics &_bss);
-   ~Basic_Seq_Statistics();
+    Basic_Seq_Statistics();
+    Basic_Seq_Statistics(const Basic_Seq_Statistics &_bss);
+    ~Basic_Seq_Statistics();
 };
 
 
@@ -78,15 +72,15 @@ class Basic_Seq_Quality_Statistics
 {
 public:
    std::vector<int> base_quality_distribution;
-   std::vector<int64_t> read_average_base_quality_distribution;
+   std::vector<int> read_average_base_quality_distribution;
    int min_base_quality = MoneDefault; // minimum base quality;
    int max_base_quality = MoneDefault; // maximum base quality;
    std::vector<int> pos_quality_distribution;
    std::vector<double> pos_quality_distribution_dev;
-   std::vector<int64_t> pos_quality_distribution_count;
+   std::vector<int> pos_quality_distribution_count;
    int64_t max_length = ZeroDefault;
 
-   std::vector<int64_t> read_quality_distribution;
+   std::vector<int> read_quality_distribution;
    int min_read_quality = MoneDefault; // the minimum mapping quality
    int max_read_quality = MoneDefault; // the maximum mapping quality
 
@@ -134,7 +128,7 @@ public:
     int64_t forward_alignment = ZeroDefault;
     int64_t reverse_alignment = ZeroDefault;
 
-    std::vector<int64_t> map_quality_distribution;
+    std::vector<int> map_quality_distribution;
     int min_map_quality = MoneDefault; // the minimum mapping quality
     int max_map_quality = MoneDefault; // the maximum mapping quality
 
@@ -149,7 +143,7 @@ public:
     int64_t num_columns = ZeroDefault; // the number of columns
     double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
 
-    std::vector<int64_t> accuracy_per_read;
+    std::vector<int> accuracy_per_read;
 
     Basic_Seq_Statistics mapped_long_read_info;
     Basic_Seq_Statistics unmapped_long_read_info;

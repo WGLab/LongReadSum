@@ -585,7 +585,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
                     // Sort the read lengths in descending order
-                    std::vector<int64_t> read_lengths = output_data.long_read_info.read_lengths;
+                    std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
                     std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int64_t>());
 
                     // Get the max read length

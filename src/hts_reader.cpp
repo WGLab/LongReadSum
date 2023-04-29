@@ -204,3 +204,23 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 bool HTSReader::hasNextRecord(){
     return !this->reading_complete;
 }
+
+// Return the number of records in the BAM file using the BAM index
+int64_t HTSReader::getNumRecords(const std::string & bam_filename){
+    samFile* bam_file = sam_open(bam_filename.c_str(), "r");
+    bam_hdr_t* bam_header = sam_hdr_read(bam_file);
+    bam1_t* bam_record = bam_init1();
+
+    int64_t num_reads = 0;
+    while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
+        num_reads++;
+    }
+
+    bam_destroy1(bam_record);
+    bam_hdr_destroy(bam_header);
+    sam_close(bam_file);
+
+    std::cout << "Number of reads in " << bam_filename << ": " << num_reads << std::endl;
+
+    return num_reads;
+}

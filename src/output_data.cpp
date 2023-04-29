@@ -19,10 +19,6 @@ Basic_Seq_Statistics::Basic_Seq_Statistics(){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = ZeroDefault;
    }
-   nx_read_length.resize(10);
-   for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = ZeroDefault;
-   }
 }
 
 Basic_Seq_Statistics::~Basic_Seq_Statistics(){
@@ -41,10 +37,6 @@ Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = _bss.read_length_count[ _i_ ];
-   }
-   nx_read_length.resize(10);
-   for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = _bss.nx_read_length[ _i_ ];
    }
    total_num_reads = _bss.total_num_reads ;
    total_num_bases = _bss.total_num_bases ;
@@ -67,9 +59,6 @@ Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
 void Basic_Seq_Statistics::reset(){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = ZeroDefault;
-   }
-   for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = ZeroDefault;
    }
 
    for(size_t _i_=0; _i_<read_gc_content_count.size(); _i_++){
@@ -150,7 +139,7 @@ void Basic_Seq_Statistics::global_sum(){
             this->gc_cnt = g_c / a_tu_g_c;
 
             // Sort the read lengths in descending order
-            std::vector<int64_t> _read_lengths = this->read_lengths;
+            std::vector<int> _read_lengths = this->read_lengths;
             std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
 
             // Get the max read length
@@ -206,7 +195,7 @@ void Basic_Seq_Statistics::global_sum_no_gc(){
         int _total_num_bases = this->total_num_bases;
 
         // Sort the read lengths in descending order
-        std::vector<int64_t> _read_lengths = this->read_lengths;
+        std::vector<int> _read_lengths = this->read_lengths;
         std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int64_t>());
 
         // Get the max read length

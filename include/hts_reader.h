@@ -41,6 +41,9 @@ class HTSReader {
         // Return if the reader has finished reading the BAM file
         bool hasNextRecord();
 
+        // Return the number of records in the BAM file using the BAM index
+        int64_t getNumRecords(const std::string &bam_file_name);
+
         HTSReader(const std::string &bam_file_name);
         ~HTSReader();
 };
