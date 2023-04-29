@@ -9,8 +9,8 @@ from glob import glob
 import argparse
 from argparse import RawTextHelpFormatter
 
-# import lrst
-from lib import lrst  # For running locally
+import lrst
+#from lib import lrst  # For running locally
 
 import generate_html
 from plot_utils import *
