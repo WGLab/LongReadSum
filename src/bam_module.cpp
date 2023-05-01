@@ -23,32 +23,32 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
 
     // Loop through the input files
     int file_count = (int) input_params.num_input_files;
-    std::cout << "Number of input files = " << file_count << std::endl;
+    //std::cout << "Number of input files = " << file_count << std::endl;
     for (int i=0; i < file_count; i++){
         this->file_index = i;
 
         // Create a BAM reader
         std::string filepath(input_params.input_files[this->file_index]);
         HTSReader reader(filepath);
-        std::cout<<"Processing file "<< filepath << std::endl;
+        std::cout<<"Processing file: "<< filepath << std::endl;
 
         // Get the number of records in the file using the BAM index
         int num_records = reader.getNumRecords(filepath);
         std::cout << "Number of records = " << num_records << std::endl;
 
         // Determine the number of records per thread
-        int thread_count = (double)input_params.threads;
-        int batch_size = 3000;
+        int thread_count = input_params.threads;
+        int batch_size = (int) ceil((double)num_records / (double)thread_count);
         std::cout << "Batch size (records per thread) = " << batch_size << std::endl;
 
          // Calculate statistics in batches
          while (reader.hasNextRecord()){
-            std::cout << "Processing batch..." << std::endl;
+            std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
-                cout_mutex.lock();
-                std::cout<<"Generated thread "<< thread_index+1 <<std::endl;
-                cout_mutex.unlock();
+                //cout_mutex.lock();
+                //::cout<<"Generated thread "<< thread_index+1 <<std::endl;
+                //cout_mutex.unlock();
 
                 // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
@@ -65,17 +65,23 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
                 cout_mutex.unlock();
                 thread_index++;
             }
-            std::cout << "All threads joined" << std::endl;
+            std::cout << "All threads joined." << std::endl;
         }
     }
 
     // Calculate the global sums across all records
-    std::cout << "Calculating global sums..." << std::endl;
+    std::cout << "Calculating summary QC..." << std::endl;
     final_output.global_sum();
-
     std::cout << "QC complete" << std::endl;
+
+    // Save the summary statistics to a file
+    std::cout << "Saving summary statistics to file..." << std::endl;
+    std::string summary_filepath = input_params.output_folder + "/bam_summary.txt";
+    final_output.save_summary(summary_filepath, input_params, final_output);
+    std::cout << "Saved file: " << summary_filepath << std::endl;
+
     auto relapse_end_time = std::chrono::high_resolution_clock::now();
-    std::cout<<"Total time(Elapsed): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
+    std::cout<<"Elapsed time (seconds) = "<< std::chrono::duration_cast<std::chrono::seconds>(relapse_end_time - relapse_start_time).count() << std::endl;
 
     return exit_code;
 }
@@ -90,11 +96,10 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
     output_mutex.lock();
     final_output.add(record_output);
     output_mutex.unlock();
-
-    // Print if records were processed
-    if (record_output.num_primary_alignment > 0){
-        cout_mutex.lock();
-        std::cout << "Thread " << std::this_thread::get_id() << " processed " << record_output.num_primary_alignment << " records" << std::endl;
-        cout_mutex.unlock();
-    }
+//    // Print if records were processed
+//    if (record_output.num_primary_alignment > 0){
+//        cout_mutex.lock();
+//        std::cout << "Thread " << std::this_thread::get_id() << " processed " << record_output.num_primary_alignment << " records" << std::endl;
+//        cout_mutex.unlock();
+//    }
 }

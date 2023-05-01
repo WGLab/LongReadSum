@@ -12,7 +12,6 @@ Output_Info::Output_Info(){
    error_str = "";
 }
 
-
 // Base class for storing basic QC data
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
    read_length_count.resize(MAX_READ_LENGTH);
@@ -361,42 +360,6 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::reset(){
-   for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-      map_quality_distribution[ _i_ ] = ZeroDefault;
-   }
-   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-      accuracy_per_read[ _i_ ] = ZeroDefault;
-   }
-
-   num_primary_alignment = ZeroDefault; 
-   num_secondary_alignment = ZeroDefault; 
-   num_reads_with_secondary_alignment = ZeroDefault; 
-   num_supplementary_alignment = ZeroDefault; 
-   num_reads_with_supplementary_alignment = ZeroDefault; 
-   num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; 
-
-   forward_alignment = ZeroDefault;
-   reverse_alignment = ZeroDefault;
-
-   min_map_quality = MoneDefault; 
-   max_map_quality = MoneDefault; 
-
-   num_matched_bases = ZeroDefault; 
-   num_mismatched_bases = ZeroDefault; 
-   num_ins_bases = ZeroDefault; 
-   num_del_bases = ZeroDefault; 
-   num_clip_bases = ZeroDefault; 
-
-   mapped_long_read_info.reset();
-   unmapped_long_read_info.reset();
-   mapped_seq_quality_info.reset();
-   unmapped_seq_quality_info.reset();
-
-   long_read_info.reset();
-   seq_quality_info.reset();
-}
-
 void Output_BAM::add(Output_BAM& output_data){
     num_primary_alignment += output_data.num_primary_alignment;
     num_secondary_alignment += output_data.num_secondary_alignment;
@@ -452,6 +415,55 @@ void Output_BAM::global_sum(){
     if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
 }
 
+// Save the output to a file
+void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data){
+    FILE *fp = fopen(output_file.c_str(), "w");
+    if (fp == NULL){
+        fprintf(stderr, "Error: cannot open file %s\n", output_file.c_str());
+    } else {
+        // Save basic statistics
+        fprintf(fp, "Total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
+        fprintf(fp, "Total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
+        fprintf(fp, "Longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
+        fprintf(fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+        fprintf(fp, "Mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
+        fprintf(fp, "Median read length\t%ld\n", output_data.long_read_info.median_read_length);
+        fprintf(fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
+        fprintf(fp, "\n");
+
+        // Save the mapping statistics
+        fprintf(fp, "Total number of mapped reads\t%ld\n", output_data.mapped_long_read_info.total_num_reads);
+        fprintf(fp, "Total number of mapped bases\t%ld\n", output_data.mapped_long_read_info.total_num_bases);
+        fprintf(fp, "Longest mapped read length\t%lu\n", output_data.mapped_long_read_info.longest_read_length);
+        fprintf(fp, "N50 mapped read length\t%ld\n", output_data.mapped_long_read_info.n50_read_length);
+        fprintf(fp, "Mean mapped read length\t%.2f\n", output_data.mapped_long_read_info.mean_read_length);
+        fprintf(fp, "Median mapped read length\t%ld\n", output_data.mapped_long_read_info.median_read_length);
+        fprintf(fp, "GC%%\t%.2f\n", output_data.mapped_long_read_info.gc_cnt * 100);
+        fprintf(fp, "\n");
+
+        // Save the read alignment statistics
+        fprintf(fp, "Total number of primary alignments\t%ld\n", output_data.num_primary_alignment);
+        fprintf(fp, "Total number of secondary alignments\t%ld\n", output_data.num_secondary_alignment);
+        fprintf(fp, "Total number of supplementary alignments\t%ld\n", output_data.num_supplementary_alignment);
+        fprintf(fp, "Total number of reads with secondary alignments\t%ld\n", output_data.num_reads_with_secondary_alignment);
+        fprintf(fp, "Total number of reads with supplementary alignments\t%ld\n", output_data.num_reads_with_supplementary_alignment);
+        fprintf(fp, "Total number of reads with both secondary and supplementary alignments\t%ld\n", output_data.num_reads_with_both_secondary_supplementary_alignment);
+        fprintf(fp, "Total number of reads with forward alignments\t%ld\n", output_data.forward_alignment);
+        fprintf(fp, "Total number of reads with reverse alignments\t%ld\n", output_data.reverse_alignment);
+        fprintf(fp, "Total number of reverse alignment\t%ld\n", output_data.reverse_alignment);
+        fprintf(fp, "\n");
+
+        // Save the base alignment statistics
+        fprintf(fp, "Total number of matched bases\t%ld\n", output_data.num_matched_bases);
+        fprintf(fp, "Total number of mismatched bases\t%ld\n", output_data.num_mismatched_bases);
+        fprintf(fp, "Total number of insertions\t%ld\n", output_data.num_ins_bases);
+        fprintf(fp, "Total number of deletions\t%ld\n", output_data.num_del_bases);
+        fprintf(fp, "Total number of soft clipped bases\t%ld\n", output_data.num_clip_bases);
+
+        // Close the file
+        fclose(fp);
+    }
+}
 
 // sequencing_summary.txt output
 Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){

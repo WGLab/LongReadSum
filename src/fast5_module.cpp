@@ -635,7 +635,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     fprintf(read_summary_fp, "\n\n");
                     for (int percent = 5; percent < 100; percent += 5)
                     {
-                        fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, output_data.long_read_info.NXX_read_length[percent]);
+                        fprintf(read_summary_fp, "N%02d read length\t%.d\n", percent, output_data.long_read_info.NXX_read_length[percent]);
                     }
 
                     fprintf(read_summary_fp, "\n\n");
@@ -643,7 +643,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     fprintf(read_summary_fp, "GC content\tnumber of reads\n");
                     for (int gc_ratio = 0; gc_ratio < 100; gc_ratio++)
                     {
-                        fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
+                        fprintf(read_summary_fp, "GC=%d%%\t%d\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
                     }
 
 
@@ -658,7 +658,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
                     for (int baseq = 0; baseq <= 60; baseq++)
                     {
-                        fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
+                        fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
                     }
                     fclose(read_summary_fp);
                 }

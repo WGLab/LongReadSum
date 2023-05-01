@@ -220,7 +220,5 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename){
     bam_hdr_destroy(bam_header);
     sam_close(bam_file);
 
-    std::cout << "Number of reads in " << bam_filename << ": " << num_reads << std::endl;
-
     return num_reads;
 }

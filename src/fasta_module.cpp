@@ -204,7 +204,7 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 fprintf(read_summary_fp, "\n\n");
                 for (int percent = 5; percent < 100; percent += 5)
                 {
-                    fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
+                    fprintf(read_summary_fp, "N%02d read length\t%.d\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
                 }
 
                 fprintf(read_summary_fp, "\n\n");
@@ -212,7 +212,7 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 fprintf(read_summary_fp, "GC content\tnumber of reads\n");
                 for (int gc_ratio = 0; gc_ratio <= 100; gc_ratio++)
                 {
-                    fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
+                    fprintf(read_summary_fp, "GC=%d%%\t%d\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
                 }
                 fclose(read_summary_fp);
             }

@@ -11,6 +11,8 @@ Define the output structures for each module.
 #include <map>
 #include <stdint.h>
 
+#include "input_parameters.h"
+
 #define MAX_READ_LENGTH 10485760
 #define MAX_MAP_QUALITY 256
 #define MAX_BASE_QUALITY 256
@@ -151,9 +153,14 @@ public:
     Basic_Seq_Quality_Statistics mapped_seq_quality_info;
     Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
 
-    void reset();
+    // Add a batch of records to the output
     void add(Output_BAM &t_output_bam);
+
+    // Calculate QC across all records
     void global_sum();
+
+    // Save the output to a summary text file
+    void save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data);
 
     Output_BAM();
     ~Output_BAM();
