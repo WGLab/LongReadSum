@@ -166,13 +166,13 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 py_output_fa.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
                 int percent = 1;
-                int64_t num_bases_sum = 0;
+                uint64_t num_bases_sum = 0;
                 int64_t num_reads_sum = 0;
                 py_output_fa.long_read_info.median_read_length = -1;
                 for (int read_len = py_output_fa.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
                 {
                     num_reads_sum += py_output_fa.long_read_info.read_length_count[read_len];
-                    num_bases_sum += py_output_fa.long_read_info.read_length_count[read_len] * read_len;
+                    num_bases_sum += (uint64_t) (py_output_fa.long_read_info.read_length_count[read_len] * read_len);
                     if (num_reads_sum * 2 > py_output_fa.long_read_info.total_num_reads && py_output_fa.long_read_info.median_read_length < 0)
                     {
                         py_output_fa.long_read_info.median_read_length = read_len;
@@ -194,12 +194,12 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 py_output_fa.long_read_info.mean_read_length = (double)py_output_fa.long_read_info.total_num_bases / (double)py_output_fa.long_read_info.total_num_reads;
 
                 read_summary_fp = fopen(read_summary_file.c_str(), "w");
-                fprintf(read_summary_fp, "total number of reads\t%ld\n", py_output_fa.long_read_info.total_num_reads);
+                fprintf(read_summary_fp, "total number of reads\t%d\n", py_output_fa.long_read_info.total_num_reads);
                 fprintf(read_summary_fp, "total number of bases\t%ld\n", py_output_fa.long_read_info.total_num_bases);
-                fprintf(read_summary_fp, "longest read length\t%lu\n", py_output_fa.long_read_info.longest_read_length);
-                fprintf(read_summary_fp, "N50 read length\t%ld\n", py_output_fa.long_read_info.n50_read_length);
+                fprintf(read_summary_fp, "longest read length\t%d\n", py_output_fa.long_read_info.longest_read_length);
+                fprintf(read_summary_fp, "N50 read length\t%d\n", py_output_fa.long_read_info.n50_read_length);
                 fprintf(read_summary_fp, "mean read length\t%.2f\n", py_output_fa.long_read_info.mean_read_length);
-                fprintf(read_summary_fp, "median read length\t%ld\n", py_output_fa.long_read_info.median_read_length);
+                fprintf(read_summary_fp, "median read length\t%d\n", py_output_fa.long_read_info.median_read_length);
                 fprintf(read_summary_fp, "GC%%\t%.2f\n", py_output_fa.long_read_info.gc_cnt * 100);
                 fprintf(read_summary_fp, "\n\n");
                 for (int percent = 5; percent < 100; percent += 5)

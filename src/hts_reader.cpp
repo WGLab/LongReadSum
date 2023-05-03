@@ -122,7 +122,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 uint32_t *cigar = bam_get_cigar(record);
                 for (uint32_t i = 0; i < record->core.n_cigar; i++) {
                     int cigar_op = bam_cigar_op(cigar[i]);
-                    int cigar_len = bam_cigar_oplen(cigar[i]);
+                    uint64_t cigar_len = (uint64_t)bam_cigar_oplen(cigar[i]);
                     switch (cigar_op) {
                         case BAM_CMATCH:
                             output_data.num_matched_bases += cigar_len;

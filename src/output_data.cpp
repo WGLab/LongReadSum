@@ -432,22 +432,22 @@ void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Outp
         fprintf(stderr, "Error: cannot open file %s\n", output_file.c_str());
     } else {
         // Save basic statistics
-        fprintf(fp, "Total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
+        fprintf(fp, "Total number of reads\t%d\n", output_data.long_read_info.total_num_reads);
         fprintf(fp, "Total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
-        fprintf(fp, "Longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
-        fprintf(fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+        fprintf(fp, "Longest read length\t%d\n", output_data.long_read_info.longest_read_length);
+        fprintf(fp, "N50 read length\t%d\n", output_data.long_read_info.n50_read_length);
         fprintf(fp, "Mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-        fprintf(fp, "Median read length\t%ld\n", output_data.long_read_info.median_read_length);
+        fprintf(fp, "Median read length\t%d\n", output_data.long_read_info.median_read_length);
         fprintf(fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
         fprintf(fp, "\n");
 
         // Save the mapping statistics
-        fprintf(fp, "Total number of mapped reads\t%ld\n", output_data.mapped_long_read_info.total_num_reads);
+        fprintf(fp, "Total number of mapped reads\t%d\n", output_data.mapped_long_read_info.total_num_reads);
         fprintf(fp, "Total number of mapped bases\t%ld\n", output_data.mapped_long_read_info.total_num_bases);
-        fprintf(fp, "Longest mapped read length\t%lu\n", output_data.mapped_long_read_info.longest_read_length);
-        fprintf(fp, "N50 mapped read length\t%ld\n", output_data.mapped_long_read_info.n50_read_length);
+        fprintf(fp, "Longest mapped read length\t%d\n", output_data.mapped_long_read_info.longest_read_length);
+        fprintf(fp, "N50 mapped read length\t%d\n", output_data.mapped_long_read_info.n50_read_length);
         fprintf(fp, "Mean mapped read length\t%.2f\n", output_data.mapped_long_read_info.mean_read_length);
-        fprintf(fp, "Median mapped read length\t%ld\n", output_data.mapped_long_read_info.median_read_length);
+        fprintf(fp, "Median mapped read length\t%d\n", output_data.mapped_long_read_info.median_read_length);
         fprintf(fp, "GC%%\t%.2f\n", output_data.mapped_long_read_info.gc_cnt * 100);
         fprintf(fp, "\n");
 

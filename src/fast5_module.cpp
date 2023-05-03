@@ -625,12 +625,12 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     // Create the summary file
                     std::cout << "Writing summary file: " << read_summary_file.c_str() << std::endl;
                     read_summary_fp = fopen(read_summary_file.c_str(), "w");
-                    fprintf(read_summary_fp, "total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
+                    fprintf(read_summary_fp, "total number of reads\t%d\n", output_data.long_read_info.total_num_reads);
                     fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
-                    fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
-                    fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+                    fprintf(read_summary_fp, "longest read length\t%d\n", output_data.long_read_info.longest_read_length);
+                    fprintf(read_summary_fp, "N50 read length\t%d\n", output_data.long_read_info.n50_read_length);
                     fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-                    fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
+                    fprintf(read_summary_fp, "median read length\t%d\n", output_data.long_read_info.median_read_length);
                     fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
                     fprintf(read_summary_fp, "\n\n");
                     for (int percent = 5; percent < 100; percent += 5)

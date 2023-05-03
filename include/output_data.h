@@ -55,8 +55,7 @@ public:
     double gc_cnt = ZeroDefault;        // GC ratio
     std::vector<int> read_gc_content_count;  // GC content distribution
     std::vector<int> read_length_count;  // Read length distribution (TODO: Replace usages with read_lengths)
-    //std::vector<int> read_lengths;  // Length of reads
-
+    std::vector<int> read_lengths;  // Length of reads
 
     void reset();
     void add(Basic_Seq_Statistics &t_seq_st);
@@ -115,12 +114,14 @@ public:
 class Output_BAM : public Output_FQ
 {
 public:
-    int num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
-    int num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
-    int num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
-    int num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
-    int num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
-    int num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+    uint64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
+    uint64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
+    uint64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
+    uint64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
+    uint64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
+    uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+    uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
+    uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
 
     // Map of reads with supplementary alignments
     std::map<std::string, bool> reads_with_supplementary;
@@ -128,19 +129,16 @@ public:
     // Map of reads with secondary alignments
     std::map<std::string, bool> reads_with_secondary;
 
-    int forward_alignment = ZeroDefault;
-    int reverse_alignment = ZeroDefault;
-
     std::vector<int> map_quality_distribution;
     int min_map_quality = MoneDefault; // the minimum mapping quality
     int max_map_quality = MoneDefault; // the maximum mapping quality
 
     // Similar to Output_FA: below are for mapped.
-    int num_matched_bases = ZeroDefault;    // the number of matched bases with =
-    int num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
-    int num_ins_bases = ZeroDefault;        // the number of inserted bases;
-    int num_del_bases = ZeroDefault;        // the number of deleted bases;
-    int num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
+    uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
+    uint64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
+    uint64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
+    uint64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
+    uint64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
     // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
     int num_columns = ZeroDefault; // the number of columns
