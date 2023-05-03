@@ -33,6 +33,7 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
         std::cout<<"Processing file: "<< filepath << std::endl;
 
         // Get the number of records in the file using the BAM index
+        std::cout << "Getting number of records..." << std::endl;
         int num_records = reader.getNumRecords(filepath);
         std::cout << "Number of records = " << num_records << std::endl;
 
@@ -96,10 +97,4 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
     output_mutex.lock();
     final_output.add(record_output);
     output_mutex.unlock();
-//    // Print if records were processed
-//    if (record_output.num_primary_alignment > 0){
-//        cout_mutex.lock();
-//        std::cout << "Thread " << std::this_thread::get_id() << " processed " << record_output.num_primary_alignment << " records" << std::endl;
-//        cout_mutex.unlock();
-//    }
 }

@@ -84,16 +84,23 @@ void Basic_Seq_Statistics::reset(){
 
 void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
     // Update the longest read length
-   if ( longest_read_length < basic_qc.longest_read_length){
-      longest_read_length = basic_qc.longest_read_length;
+   if ( this->longest_read_length < basic_qc.longest_read_length){
+      this->longest_read_length = basic_qc.longest_read_length;
    }
 
     // Update base counts
-    total_a_cnt += basic_qc.total_a_cnt;
-    total_c_cnt += basic_qc.total_c_cnt;
-    total_g_cnt += basic_qc.total_g_cnt;
-    total_tu_cnt += basic_qc.total_tu_cnt;
-    total_n_cnt += basic_qc.total_n_cnt;
+    std::cout << "class total_a_cnt: " << this->total_a_cnt << std::endl;
+
+    this->total_a_cnt += basic_qc.total_a_cnt;
+
+    std::cout << "total_a_cnt: " << basic_qc.total_a_cnt << std::endl;
+
+    std::cout << "updated total_a_cnt: " << this->total_a_cnt << std::endl;
+
+    this->total_c_cnt += basic_qc.total_c_cnt;
+    this->total_g_cnt += basic_qc.total_g_cnt;
+    this->total_tu_cnt += basic_qc.total_tu_cnt;
+    this->total_n_cnt += basic_qc.total_n_cnt;
 
     // Update total number of bases
     this->total_num_bases += basic_qc.total_num_bases;
@@ -121,21 +128,24 @@ void Basic_Seq_Statistics::global_sum(){
 
     } else {
         // Add the G + C bases
-        double g_c = this->total_g_cnt + this->total_c_cnt;
+        int g_c = this->total_g_cnt + this->total_c_cnt;
 
-        // Add all bases
-        double a_tu_g_c = g_c + this->total_a_cnt + this->total_tu_cnt;
+        // Add A, G, C, and U/T bases
+        int a_tu_g_c = g_c + this->total_a_cnt + this->total_tu_cnt;
+
+        // Get total base counts
+        int total_base_counts = this->total_a_cnt + this->total_c_cnt + this->total_g_cnt + this->total_tu_cnt + this->total_n_cnt;
 
         // Check that our total base counts match what was stored (That our code works)
         int _total_num_bases = this->total_num_bases;
-        if (a_tu_g_c != (double)_total_num_bases)
+        if (total_base_counts != _total_num_bases)
         {
             std::cerr << "Total number of bases is not consistent." << std::endl;
-            std::cout << _total_num_bases << std::endl;
-            std::cout << a_tu_g_c << std::endl;
+            std::cout << "From reads: " << _total_num_bases << std::endl;
+            std::cout << "From bases: " << total_base_counts << std::endl;
         } else {
             // Calculate GC-content
-            this->gc_cnt = g_c / a_tu_g_c;
+            this->gc_cnt = (double) g_c / (double) a_tu_g_c;
 
             // Sort the read lengths in descending order
             std::vector<int> _read_lengths = this->read_lengths;

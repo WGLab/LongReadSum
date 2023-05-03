@@ -37,25 +37,26 @@ public:
 class Basic_Seq_Statistics
 {
 public:
-    int64_t total_num_reads = ZeroDefault; // total number of long reads
-    int64_t total_num_bases = ZeroDefault; // total number of bases
-    int64_t longest_read_length = ZeroDefault; // the length of longest reads
-    int64_t n50_read_length = MoneDefault;      // N50
-    int64_t n95_read_length = MoneDefault;      // N95
-    int64_t n05_read_length = MoneDefault;      // N05;
+    int total_num_reads = ZeroDefault; // total number of long reads
+    uint64_t total_num_bases = ZeroDefault; // total number of bases
+    int longest_read_length = ZeroDefault; // the length of longest reads
+    int n50_read_length = MoneDefault;      // N50
+    int n95_read_length = MoneDefault;      // N95
+    int n05_read_length = MoneDefault;      // N05;
     double mean_read_length = MoneDefault;      // mean of read length
     std::vector<int> NXX_read_length;       // NXX_read_length[50] means N50 read length
-    int64_t median_read_length = MoneDefault;   // median of read length
+    int median_read_length = MoneDefault;   // median of read length
 
-    int64_t total_a_cnt = ZeroDefault;  // A content
-    int64_t total_c_cnt = ZeroDefault;  // C content
-    int64_t total_g_cnt = ZeroDefault;  // G content
-    int64_t total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
-    int64_t total_n_cnt = ZeroDefault;  // N content
+    uint64_t total_a_cnt = ZeroDefault;  // A content
+    uint64_t total_c_cnt = ZeroDefault;  // C content
+    uint64_t total_g_cnt = ZeroDefault;  // G content
+    uint64_t total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
+    uint64_t total_n_cnt = ZeroDefault;  // N content
     double gc_cnt = ZeroDefault;        // GC ratio
     std::vector<int> read_gc_content_count;  // GC content distribution
     std::vector<int> read_length_count;  // Read length distribution (TODO: Replace usages with read_lengths)
-    std::vector<int> read_lengths;  // Length of reads
+    //std::vector<int> read_lengths;  // Length of reads
+
 
     void reset();
     void add(Basic_Seq_Statistics &t_seq_st);
@@ -80,7 +81,7 @@ public:
    std::vector<int> pos_quality_distribution;
    std::vector<double> pos_quality_distribution_dev;
    std::vector<int> pos_quality_distribution_count;
-   int64_t max_length = ZeroDefault;
+   int max_length = ZeroDefault;
 
    std::vector<int> read_quality_distribution;
    int min_read_quality = MoneDefault; // the minimum mapping quality
@@ -114,12 +115,12 @@ public:
 class Output_BAM : public Output_FQ
 {
 public:
-    int64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
-    int64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
-    int64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
-    int64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
-    int64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
-    int64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+    int num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
+    int num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
+    int num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
+    int num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
+    int num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
+    int num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
 
     // Map of reads with supplementary alignments
     std::map<std::string, bool> reads_with_supplementary;
@@ -127,22 +128,22 @@ public:
     // Map of reads with secondary alignments
     std::map<std::string, bool> reads_with_secondary;
 
-    int64_t forward_alignment = ZeroDefault;
-    int64_t reverse_alignment = ZeroDefault;
+    int forward_alignment = ZeroDefault;
+    int reverse_alignment = ZeroDefault;
 
     std::vector<int> map_quality_distribution;
     int min_map_quality = MoneDefault; // the minimum mapping quality
     int max_map_quality = MoneDefault; // the maximum mapping quality
 
     // Similar to Output_FA: below are for mapped.
-    int64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
-    int64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
-    int64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
-    int64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
-    int64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
+    int num_matched_bases = ZeroDefault;    // the number of matched bases with =
+    int num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
+    int num_ins_bases = ZeroDefault;        // the number of inserted bases;
+    int num_del_bases = ZeroDefault;        // the number of deleted bases;
+    int num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
     // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
-    int64_t num_columns = ZeroDefault; // the number of columns
+    int num_columns = ZeroDefault; // the number of columns
     double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
 
     std::vector<int> accuracy_per_read;
@@ -223,7 +224,7 @@ public:
     Basic_Seq_Quality_Statistics seq_quality_info;
 
     // Signal data section
-    int64_t read_count;
+    int read_count;
     int base_count;
     std::vector<Base_Signals> read_base_signals;
 

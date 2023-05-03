@@ -9,14 +9,21 @@ from glob import glob
 import argparse
 from argparse import RawTextHelpFormatter
 
-import lrst
-#from lib import lrst  # For running locally
+# import lrst
+
+# Print the package name
+print("Package name: " + __name__)
+if __name__ == 'cli':
+    print("Running locally.")
+    from lib import lrst  # For debugging
+else:
+    print("Running from installed package.")
+    import lrst
 
 import generate_html
 from plot_utils import *
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
-
 prg_name = "LongReadSum"
 
 

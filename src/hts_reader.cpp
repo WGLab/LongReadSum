@@ -35,8 +35,8 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *bas
     basic_qc->total_num_reads++;
 
     // Update read length statistics
-    int64_t read_length = (int64_t) record->core.l_qseq;
-    basic_qc->total_num_bases += read_length;  // Update the total number of bases
+    int read_length = (int) record->core.l_qseq;
+    basic_qc->total_num_bases += (uint64_t) read_length;  // Update the total number of bases
     basic_qc->read_lengths.push_back(read_length);
 
     // Loop and count the number of each base
@@ -63,6 +63,7 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *bas
                 break;
             case 'N':
                 basic_qc->total_n_cnt++;
+                std::cerr << "Warning: N base found in read " << bam_get_qname(record) << std::endl;
                 break;
             default:
                 std::cerr << "Error reading nucleotide: " << base << std::endl;
