@@ -61,6 +61,7 @@ public:
     void add(Basic_Seq_Statistics &t_seq_st);
     void global_sum();
     void global_sum_no_gc();
+    void calculate_NXX_scores();  // Calculate N50, N95, N05, etc.
     void resize();
 
     Basic_Seq_Statistics();

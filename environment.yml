@@ -6,17 +6,11 @@ channels:
   - defaults
 dependencies:
   - python
-  - setuptools
-  - conda-build
   - hdf5
   - htslib
-  - samtools
   - swig
   - matplotlib
   - plotly=4.14
-  - pytest
-  - pytest-dependency
-  - pip
 
 # conda env create --file=environment.yml
 # conda activate lrst_py36

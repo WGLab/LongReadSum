@@ -13,15 +13,16 @@ from argparse import RawTextHelpFormatter
 
 # Print the package name
 print("Package name: " + __name__)
-if __name__ == 'cli':
+if __name__ == 'src.cli':
     print("Running locally.")
     from lib import lrst  # For debugging
+    from src import generate_html
+    from src.plot_utils import *
 else:
     print("Running from installed package.")
     import lrst
-
-import generate_html
-from plot_utils import *
+    import generate_html
+    from plot_utils import *
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 prg_name = "LongReadSum"
@@ -287,16 +288,16 @@ def seqtxt_module(margs):
             logging.info("QC generated.")
             logging.info("Generating output files...")
             from src import seqtxt_plot
-            seqtxt_plot.plot(seqtxt_output, param_dict)
+            plot_filepaths = seqtxt_plot.plot(seqtxt_output, param_dict)
             for static in [True, False]:
                 if margs.seq == 0:
                     f5_html_gen = generate_html.ST_HTML_Generator(
                         [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"],
-                         "sequencing_summary.txt QC", param_dict], static=static);
+                         "sequencing_summary.txt QC", param_dict], plot_filepaths, static=static)
                 else:
                     f5_html_gen = generate_html.ST_HTML_Generator(
                         [["basic_st", "read_length_st", "read_length_hist", "basic_info"], "sequencing_summary.txt QC",
-                         param_dict], static=static)
+                         param_dict], plot_filepaths, static=static)
                 f5_html_gen.generate_st_html()
         else:
             logging.error("QC did not generate.")

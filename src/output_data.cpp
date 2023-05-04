@@ -89,14 +89,7 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
    }
 
     // Update base counts
-    std::cout << "class total_a_cnt: " << this->total_a_cnt << std::endl;
-
     this->total_a_cnt += basic_qc.total_a_cnt;
-
-    std::cout << "total_a_cnt: " << basic_qc.total_a_cnt << std::endl;
-
-    std::cout << "updated total_a_cnt: " << this->total_a_cnt << std::endl;
-
     this->total_c_cnt += basic_qc.total_c_cnt;
     this->total_g_cnt += basic_qc.total_g_cnt;
     this->total_tu_cnt += basic_qc.total_tu_cnt;
@@ -128,65 +121,117 @@ void Basic_Seq_Statistics::global_sum(){
 
     } else {
         // Add the G + C bases
-        int g_c = this->total_g_cnt + this->total_c_cnt;
+        uint64_t gc_total = this->total_g_cnt + this->total_c_cnt;
 
         // Add A, G, C, and U/T bases
-        int a_tu_g_c = g_c + this->total_a_cnt + this->total_tu_cnt;
+        //uint64_t base_total = this->total_g_cnt + this->total_c_cnt + this->total_a_cnt + this->total_tu_cnt;
 
         // Get total base counts
-        int total_base_counts = this->total_a_cnt + this->total_c_cnt + this->total_g_cnt + this->total_tu_cnt + this->total_n_cnt;
+        uint64_t base_total = this->total_a_cnt + this->total_c_cnt + this->total_g_cnt + this->total_tu_cnt + this->total_n_cnt;
 
         // Check that our total base counts match what was stored (That our code works)
-        int _total_num_bases = this->total_num_bases;
-        if (total_base_counts != _total_num_bases)
+        uint64_t base_total_from_reads = this->total_num_bases;
+        if (base_total != base_total_from_reads)
         {
             std::cerr << "Total number of bases is not consistent." << std::endl;
-            std::cout << "From reads: " << _total_num_bases << std::endl;
-            std::cout << "From bases: " << total_base_counts << std::endl;
+            std::cout << "From reads: " << base_total_from_reads << std::endl;
+            std::cout << "From bases: " << base_total << std::endl;
         } else {
             // Calculate GC-content
-            this->gc_cnt = (double) g_c / (double) a_tu_g_c;
+            double percent_gc = (double) gc_total / base_total;
+            this->gc_cnt = percent_gc;
+            std::cout << "GC content uint64: " << this->gc_cnt << std::endl;
+            std::cout << "resulting from: " << gc_total << " / " << base_total << std::endl;
 
-            // Sort the read lengths in descending order
-            std::vector<int> _read_lengths = this->read_lengths;
-            std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
-
-            // Get the max read length
-            int max_read_length = _read_lengths.at(0);
-            this->longest_read_length = max_read_length;
-
-            // Get the median read length
-            double _median_read_length = _read_lengths[_read_lengths.size() / 2];
-            this->median_read_length = _median_read_length;
-
-            // Get the mean read length
-            float _mean_read_length = (double)_total_num_bases / (double)_read_lengths.size();
-            this->mean_read_length = _mean_read_length;
+//            // Sort the read lengths in descending order
+//            std::vector<int> _read_lengths = this->read_lengths;
+//            std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
+//
+//            // Get the max read length
+//            int max_read_length = _read_lengths.at(0);
+//            this->longest_read_length = max_read_length;
+//
+//            // Get the median read length
+//            double _median_read_length = _read_lengths[_read_lengths.size() / 2];
+//            this->median_read_length = _median_read_length;
+//
+//            // Get the mean read length
+//            double mean_read_length = (double) base_total / this->total_num_reads;
+//            this->mean_read_length = mean_read_length;
 
             // Calculate N50 and other N-scores
-            this->NXX_read_length.resize(101, 0);
-            for (int percent_value = 1; percent_value <= 100; percent_value++)
-            {
-                // Get the base percentage threshold for this N-score
-                double base_threshold = (double)_total_num_bases * (percent_value / 100.0);
+            this->calculate_NXX_scores();
+//            for (int percent_value = 1; percent_value <= 100; percent_value++)
+//            {
+//                // Get the base percentage threshold for this N-score
+//                double base_threshold = (double) (base_total * (double) (percent_value / 100.0));
+//
+//
+//                // Calculate the NXX score
+//                double current_base_count = 0;
+//                int current_read_index = 0;
+//                while (current_base_count < base_threshold) {
+//                    current_base_count += _read_lengths.at(current_read_index);
+//                    current_read_index++;
+//                }
+//                int nxx_read_index = current_read_index-1;
+//                int nxx_read_length = _read_lengths.at(nxx_read_index);
+//                this->NXX_read_length[percent_value] = nxx_read_length;
+//            }
 
-                // Calculate the NXX score
-                double current_base_count = 0;
-                int current_read_index = -1;
-                while (current_base_count < base_threshold) {
-                    current_read_index ++;
-                    current_base_count += _read_lengths.at(current_read_index);
-                }
-                int nxx_read_length = _read_lengths.at(current_read_index);
-                this->NXX_read_length[percent_value] = nxx_read_length;
-            }
-
-            // Set common score variables
-            this->n50_read_length = this->NXX_read_length[50];
-            this->n95_read_length = this->NXX_read_length[95];
-            this->n05_read_length = this->NXX_read_length[5];
+//            // Set common score variables
+//            this->n50_read_length = this->NXX_read_length[50];
+//            this->n95_read_length = this->NXX_read_length[95];
+//            this->n05_read_length = this->NXX_read_length[5];
         }
     }
+}
+
+// Calculates NXX scores and other basic read length statistics
+void Basic_Seq_Statistics::calculate_NXX_scores(){
+
+    // Sort the read lengths in descending order
+    std::sort(this->read_lengths.begin(), this->read_lengths.end(), std::greater<int>());
+
+    // Get total base counts
+    uint64_t base_total = this->total_num_bases;
+
+    // Get the max read length
+    int64_t max_length = this->read_lengths.at(0);
+    this->longest_read_length = max_length;
+
+    // Get the median read length
+    double median_length = this->read_lengths[this->read_lengths.size() / 2];
+    this->median_read_length = median_length;
+
+    // Get the mean read length
+    float mean_length = (double)base_total / (double)this->read_lengths.size();
+    this->mean_read_length = mean_length;
+
+    // Initialize the NXX scores
+    this->NXX_read_length.resize(100, 0);
+    for (int percent_value = 1; percent_value <= 100; percent_value++)
+    {
+        // Get the base percentage threshold for this N-score
+        double base_threshold = (double) (base_total * (double) (percent_value / 100.0));
+
+
+        // Calculate the NXX score
+        double current_base_count = 0;
+        int current_read_index = 0;
+        while (current_base_count < base_threshold) {
+            current_base_count += this->read_lengths.at(current_read_index);
+            current_read_index++;
+        }
+        int nxx_read_index = current_read_index-1;
+        int nxx_read_length = this->read_lengths.at(nxx_read_index);
+        this->NXX_read_length[percent_value] = nxx_read_length;
+    }
+
+    // Set common score variables
+    this->n50_read_length = this->NXX_read_length[50];
+    this->n95_read_length = this->NXX_read_length[95];
+    this->n05_read_length = this->NXX_read_length[5];
 }
 
 // Calculates NXX scores for sequencing_summary.txt files
@@ -200,47 +245,8 @@ void Basic_Seq_Statistics::global_sum_no_gc(){
         this->n05_read_length = 0;
 
     } else {
-        // Check that our total base counts match what was stored (That our code works)
-        int _total_num_bases = this->total_num_bases;
-
-        // Sort the read lengths in descending order
-        std::vector<int> _read_lengths = this->read_lengths;
-        std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int64_t>());
-
-        // Get the max read length
-        int64_t max_read_length = _read_lengths.at(0);
-        this->longest_read_length = max_read_length;
-
-        // Get the median read length
-        double _median_read_length = _read_lengths[_read_lengths.size() / 2];
-        this->median_read_length = _median_read_length;
-
-        // Get the mean read length
-        float _mean_read_length = (double)_total_num_bases / (double)_read_lengths.size();
-        this->mean_read_length = _mean_read_length;
-
         // Calculate N50 and other N-scores
-        this->NXX_read_length.resize(101, 0);
-        for (int percent_value = 1; percent_value <= 100; percent_value++)
-        {
-            // Get the base percentage threshold for this N-score
-            double base_threshold = (double)_total_num_bases * (percent_value / 100.0);
-
-            // Calculate the NXX score
-            double current_base_count = 0;
-            int current_read_index = -1;
-            while (current_base_count < base_threshold) {
-                current_read_index ++;
-                current_base_count += _read_lengths.at(current_read_index);
-            }
-            int nxx_read_length = _read_lengths.at(current_read_index);
-            this->NXX_read_length[percent_value] = nxx_read_length;
-        }
-
-        // Set common score variables
-        this->n50_read_length = this->NXX_read_length[50];
-        this->n95_read_length = this->NXX_read_length[95];
-        this->n05_read_length = this->NXX_read_length[5];
+        this->calculate_NXX_scores();
     }
 }
 

@@ -30,4 +30,5 @@ RUN make
 ENV HDF5_PLUGIN_PATH="/longreadsum/lib/"
 
 # The code to run when container is started:
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "lrst_py39", "python", "src/entry_point.py"]
+WORKDIR /
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "lrst_py39", "python", "longreadsum"]
