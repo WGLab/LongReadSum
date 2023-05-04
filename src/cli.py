@@ -12,14 +12,14 @@ from argparse import RawTextHelpFormatter
 # import lrst
 
 # Print the package name
-print("Package name: " + __name__)
+# print("Package name: " + __name__)
 if __name__ == 'src.cli':
-    print("Running locally.")
+    # print("Running locally.")
     from lib import lrst  # For debugging
     from src import generate_html
     from src.plot_utils import *
 else:
-    print("Running from installed package.")
+    # print("Running from installed package.")
     import lrst
     import generate_html
     from plot_utils import *
