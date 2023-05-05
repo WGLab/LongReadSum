@@ -123,9 +123,6 @@ void Basic_Seq_Statistics::global_sum(){
         // Add the G + C bases
         uint64_t gc_total = this->total_g_cnt + this->total_c_cnt;
 
-        // Add A, G, C, and U/T bases
-        //uint64_t base_total = this->total_g_cnt + this->total_c_cnt + this->total_a_cnt + this->total_tu_cnt;
-
         // Get total base counts
         uint64_t base_total = this->total_a_cnt + this->total_c_cnt + this->total_g_cnt + this->total_tu_cnt + this->total_n_cnt;
 
@@ -140,49 +137,9 @@ void Basic_Seq_Statistics::global_sum(){
             // Calculate GC-content
             double percent_gc = (double) gc_total / base_total;
             this->gc_cnt = percent_gc;
-            std::cout << "GC content uint64: " << this->gc_cnt << std::endl;
-            std::cout << "resulting from: " << gc_total << " / " << base_total << std::endl;
-
-//            // Sort the read lengths in descending order
-//            std::vector<int> _read_lengths = this->read_lengths;
-//            std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
-//
-//            // Get the max read length
-//            int max_read_length = _read_lengths.at(0);
-//            this->longest_read_length = max_read_length;
-//
-//            // Get the median read length
-//            double _median_read_length = _read_lengths[_read_lengths.size() / 2];
-//            this->median_read_length = _median_read_length;
-//
-//            // Get the mean read length
-//            double mean_read_length = (double) base_total / this->total_num_reads;
-//            this->mean_read_length = mean_read_length;
 
             // Calculate N50 and other N-scores
             this->calculate_NXX_scores();
-//            for (int percent_value = 1; percent_value <= 100; percent_value++)
-//            {
-//                // Get the base percentage threshold for this N-score
-//                double base_threshold = (double) (base_total * (double) (percent_value / 100.0));
-//
-//
-//                // Calculate the NXX score
-//                double current_base_count = 0;
-//                int current_read_index = 0;
-//                while (current_base_count < base_threshold) {
-//                    current_base_count += _read_lengths.at(current_read_index);
-//                    current_read_index++;
-//                }
-//                int nxx_read_index = current_read_index-1;
-//                int nxx_read_length = _read_lengths.at(nxx_read_index);
-//                this->NXX_read_length[percent_value] = nxx_read_length;
-//            }
-
-//            // Set common score variables
-//            this->n50_read_length = this->NXX_read_length[50];
-//            this->n95_read_length = this->NXX_read_length[95];
-//            this->n05_read_length = this->NXX_read_length[5];
         }
     }
 }
