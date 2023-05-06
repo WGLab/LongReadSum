@@ -4,7 +4,7 @@
 #include <string>
 #include <map>
 #include <vector>
-
+#include <stdint.h>
 
 /////////////////////////////////
 #define MAX_F5EVENT_SIZE   3000000

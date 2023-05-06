@@ -12,7 +12,7 @@
 // https://github.com/lh3/seqtk
 #include "kseq.h"
 #include "kseq.h"
-#include "FASTQ_module.h"
+#include "fastq_module.h"
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
@@ -44,7 +44,7 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
             read_name = seq->name.s;
             read_seq = seq->seq.s;
             raw_read_qual = seq->qual.s;
-            if ((uint64_t)read_len > long_read_info.longest_read_length)
+            if (read_len > long_read_info.longest_read_length)
             {
                 long_read_info.longest_read_length = read_len;
             }
@@ -248,14 +248,14 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
 
             // Sort the read lengths in descending order
             std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
-            std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int>());
+            std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int64_t>());
 
             // Get the max read length
-            int max_read_length = read_lengths.at(0);
+            int64_t max_read_length = read_lengths.at(0);
             output_data.long_read_info.longest_read_length = max_read_length;
 
             // Get the median read length
-            int median_read_length = read_lengths[read_lengths.size() / 2];
+            int64_t median_read_length = read_lengths[read_lengths.size() / 2];
             output_data.long_read_info.median_read_length = median_read_length;
 
             // Get the mean read length
@@ -285,17 +285,17 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
             output_data.long_read_info.n05_read_length = output_data.long_read_info.NXX_read_length[5];
 
             read_summary_fp = fopen(read_summary_file.c_str(), "w");
-            fprintf(read_summary_fp, "total number of reads\t%ld\n", output_data.long_read_info.total_num_reads);
+            fprintf(read_summary_fp, "total number of reads\t%d\n", output_data.long_read_info.total_num_reads);
             fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
-            fprintf(read_summary_fp, "longest read length\t%lu\n", output_data.long_read_info.longest_read_length);
-            fprintf(read_summary_fp, "N50 read length\t%ld\n", output_data.long_read_info.n50_read_length);
+            fprintf(read_summary_fp, "longest read length\t%d\n", output_data.long_read_info.longest_read_length);
+            fprintf(read_summary_fp, "N50 read length\t%d\n", output_data.long_read_info.n50_read_length);
             fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-            fprintf(read_summary_fp, "median read length\t%ld\n", output_data.long_read_info.median_read_length);
+            fprintf(read_summary_fp, "median read length\t%d\n", output_data.long_read_info.median_read_length);
             fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
             fprintf(read_summary_fp, "\n\n");
             for (int percent = 5; percent < 100; percent += 5)
             {
-                fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, output_data.long_read_info.NXX_read_length[percent]);
+                fprintf(read_summary_fp, "N%02d read length\t%.d\n", percent, output_data.long_read_info.NXX_read_length[percent]);
             }
 
             fprintf(read_summary_fp, "\n\n");
@@ -303,22 +303,21 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
             fprintf(read_summary_fp, "GC content\tnumber of reads\n");
             for (int gc_ratio = 0; gc_ratio < 100; gc_ratio++)
             {
-                fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
+                fprintf(read_summary_fp, "GC=%d%%\t%d\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
             }
-
 
             fprintf(read_summary_fp, "\n\n");
             fprintf(read_summary_fp, "base quality\tnumber of bases\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
             }
 
             fprintf(read_summary_fp, "\n\n");
             fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
             }
             fclose(read_summary_fp);
         }

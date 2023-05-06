@@ -9,30 +9,35 @@ from glob import glob
 import argparse
 from argparse import RawTextHelpFormatter
 
-import lrst
-import generate_html
-from plot_utils import *
+# import lrst
+
+# Print the package name
+# print("Package name: " + __name__)
+if __name__ == 'src.cli':
+    # print("Running locally.")
+    from lib import lrst  # For debugging
+    from src import generate_html
+    from src.plot_utils import *
+else:
+    # print("Running from installed package.")
+    import lrst
+    import generate_html
+    from plot_utils import *
 
 logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
+prg_name = "LongReadSum"
 
 
-def get_log_level(log_l):
-    if log_l == lrst_global.LOG_ALL:
-        return logging.ALL
-    elif log_l == lrst_global.LOG_DEBUG:
-        return logging.DEBUG
-    elif log_l == lrst_global.LOG_INFO:
-        return logging.INFO
-    elif log_l == lrst_global.LOG_WARN:
-        return logging.WARN
-    elif log_l == lrst_global.LOG_ERROR:
-        return logging.ERROR
-    elif log_l == lrst_global.LOG_FATAL:
-        return logging.FATAL
-    elif log_l == lrst_global.LOG_OFF:
-        return logging.OFF
-    else:
-        return logging.ERROR
+# Return the log level type from the code (Default: ERROR)
+def get_log_level(level_code):
+    switch = {
+        1: logging.DEBUG,
+        2: logging.INFO,
+        3: logging.WARN,
+        4: logging.ERROR,
+        5: logging.FATAL,
+    }
+    return switch.get(level_code, logging.ERROR)
 
 
 def get_common_param(margs):
@@ -43,9 +48,11 @@ def get_common_param(margs):
     margs: Command line input arguments (dict).
     """
     param_dict = {}
+    param_dict["prg_name"] = prg_name
     this_error_str = ""
 
-    if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (margs.inputPattern == None or margs.inputPattern == ""):
+    if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (
+            margs.inputPattern == None or margs.inputPattern == ""):
         this_error_str += "No input file(s) are provided. \n"
     else:
         # Group parameters into an array
@@ -59,7 +66,7 @@ def get_common_param(margs):
         if not (margs.inputPattern == None or margs.inputPattern == ""):
             pat_split = margs.inputPattern.split("*")
             param_dict["input_files"].extend(
-                glob(os.path.join("*".join(pat_split[:-1]), "*"+pat_split[-1])))
+                glob(os.path.join("*".join(pat_split[:-1]), "*" + pat_split[-1])))
 
         # Number of reads to sample
         read_count = margs.readCount
@@ -80,13 +87,13 @@ def get_common_param(margs):
         try:
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
-            if not os.path.isdir(output_dir + '/'+lrst_global.default_image_path):
+            if not os.path.isdir(output_dir + '/' + getDefaultImageFolder()):
                 os.makedirs(output_dir + '/' +
-                        lrst_global.default_image_path)
+                            getDefaultImageFolder())
 
         except OSError as e:
             this_error_str += "Cannot create folder for " + \
-                param_dict["output_folder"]+" \n"
+                              param_dict["output_folder"] + " \n"
     param_dict["out_prefix"] = margs.outprefix
 
     if (margs.log == None or margs.log == ""):
@@ -133,7 +140,7 @@ def fq_module(margs):
         input_para.downsample_percentage = param_dict["downsample_percentage"]
 
         input_para.other_flags = 0
-        input_para.user_defined_fastq_base_qual_offset = margs.udqual; 
+        input_para.user_defined_fastq_base_qual_offset = margs.udqual;
 
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
@@ -144,10 +151,11 @@ def fq_module(margs):
         fq_output = lrst.Output_FQ()
         exit_code = lrst.callFASTQModule(input_para, fq_output)
         if exit_code == 0:
-            create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
+            plot_filepaths = create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FASTQ QC", param_dict], static=static)
+                    [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality",
+                      "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=static)
                 fq_html_gen.generate_st_html()
 
             logging.info("Completed.")
@@ -187,13 +195,14 @@ def fa_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_FA
-            plot_for_FA.fa_plot(fa_output, param_dict)
+            from src import fasta_plot
+            plot_filepaths = fasta_plot.plot(fa_output, param_dict)
 
             # TODO: Unused 'static' variable results in redundant function call
             for static in [True, False]:
                 fa_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info"], "FASTA QC", param_dict], static=True)
+                    [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"], "FASTA QC",
+                     param_dict], plot_filepaths, static=True)
                 fa_html_gen.generate_st_html()
 
         else:
@@ -219,30 +228,30 @@ def bam_module(margs):
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
         input_para.downsample_percentage = param_dict["downsample_percentage"]
-        input_para.other_flags =  (1 if param_dict["detail"]>0 else 0) ;
+        input_para.other_flags = (1 if param_dict["detail"] > 0 else 0);
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
-
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
 
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
         if exit_code == 0:
-            logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_BAM
-            plot_for_BAM.bam_plot(bam_output, param_dict)
+            from src import bam_plot
+            plot_filepaths = bam_plot.plot(bam_output, param_dict)
 
             for static in [True, False]:
                 bam_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st","map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality"], "BAM QC", param_dict], static=static)
+                    [["basic_st", "map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info",
+                      "base_quality"], "BAM QC", param_dict], plot_filepaths, static=static)
                 bam_html_gen.generate_st_html()
 
         else:
             logging.error("QC did not generate.")
 
         logging.info("Done.")
+
 
 def seqtxt_module(margs):
     """
@@ -263,7 +272,7 @@ def seqtxt_module(margs):
         input_para.downsample_percentage = param_dict["downsample_percentage"]
         input_para.other_flags = margs.seq  # Default = 1
         input_para.other_flags = (input_para.other_flags << 4)
-        input_para.other_flags += (1 if param_dict["detail"]>0 else 0)
+        input_para.other_flags += (1 if param_dict["detail"] > 0 else 0)
         input_para.other_flags = (input_para.other_flags << 4)
         input_para.other_flags += int(margs.sum_type)
 
@@ -278,19 +287,23 @@ def seqtxt_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_SeqTxt
-            plot_for_SeqTxt.plot(seqtxt_output, param_dict)
+            from src import seqtxt_plot
+            plot_filepaths = seqtxt_plot.plot(seqtxt_output, param_dict)
             for static in [True, False]:
-                if margs.seq==0:
-                    f5_html_gen = generate_html.ST_HTML_Generator([["basic_st", "read_length_st","read_length_hist","base_st","basic_info"], "sequencing_summary.txt QC", param_dict], static=static);
+                if margs.seq == 0:
+                    f5_html_gen = generate_html.ST_HTML_Generator(
+                        [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info"],
+                         "sequencing_summary.txt QC", param_dict], plot_filepaths, static=static)
                 else:
                     f5_html_gen = generate_html.ST_HTML_Generator(
-                       [["basic_st", "read_length_st","read_length_hist", "basic_info"], "sequencing_summary.txt QC", param_dict], static=static)
+                        [["basic_st", "read_length_st", "read_length_hist", "basic_info"], "sequencing_summary.txt QC",
+                         param_dict], plot_filepaths, static=static)
                 f5_html_gen.generate_st_html()
         else:
             logging.error("QC did not generate.")
 
         logging.info("Done.")
+
 
 def fast5_module(margs):
     """
@@ -321,15 +334,17 @@ def fast5_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            create_base_quality_plots(fast5_output, param_dict, "FAST5: Basic statistics")
+            plot_filepaths = create_base_quality_plots(fast5_output, param_dict, "FAST5: Basic statistics")
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st","read_length_hist", "base_st", "basic_info", "base_quality", "read_avg_base_quality"], "FAST5 QC", param_dict], static=static)
+                    [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality",
+                      "read_avg_base_quality"], "FAST5 QC", param_dict], plot_filepaths, static=static)
                 fast5_html_obj.generate_st_html()
         else:
             logging.error("QC did not generate.")
 
         logging.info("Done.")
+
 
 def fast5_signal_module(margs):
     """
@@ -361,12 +376,12 @@ def fast5_signal_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating output files...")
-            from src import plot_for_FAST5s
-            dynamic_plots = plot_for_FAST5s.plot(fast5_output, param_dict)
+            from src import fast5_signal_plot
+            dynamic_plots, plot_filepaths = fast5_signal_plot.plot(fast5_output, param_dict)
 
             # Generate a dynamic HTML file
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [[], "FAST5 signal QC", param_dict], static=False)
+                [[], "FAST5 signal QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_st_html(signal_plots=dynamic_plots)
         else:
             logging.error("QC did not generate.")
@@ -400,7 +415,7 @@ input_files_group.add_argument(
 
 input_files_group.add_argument(
     "-I", "--inputs", type=str, default=None,
-    help="Multiple comma-separated input filepaths",)
+    help="Multiple comma-separated input filepaths", )
 
 input_files_group.add_argument(
     "-P", "--inputPattern", type=str, default=None,
@@ -424,11 +439,11 @@ input_files_group.add_argument("-p", "--downsample_percentage", type=float, defa
 
 common_grp_param.add_argument(
     "-g", "--log", type=str, default="log_output.log", help="Log file")
-common_grp_param.add_argument("-G", "--Log_level", type=int, default=lrst_global.LOG_ERROR,
+common_grp_param.add_argument("-G", "--Log_level", type=int, default=4,
                               help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
 
 common_grp_param.add_argument("-o", "--outputfolder", type=str,
-                              default="output_" + lrst_global.prg_name, help="The output folder.")
+                              default="output_" + prg_name, help="The output folder.")
 common_grp_param.add_argument("-t", "--thread", type=int,
                               default=1, help="The number of threads used. Default: 1.")
 common_grp_param.add_argument("-Q", "--outprefix", type=str,
@@ -469,11 +484,11 @@ fast5_parser.set_defaults(func=fast5_module)
 
 # FAST5 signal mode inputs
 fast5_signal_parser = subparsers.add_parser('f5s',
-                                     parents=[parent_parser],
-                                     help="FAST5 file input with signal statistics output",
-                                     description="For example:\n"
-                                                 "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
-                                     formatter_class=RawTextHelpFormatter)
+                                            parents=[parent_parser],
+                                            help="FAST5 file input with signal statistics output",
+                                            description="For example:\n"
+                                                        "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
+                                            formatter_class=RawTextHelpFormatter)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
 # sequencing_summary.txt inputs
@@ -503,11 +518,11 @@ bam_parsers.set_defaults(func=bam_module)
 # =====
 def main():
     if sys.version_info[0] < 2:
-        logging.info(lrst_global.prg_name +
-              " could not be run with lower version than python 2.7.")
+        logging.info(prg_name +
+                     " could not be run with lower version than python 2.7.")
     else:
         if sys.version_info[1] < 6:
-            logging.info(lrst_global.prg_name+" could be run with python 2.7.")
+            logging.info(prg_name + " could be run with python 2.7.")
         else:
             if len(sys.argv) < 2:
                 parser.print_help()

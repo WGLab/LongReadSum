@@ -9,7 +9,7 @@ Utility functions for basic statistics
 #include<algorithm>  // std::foreach
 #include <math.h>  // sqrt, pow
 
-#include "BasicStatistics.h"
+#include "basic_statistics.h"
 
 // Compute basic statistics
 double computeMean(std::vector<int> values)

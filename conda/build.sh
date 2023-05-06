@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# Build the C++ library
+
 # Add the library path to the LD_LIBRARY_PATH
 export LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:${PREFIX}/lib
 
@@ -13,11 +15,11 @@ $PYTHON setup.py -I"${PREFIX}"/include -L"${PREFIX}"/lib install
 cp "${SRC_DIR}"/longreadsum "${PREFIX}"/bin
 
 # Create the src directory
-mkdir -p "${PREFIX}"/src
+#mkdir -p "${PREFIX}"/lib
 
-# Copy the lib files to the src directory
-cp -r "${SRC_DIR}"/src/*.py "${PREFIX}"/src
+# Copy the lib files to the build directory
+cp -r "${SRC_DIR}"/src/*.py "${PREFIX}"/lib
 
 # Copy the SWIG generated library to the lib directory
-cp -r "${SRC_DIR}"/lib/*.py "${PREFIX}"/src
+cp -r "${SRC_DIR}"/lib/*.py "${PREFIX}"/lib
 cp -r "${SRC_DIR}"/lib/*.so "${PREFIX}"/lib

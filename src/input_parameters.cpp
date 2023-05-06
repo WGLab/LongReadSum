@@ -1,6 +1,6 @@
 #include <string>
 
-#include "InputStructure.h"
+#include "input_parameters.h"
 
 Input_Para::Input_Para(){
     // Set default parameters

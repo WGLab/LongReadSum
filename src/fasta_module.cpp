@@ -11,7 +11,7 @@ FASTA_module.cpp:
 #include <sys/stat.h>
 #include <iostream>
 #include "kseq.h"
-#include "FASTA_module.h"
+#include "fasta_module.h"
 
 KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
@@ -23,7 +23,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
     kseq_t *seq;
     char *read_seq;
     char *read_name;
-    int read_len;
+    int64_t read_len;
     double read_gc_cnt;
 
     Basic_Seq_Statistics &long_read_info = py_output_fa.long_read_info;
@@ -39,13 +39,13 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             if (read_len == 0) {continue;}
             read_name = seq->name.s;
             read_seq = seq->seq.s;
-            if ((uint64_t)read_len > long_read_info.longest_read_length)
+            if ((int64_t)read_len > long_read_info.longest_read_length)
             {
                 long_read_info.longest_read_length = read_len;
             }
             long_read_info.total_num_reads += 1;
             long_read_info.total_num_bases += read_len;
-            if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
+            if (read_len < (int64_t) long_read_info.read_length_count.size()) {
                 long_read_info.read_length_count[read_len] += 1;
             } else {
                 long_read_info.read_length_count.resize(read_len + 1000, 0);
@@ -76,7 +76,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             }
             read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
             long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-            fprintf(read_details_fp, "%s\t%d\t%.2f\n", read_name, read_len, read_gc_cnt);
+            fprintf(read_details_fp, "%s\t%ld\t%.2f\n", read_name, read_len, read_gc_cnt);
         }
 
         kseq_destroy(seq);
@@ -166,13 +166,13 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 py_output_fa.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
                 int percent = 1;
-                int64_t num_bases_sum = 0;
+                uint64_t num_bases_sum = 0;
                 int64_t num_reads_sum = 0;
                 py_output_fa.long_read_info.median_read_length = -1;
                 for (int read_len = py_output_fa.long_read_info.read_length_count.size() - 1; read_len > 0; read_len--)
                 {
                     num_reads_sum += py_output_fa.long_read_info.read_length_count[read_len];
-                    num_bases_sum += py_output_fa.long_read_info.read_length_count[read_len] * read_len;
+                    num_bases_sum += (uint64_t) (py_output_fa.long_read_info.read_length_count[read_len] * read_len);
                     if (num_reads_sum * 2 > py_output_fa.long_read_info.total_num_reads && py_output_fa.long_read_info.median_read_length < 0)
                     {
                         py_output_fa.long_read_info.median_read_length = read_len;
@@ -194,17 +194,17 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 py_output_fa.long_read_info.mean_read_length = (double)py_output_fa.long_read_info.total_num_bases / (double)py_output_fa.long_read_info.total_num_reads;
 
                 read_summary_fp = fopen(read_summary_file.c_str(), "w");
-                fprintf(read_summary_fp, "total number of reads\t%ld\n", py_output_fa.long_read_info.total_num_reads);
+                fprintf(read_summary_fp, "total number of reads\t%d\n", py_output_fa.long_read_info.total_num_reads);
                 fprintf(read_summary_fp, "total number of bases\t%ld\n", py_output_fa.long_read_info.total_num_bases);
-                fprintf(read_summary_fp, "longest read length\t%lu\n", py_output_fa.long_read_info.longest_read_length);
-                fprintf(read_summary_fp, "N50 read length\t%ld\n", py_output_fa.long_read_info.n50_read_length);
+                fprintf(read_summary_fp, "longest read length\t%d\n", py_output_fa.long_read_info.longest_read_length);
+                fprintf(read_summary_fp, "N50 read length\t%d\n", py_output_fa.long_read_info.n50_read_length);
                 fprintf(read_summary_fp, "mean read length\t%.2f\n", py_output_fa.long_read_info.mean_read_length);
-                fprintf(read_summary_fp, "median read length\t%ld\n", py_output_fa.long_read_info.median_read_length);
+                fprintf(read_summary_fp, "median read length\t%d\n", py_output_fa.long_read_info.median_read_length);
                 fprintf(read_summary_fp, "GC%%\t%.2f\n", py_output_fa.long_read_info.gc_cnt * 100);
                 fprintf(read_summary_fp, "\n\n");
                 for (int percent = 5; percent < 100; percent += 5)
                 {
-                    fprintf(read_summary_fp, "N%02d read length\t%.ld\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
+                    fprintf(read_summary_fp, "N%02d read length\t%.d\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
                 }
 
                 fprintf(read_summary_fp, "\n\n");
@@ -212,7 +212,7 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 fprintf(read_summary_fp, "GC content\tnumber of reads\n");
                 for (int gc_ratio = 0; gc_ratio <= 100; gc_ratio++)
                 {
-                    fprintf(read_summary_fp, "GC=%d%%\t%ld\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
+                    fprintf(read_summary_fp, "GC=%d%%\t%d\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
                 }
                 fclose(read_summary_fp);
             }

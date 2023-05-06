@@ -1,5 +1,9 @@
-#include "InputStructure.h"
-#include "OutputStructures.h"
+/* module_caller.h
+ * Module caller header file
+ */
+
+#include "input_parameters.h"
+#include "output_data.h"
 
 int callBAMModule( Input_Para& _input_data, Output_BAM& py_output_bam );
 

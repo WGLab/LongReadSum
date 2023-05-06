@@ -1,15 +1,16 @@
 #include <iostream>
-#include "ModuleCaller.h"
-#include "BAM_module.h"
-#include "SeqTxt_module.h"
-#include "FASTQ_module.h"
-#include "FASTA_module.h"
-#include "FAST5_module.h"
+#include "module_caller.h"
+#include "bam_module.h"
+#include "seqtxt_module.h"
+#include "fastq_module.h"
+#include "fasta_module.h"
+#include "fast5_module.h"
 
 int callBAMModule(Input_Para &_input_data, Output_BAM &py_output_bam)
 {
-    BAM_Module _bam_module(_input_data);
-    int exit_code = _bam_module.calculateStatistics(py_output_bam);
+//    BAM_Module _bam_module(_input_data);
+    BAM_Module module;
+    int exit_code = module.calculateStatistics(_input_data, py_output_bam);
     return exit_code;
 }
 

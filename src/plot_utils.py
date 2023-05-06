@@ -7,12 +7,52 @@ import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
-if __package__ == 'src':
-    from src import lrst_global
-else:
-    import lrst_global
-
 logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
+
+
+# Return the default image path
+def getDefaultImageFolder():
+    return 'img/'
+
+
+# Return the default image suffix
+def getDefaultImageSuffix():
+    return '.png'
+
+
+# Return a dictionary of default plot filenames
+def getDefaultPlotFilenames():
+    default_image_path = getDefaultImageFolder()
+    default_image_suf = getDefaultImageSuffix()
+
+    plot_filenames = {  # for fq/fa
+        "read_length_distr": {'file': default_image_path + "read_length_distr" + default_image_suf,
+                              'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
+        "map_st": {'file': default_image_path + "map_st" + default_image_suf, 'title': "Map Information",
+                   'description': "Read Mapping Statistics"},
+        "err_st": {'file': default_image_path + "err_st" + default_image_suf,
+                   'title': "Base Alignment and Error Statistics",
+                   'description': "Base Alignment and Error Statistics"},
+        "read_length_st": {'file': default_image_path + "read_length_st" + default_image_suf,
+                           'title': "Read Length Statistics", 'description': "Read Length Statistics"},
+        "base_st": {'file': default_image_path + "base_st" + default_image_suf, 'title': "Base Count Statistics",
+                    'description': "Base Count Statistics", 'summary': ""},
+        "basic_info": {'file': default_image_path + "basic_info" + default_image_suf, 'title': "Basic Statistics",
+                       'description': "Basic Statistics", 'summary': ""},
+        "read_length_hist": {'file': default_image_path + "read_length_hist" + default_image_suf,
+                             'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
+
+        "base_quality": {'file': default_image_path + "base_quality" + default_image_suf,
+                         'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
+
+        "read_avg_base_quality": {'file': default_image_path + "read_avg_base_quality" + default_image_suf,
+                                  'title': "Read Base Quality Histogram", 'description': "Read Base Quality Histogram"},
+
+        "pos_quality": {'file': default_image_path + "pos_quality" + default_image_suf,
+                        'title': "Base Position Quality", 'description': "Base Position Quality"},
+    }
+
+    return plot_filenames
 
 
 def setDefaultFontSize(font_size):
@@ -22,7 +62,8 @@ def setDefaultFontSize(font_size):
 
 def fmt(x):
     """Format numbers for plots."""
-    format_x = np.format_float_scientific(x, exp_digits=4)
+    format_x = "{:,}".format(round(x))
+
     return format_x
 
 
@@ -57,7 +98,7 @@ def plot_base_counts(data, path, subtitles=None, categories=None):
     ylabel_list = itertools.cycle(['Counts'])
     subtitle_list = subtitles
     bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path)
-    # lrst_global.plot_filenames['base_st']['summary']='GC Content: {:.2%}'.format(bam_output.mapped_long_read_info.gc_cnt)
+    # plot_filepaths['base_st']['summary']='GC Content: {:.2%}'.format(bam_output.mapped_long_read_info.gc_cnt)
 
 
 def plot_basic_info(data, path, subtitles=None, categories=None):
@@ -174,6 +215,78 @@ def histogram(data, path, font_size):
     return html_obj
 
 
+def read_lengths_histogram(data, path, font_size):
+    """Plot the read length histograms."""
+    annotation_size = 10  # Annotation font size
+    mean, median, n50 = data.mean_read_length, data.median_read_length, data.n50_read_length
+
+    # Read the read lengths array in float64 format
+    read_lengths = np.array(data.read_lengths, dtype=np.float64)
+
+    # Calculate a histogram of read lengths
+    hist, edges = np.histogram(read_lengths, bins=10)
+
+    # Create a figure with two subplots
+    fig = make_subplots(
+        rows=2, cols=1,
+        subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.3)
+    fig.update_layout(showlegend=False, autosize=False)
+
+    customdata = np.dstack((edges[:-1], edges[1:], hist))[0, :, :]
+    fig.add_trace(go.Bar(x=edges, y=hist, customdata=customdata,
+                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata['
+                                       '2]:.0f}<extra></extra>',
+                         marker_color='#36a5c7'), row=1, col=1)
+
+    fig.add_vline(mean, line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
+                  annotation_textangle=90, row=1, col=1)
+    fig.add_vline(median, line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
+                  annotation_textangle=90, row=1, col=1)
+    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
+                  annotation_textangle=90, row=1, col=1)
+
+    # Log histogram
+    # Get the log10 histogram of read lengths
+    read_lengths_log = np.log10(read_lengths, out=np.zeros_like(read_lengths), where=(read_lengths != 0))
+    log_hist, log_edges = np.histogram(read_lengths_log, bins=len(edges))
+
+    xd = log_edges
+    customdata = np.dstack((np.power(10, log_edges)[:-1], np.power(10, log_edges)[1:], log_hist))[0, :, :]
+    yd = log_hist
+    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
+                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
+                         marker_color='#36a5c7'), row=2, col=1)
+
+    fig.add_vline(np.log10(mean), line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
+                  annotation_textangle=90, row=2, col=1)
+    fig.add_vline(np.log10(median), line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
+                  annotation_textangle=90, row=2, col=1)
+    fig.add_vline(np.log10(n50), line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
+                  annotation_textangle=90, row=2, col=1)
+    fig.update_annotations(font=dict(color="white"))
+
+    # Set tick value range for the log scale
+    tick_vals = list(range(0, 5))
+    fig.update_xaxes(
+        range=[0, 5],
+        tickmode='array',
+        tickvals=tick_vals,
+        ticktext=['{:,}'.format(10 ** x) for x in tick_vals],
+        ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
+
+    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1)
+    fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
+
+    # Set font sizes
+    fig.update_layout(font=dict(size=font_size), autosize=True)
+
+    fig.update_annotations(font_size=annotation_size)
+    html_obj = fig.to_html(full_html=False)
+    fig.write_image(path, engine="kaleido")
+
+    return html_obj
+
+
 def base_quality(data, path, font_size):
     """
     Save the 'Base quality' plot image.
@@ -184,7 +297,8 @@ def base_quality(data, path, font_size):
 
     customdata = np.dstack((xd, yd))[0, :, :]
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
-                         hovertemplate='Base Quality: %{customdata[0]:.0f}<br>Base Counts:%{customdata[1]:.0f}<extra></extra>',
+                         hovertemplate='Base Quality: %{customdata[0]:.0f}<br>Base Counts:%{customdata['
+                                       '1]:.0f}<extra></extra>',
                          marker_color='#36a5c7'))
 
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff=0)
@@ -213,11 +327,11 @@ def read_avg_base_quality(data, path, font_size):
     return fig.to_html(full_html=False)
 
 
-def create_statistics_table(module_output, table_title="Basic Statistics"):
-    lrst_global.plot_filenames["basic_st"] = {}
-    lrst_global.plot_filenames["basic_st"]['file'] = ""
-    lrst_global.plot_filenames["basic_st"]['title'] = "Summary Table"
-    lrst_global.plot_filenames["basic_st"]['description'] = table_title
+def create_statistics_table(module_output, plot_filepaths, table_title="Basic Statistics"):
+    plot_filepaths["basic_st"] = {}
+    plot_filepaths["basic_st"]['file'] = ""
+    plot_filepaths["basic_st"]['title'] = "Summary Table"
+    plot_filepaths["basic_st"]['description'] = table_title
 
     table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
     table_str += "\n<tbody>"
@@ -239,7 +353,9 @@ def create_statistics_table(module_output, table_title="Basic Statistics"):
                                            module_output.long_read_info.median_read_length)
     table_str += "\n</tbody>\n</table>"
 
-    lrst_global.plot_filenames["basic_st"]['detail'] = table_str
+    plot_filepaths["basic_st"]['detail'] = table_str
+
+    return plot_filepaths
 
 
 def create_base_quality_plots(module_output, para_dict, table_title):
@@ -247,7 +363,8 @@ def create_base_quality_plots(module_output, para_dict, table_title):
     Generate HTML plots for base and base quality (BAM, FASTQ, FAST5).
     """
     out_path = para_dict["output_folder"]
-    get_image_path = lambda x: os.path.join(out_path, lrst_global.plot_filenames[x]['file'])
+    plot_filepaths = getDefaultPlotFilenames()
+    get_image_path = lambda x: os.path.join(out_path, plot_filepaths[x]['file'])
 
     # Set the default matplotlib font size
     setDefaultFontSize(12)
@@ -256,7 +373,7 @@ def create_base_quality_plots(module_output, para_dict, table_title):
     font_size = para_dict["fontsize"]
 
     # Create the statistics table
-    create_statistics_table(module_output, table_title)
+    plot_filepaths = create_statistics_table(module_output, plot_filepaths, table_title)
 
     # Create basic plots
     basic_data = module_output.long_read_info
@@ -266,13 +383,15 @@ def create_base_quality_plots(module_output, para_dict, table_title):
 
     # Read length histogram
     length_hist_path = get_image_path('read_length_hist')
-    lrst_global.plot_filenames['read_length_hist']['dynamic'] = histogram(basic_data, length_hist_path, font_size)
+    plot_filepaths['read_length_hist']['dynamic'] = histogram(basic_data, length_hist_path, font_size)
 
     # Base quality histogram
     quality_data = module_output.seq_quality_info
     quality_hist_path = get_image_path('base_quality')
-    lrst_global.plot_filenames['base_quality']['dynamic'] = base_quality(quality_data, quality_hist_path, font_size)
+    plot_filepaths['base_quality']['dynamic'] = base_quality(quality_data, quality_hist_path, font_size)
 
     # Read quality histogram
     read_quality_dynamic = read_avg_base_quality(quality_data, get_image_path('read_avg_base_quality'), font_size)
-    lrst_global.plot_filenames['read_avg_base_quality']['dynamic'] = read_quality_dynamic
+    plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
+
+    return plot_filepaths

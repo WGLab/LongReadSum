@@ -3,8 +3,8 @@
 #include <math.h>  // sqrt
 #include <iostream>
 
-#include "OutputStructures.h"
-#include "BasicStatistics.h"
+#include "output_data.h"
+#include "basic_statistics.h"
 
 // Base class for storing error output.
 Output_Info::Output_Info(){
@@ -12,16 +12,11 @@ Output_Info::Output_Info(){
    error_str = "";
 }
 
-
 // Base class for storing basic QC data
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = ZeroDefault;
-   }
-   nx_read_length.resize(10);
-   for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = ZeroDefault;
    }
 }
 
@@ -41,10 +36,6 @@ Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_length_count.resize(MAX_READ_LENGTH);
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = _bss.read_length_count[ _i_ ];
-   }
-   nx_read_length.resize(10);
-   for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = _bss.nx_read_length[ _i_ ];
    }
    total_num_reads = _bss.total_num_reads ;
    total_num_bases = _bss.total_num_bases ;
@@ -67,9 +58,6 @@ Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
 void Basic_Seq_Statistics::reset(){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       read_length_count[ _i_ ] = ZeroDefault;
-   }
-   for(int _i_=0; _i_< 10 ; _i_++){
-      nx_read_length[ _i_ ] = ZeroDefault;
    }
 
    for(size_t _i_=0; _i_<read_gc_content_count.size(); _i_++){
@@ -94,28 +82,30 @@ void Basic_Seq_Statistics::reset(){
    gc_cnt = ZeroDefault; 
 }
 
-void Basic_Seq_Statistics::add(Basic_Seq_Statistics& t_seq_st){
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_count[ _i_ ] += t_seq_st.read_length_count[ _i_ ];
-   }
-   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-      read_gc_content_count[ _i_ ] += t_seq_st.read_gc_content_count[ _i_ ];
-   }
-   total_num_reads += t_seq_st.total_num_reads ;
-   total_num_bases += t_seq_st.total_num_bases ;
-
-   if ( longest_read_length < t_seq_st.longest_read_length){
-      longest_read_length = t_seq_st.longest_read_length;
+void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
+    // Update the longest read length
+   if ( this->longest_read_length < basic_qc.longest_read_length){
+      this->longest_read_length = basic_qc.longest_read_length;
    }
 
-   total_a_cnt += t_seq_st.total_a_cnt ;
-   total_c_cnt += t_seq_st.total_c_cnt ;
-   total_g_cnt += t_seq_st.total_g_cnt ;
-   total_tu_cnt += t_seq_st.total_tu_cnt ;
-   total_n_cnt += t_seq_st.total_n_cnt ;
+    // Update base counts
+    this->total_a_cnt += basic_qc.total_a_cnt;
+    this->total_c_cnt += basic_qc.total_c_cnt;
+    this->total_g_cnt += basic_qc.total_g_cnt;
+    this->total_tu_cnt += basic_qc.total_tu_cnt;
+    this->total_n_cnt += basic_qc.total_n_cnt;
 
-   // Add read lengths
-   this->read_lengths.insert(this->read_lengths.end(), t_seq_st.read_lengths.begin(), t_seq_st.read_lengths.end());
+    // Update total number of bases
+    this->total_num_bases += basic_qc.total_num_bases;
+
+    // Update read counts
+    this->total_num_reads += basic_qc.total_num_reads;
+
+    // Add read lengths
+    this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
+
+    // Add GC content
+    this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
 }
 
 // Calculates NXX scores and GC content for BAM files
@@ -131,62 +121,74 @@ void Basic_Seq_Statistics::global_sum(){
 
     } else {
         // Add the G + C bases
-        double g_c = this->total_g_cnt + this->total_c_cnt;
+        uint64_t gc_total = this->total_g_cnt + this->total_c_cnt;
 
-        // Add all bases
-        double a_tu_g_c = g_c + this->total_a_cnt + this->total_tu_cnt;
+        // Get total base counts
+        uint64_t base_total = this->total_a_cnt + this->total_c_cnt + this->total_g_cnt + this->total_tu_cnt + this->total_n_cnt;
 
         // Check that our total base counts match what was stored (That our code works)
-        int _total_num_bases = this->total_num_bases;
-        if (a_tu_g_c != (double)_total_num_bases)
+        uint64_t base_total_from_reads = this->total_num_bases;
+        if (base_total != base_total_from_reads)
         {
             std::cerr << "Total number of bases is not consistent." << std::endl;
-            std::cout << _total_num_bases << std::endl;
-            std::cout << a_tu_g_c << std::endl;
+            std::cout << "From reads: " << base_total_from_reads << std::endl;
+            std::cout << "From bases: " << base_total << std::endl;
         } else {
             // Calculate GC-content
-            this->gc_cnt = g_c / a_tu_g_c;
-
-            // Sort the read lengths in descending order
-            std::vector<int> _read_lengths = this->read_lengths;
-            std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
-
-            // Get the max read length
-            int max_read_length = _read_lengths.at(0);
-            this->longest_read_length = max_read_length;
-
-            // Get the median read length
-            double _median_read_length = _read_lengths[_read_lengths.size() / 2];
-            this->median_read_length = _median_read_length;
-
-            // Get the mean read length
-            float _mean_read_length = (double)_total_num_bases / (double)_read_lengths.size();
-            this->mean_read_length = _mean_read_length;
+            double percent_gc = (double) gc_total / base_total;
+            this->gc_cnt = percent_gc;
 
             // Calculate N50 and other N-scores
-            this->NXX_read_length.resize(101, 0);
-            for (int percent_value = 1; percent_value <= 100; percent_value++)
-            {
-                // Get the base percentage threshold for this N-score
-                double base_threshold = (double)_total_num_bases * (percent_value / 100.0);
-
-                // Calculate the NXX score
-                double current_base_count = 0;
-                int current_read_index = -1;
-                while (current_base_count < base_threshold) {
-                    current_read_index ++;
-                    current_base_count += _read_lengths.at(current_read_index);
-                }
-                int nxx_read_length = _read_lengths.at(current_read_index);
-                this->NXX_read_length[percent_value] = nxx_read_length;
-            }
-
-            // Set common score variables
-            this->n50_read_length = this->NXX_read_length[50];
-            this->n95_read_length = this->NXX_read_length[95];
-            this->n05_read_length = this->NXX_read_length[5];
+            this->calculate_NXX_scores();
         }
     }
+}
+
+// Calculates NXX scores and other basic read length statistics
+void Basic_Seq_Statistics::calculate_NXX_scores(){
+
+    // Sort the read lengths in descending order
+    std::sort(this->read_lengths.begin(), this->read_lengths.end(), std::greater<int>());
+
+    // Get total base counts
+    uint64_t base_total = this->total_num_bases;
+
+    // Get the max read length
+    int64_t max_length = this->read_lengths.at(0);
+    this->longest_read_length = max_length;
+
+    // Get the median read length
+    double median_length = this->read_lengths[this->read_lengths.size() / 2];
+    this->median_read_length = median_length;
+
+    // Get the mean read length
+    float mean_length = (double)base_total / (double)this->read_lengths.size();
+    this->mean_read_length = mean_length;
+
+    // Initialize the NXX scores
+    this->NXX_read_length.resize(100, 0);
+    for (int percent_value = 1; percent_value <= 100; percent_value++)
+    {
+        // Get the base percentage threshold for this N-score
+        double base_threshold = (double) (base_total * (double) (percent_value / 100.0));
+
+
+        // Calculate the NXX score
+        double current_base_count = 0;
+        int current_read_index = 0;
+        while (current_base_count < base_threshold) {
+            current_base_count += this->read_lengths.at(current_read_index);
+            current_read_index++;
+        }
+        int nxx_read_index = current_read_index-1;
+        int nxx_read_length = this->read_lengths.at(nxx_read_index);
+        this->NXX_read_length[percent_value] = nxx_read_length;
+    }
+
+    // Set common score variables
+    this->n50_read_length = this->NXX_read_length[50];
+    this->n95_read_length = this->NXX_read_length[95];
+    this->n05_read_length = this->NXX_read_length[5];
 }
 
 // Calculates NXX scores for sequencing_summary.txt files
@@ -200,47 +202,8 @@ void Basic_Seq_Statistics::global_sum_no_gc(){
         this->n05_read_length = 0;
 
     } else {
-        // Check that our total base counts match what was stored (That our code works)
-        int _total_num_bases = this->total_num_bases;
-
-        // Sort the read lengths in descending order
-        std::vector<int> _read_lengths = this->read_lengths;
-        std::sort(_read_lengths.begin(), _read_lengths.end(), std::greater<int>());
-
-        // Get the max read length
-        int max_read_length = _read_lengths.at(0);
-        this->longest_read_length = max_read_length;
-
-        // Get the median read length
-        double _median_read_length = _read_lengths[_read_lengths.size() / 2];
-        this->median_read_length = _median_read_length;
-
-        // Get the mean read length
-        float _mean_read_length = (double)_total_num_bases / (double)_read_lengths.size();
-        this->mean_read_length = _mean_read_length;
-
         // Calculate N50 and other N-scores
-        this->NXX_read_length.resize(101, 0);
-        for (int percent_value = 1; percent_value <= 100; percent_value++)
-        {
-            // Get the base percentage threshold for this N-score
-            double base_threshold = (double)_total_num_bases * (percent_value / 100.0);
-
-            // Calculate the NXX score
-            double current_base_count = 0;
-            int current_read_index = -1;
-            while (current_base_count < base_threshold) {
-                current_read_index ++;
-                current_base_count += _read_lengths.at(current_read_index);
-            }
-            int nxx_read_length = _read_lengths.at(current_read_index);
-            this->NXX_read_length[percent_value] = nxx_read_length;
-        }
-
-        // Set common score variables
-        this->n50_read_length = this->NXX_read_length[50];
-        this->n95_read_length = this->NXX_read_length[95];
-        this->n05_read_length = this->NXX_read_length[5];
+        this->calculate_NXX_scores();
     }
 }
 
@@ -370,84 +333,38 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::reset(){
-   for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-      map_quality_distribution[ _i_ ] = ZeroDefault;
-   }
-   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-      accuracy_per_read[ _i_ ] = ZeroDefault;
-   }
+void Output_BAM::add(Output_BAM& output_data){
+    num_primary_alignment += output_data.num_primary_alignment;
+    num_secondary_alignment += output_data.num_secondary_alignment;
+    num_supplementary_alignment += output_data.num_supplementary_alignment;
+    
+    // Update the supplementary alignment information
+    this->reads_with_supplementary.insert( output_data.reads_with_supplementary.begin(), output_data.reads_with_supplementary.end() );
+    this->num_reads_with_supplementary_alignment = this->reads_with_supplementary.size();
 
-   num_primary_alignment = ZeroDefault; 
-   num_secondary_alignment = ZeroDefault; 
-   num_reads_with_secondary_alignment = ZeroDefault; 
-   num_supplementary_alignment = ZeroDefault; 
-   num_reads_with_supplementary_alignment = ZeroDefault; 
-   num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; 
+    // Update the secondary alignment information
+    this->reads_with_secondary.insert( output_data.reads_with_secondary.begin(), output_data.reads_with_secondary.end() );
+    this->num_reads_with_secondary_alignment = this->reads_with_secondary.size();
 
-   forward_alignment = ZeroDefault;
-   reverse_alignment = ZeroDefault;
+    forward_alignment += output_data.forward_alignment;
+    reverse_alignment += output_data.reverse_alignment;
 
-   min_map_quality = MoneDefault; 
-   max_map_quality = MoneDefault; 
-
-   num_matched_bases = ZeroDefault; 
-   num_mismatched_bases = ZeroDefault; 
-   num_ins_bases = ZeroDefault; 
-   num_del_bases = ZeroDefault; 
-   num_clip_bases = ZeroDefault; 
-
-   mapped_long_read_info.reset();
-   unmapped_long_read_info.reset();
-   mapped_seq_quality_info.reset();
-   unmapped_seq_quality_info.reset();
-
-   long_read_info.reset();
-   seq_quality_info.reset();
-}
-
-void Output_BAM::add(Output_BAM& t_output_bam){
-    for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-        map_quality_distribution[ _i_ ] += t_output_bam.map_quality_distribution[ _i_ ];
-    }
-    for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-        accuracy_per_read[ _i_ ] += t_output_bam.accuracy_per_read[ _i_ ];
+    // Update the base quality vector
+    for (int i=0; i<MAX_READ_QUALITY; i++){
+        this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
     }
 
-    num_primary_alignment += t_output_bam.num_primary_alignment ;
-    num_secondary_alignment += t_output_bam.num_secondary_alignment ;
-    num_reads_with_secondary_alignment += t_output_bam.num_reads_with_secondary_alignment ;
-    num_supplementary_alignment += t_output_bam.num_supplementary_alignment;
-    num_reads_with_supplementary_alignment += t_output_bam.num_reads_with_supplementary_alignment;
-    num_reads_with_both_secondary_supplementary_alignment += t_output_bam.num_reads_with_both_secondary_supplementary_alignment;
+    num_matched_bases += output_data.num_matched_bases;
+    num_mismatched_bases += output_data.num_mismatched_bases;
+    num_ins_bases += output_data.num_ins_bases;
+    num_del_bases += output_data.num_del_bases;
+    num_clip_bases += output_data.num_clip_bases;
 
-    forward_alignment += t_output_bam.forward_alignment;
-    reverse_alignment += t_output_bam.reverse_alignment;
+    mapped_long_read_info.add(output_data.mapped_long_read_info);
+    unmapped_long_read_info.add(output_data.unmapped_long_read_info);
 
-    if ( min_map_quality < 0 || min_map_quality > t_output_bam.min_map_quality){
-      min_map_quality = t_output_bam.min_map_quality;
-    }
-    if ( max_map_quality < t_output_bam.max_map_quality ){
-      max_map_quality =  t_output_bam.max_map_quality;
-    }
-
-    num_matched_bases += t_output_bam.num_matched_bases;
-    num_mismatched_bases += t_output_bam.num_mismatched_bases;
-    num_ins_bases += t_output_bam.num_ins_bases;
-    num_del_bases += t_output_bam.num_del_bases;
-    num_clip_bases += t_output_bam.num_clip_bases;
-
-    mapped_long_read_info.add(t_output_bam.mapped_long_read_info);
-    unmapped_long_read_info.add(t_output_bam.unmapped_long_read_info);
-    mapped_seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-    unmapped_seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
-
-    long_read_info.add(t_output_bam.mapped_long_read_info);
-    long_read_info.add(t_output_bam.unmapped_long_read_info);
-    seq_quality_info.add(t_output_bam.mapped_seq_quality_info);
-    seq_quality_info.add(t_output_bam.unmapped_seq_quality_info);
-
-    // Add read lengths
+    long_read_info.add(output_data.mapped_long_read_info);
+    long_read_info.add(output_data.unmapped_long_read_info);
 }
 
 void Output_BAM::global_sum(){
@@ -459,10 +376,67 @@ void Output_BAM::global_sum(){
     long_read_info.global_sum();
     seq_quality_info.global_sum();
 
+    // Loop through each read and check if it is in both the secondary and supplementary sets
+    for ( auto it = this->reads_with_secondary.begin(); it != this->reads_with_secondary.end(); ++it ){
+        std::string read_id = it->first;
+        if ( this->reads_with_supplementary.find( read_id ) != this->reads_with_supplementary.end() ){
+            this->num_reads_with_both_secondary_supplementary_alignment++;
+        }
+    }
+
     if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
     if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
 }
 
+// Save the output to a file
+void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data){
+    FILE *fp = fopen(output_file.c_str(), "w");
+    if (fp == NULL){
+        fprintf(stderr, "Error: cannot open file %s\n", output_file.c_str());
+    } else {
+        // Save basic statistics
+        fprintf(fp, "Total number of reads\t%d\n", output_data.long_read_info.total_num_reads);
+        fprintf(fp, "Total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
+        fprintf(fp, "Longest read length\t%d\n", output_data.long_read_info.longest_read_length);
+        fprintf(fp, "N50 read length\t%d\n", output_data.long_read_info.n50_read_length);
+        fprintf(fp, "Mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
+        fprintf(fp, "Median read length\t%d\n", output_data.long_read_info.median_read_length);
+        fprintf(fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
+        fprintf(fp, "\n");
+
+        // Save the mapping statistics
+        fprintf(fp, "Total number of mapped reads\t%d\n", output_data.mapped_long_read_info.total_num_reads);
+        fprintf(fp, "Total number of mapped bases\t%ld\n", output_data.mapped_long_read_info.total_num_bases);
+        fprintf(fp, "Longest mapped read length\t%d\n", output_data.mapped_long_read_info.longest_read_length);
+        fprintf(fp, "N50 mapped read length\t%d\n", output_data.mapped_long_read_info.n50_read_length);
+        fprintf(fp, "Mean mapped read length\t%.2f\n", output_data.mapped_long_read_info.mean_read_length);
+        fprintf(fp, "Median mapped read length\t%d\n", output_data.mapped_long_read_info.median_read_length);
+        fprintf(fp, "GC%%\t%.2f\n", output_data.mapped_long_read_info.gc_cnt * 100);
+        fprintf(fp, "\n");
+
+        // Save the read alignment statistics
+        fprintf(fp, "Total number of primary alignments\t%ld\n", output_data.num_primary_alignment);
+        fprintf(fp, "Total number of secondary alignments\t%ld\n", output_data.num_secondary_alignment);
+        fprintf(fp, "Total number of supplementary alignments\t%ld\n", output_data.num_supplementary_alignment);
+        fprintf(fp, "Total number of reads with secondary alignments\t%ld\n", output_data.num_reads_with_secondary_alignment);
+        fprintf(fp, "Total number of reads with supplementary alignments\t%ld\n", output_data.num_reads_with_supplementary_alignment);
+        fprintf(fp, "Total number of reads with both secondary and supplementary alignments\t%ld\n", output_data.num_reads_with_both_secondary_supplementary_alignment);
+        fprintf(fp, "Total number of reads with forward alignments\t%ld\n", output_data.forward_alignment);
+        fprintf(fp, "Total number of reads with reverse alignments\t%ld\n", output_data.reverse_alignment);
+        fprintf(fp, "Total number of reverse alignment\t%ld\n", output_data.reverse_alignment);
+        fprintf(fp, "\n");
+
+        // Save the base alignment statistics
+        fprintf(fp, "Total number of matched bases\t%ld\n", output_data.num_matched_bases);
+        fprintf(fp, "Total number of mismatched bases\t%ld\n", output_data.num_mismatched_bases);
+        fprintf(fp, "Total number of insertions\t%ld\n", output_data.num_ins_bases);
+        fprintf(fp, "Total number of deletions\t%ld\n", output_data.num_del_bases);
+        fprintf(fp, "Total number of soft clipped bases\t%ld\n", output_data.num_clip_bases);
+
+        // Close the file
+        fclose(fp);
+    }
+}
 
 // sequencing_summary.txt output
 Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
