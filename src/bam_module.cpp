@@ -32,15 +32,24 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
         HTSReader reader(filepath);
         std::cout<<"Processing file: "<< filepath << std::endl;
 
+        // Get the number of threads
+        int thread_count = input_params.threads;
+
         // Get the number of records in the file using the BAM index
         std::cout << "Getting number of records..." << std::endl;
         int num_records = reader.getNumRecords(filepath);
         std::cout << "Number of records = " << num_records << std::endl;
 
-        // Determine the number of records per thread
-        int thread_count = input_params.threads;
-        int batch_size = (int) ceil((double)num_records / (double)thread_count);
-        std::cout << "Batch size (records per thread) = " << batch_size << std::endl;
+        // Determine the batch size if the thread count is greater than 1
+        int batch_size = 0;
+        if (thread_count > 1) {
+            // Determine the number of records per thread
+            batch_size = (int) ceil((double)num_records / (double)thread_count);
+            std::cout << "Batch size (records per thread) = " << batch_size << std::endl;
+        } else {
+            // Set the batch size to the number of records
+            batch_size = num_records;
+        }
 
          // Calculate statistics in batches
          while (reader.hasNextRecord()){
