@@ -32,20 +32,41 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
         HTSReader reader(filepath);
         std::cout<<"Processing file: "<< filepath << std::endl;
 
-        // Get the number of threads
+        // Get the number of threads (Set to 1 if the number of threads is not specified/invalid)
         int thread_count = input_params.threads;
+        if (thread_count < 1) {
+            thread_count = 1;
+        }
 
         // Get the number of records in the file using the BAM index
         std::cout << "Getting number of records..." << std::endl;
         int num_records = reader.getNumRecords(filepath);
         std::cout << "Number of records = " << num_records << std::endl;
 
+        // Exit if there are no records
+        if (num_records == 0){
+            std::cerr << "No records found in file: " << filepath << std::endl;
+            exit_code = 1;
+            return exit_code;
+        }
+
         // Determine the batch size if the thread count is greater than 1
         int batch_size = 0;
         if (thread_count > 1) {
-            // Determine the number of records per thread
-            batch_size = (int) ceil((double)num_records / (double)thread_count);
-            std::cout << "Batch size (records per thread) = " << batch_size << std::endl;
+            // If the number of records is less than the number of threads, set the number of threads to the number of records
+            if (num_records < thread_count){
+                thread_count = num_records;
+                batch_size = 1;
+                std::cout << "Number of threads set to " << thread_count << std::endl;
+                std::cout << "Batch size (records per thread) = " << batch_size << std::endl;
+
+            // Otherwise, the batch size is the number of records divided by the number of threads
+            } else {
+                // Determine the number of records per thread
+                batch_size = (int) ceil((double)num_records / (double)thread_count);
+                std::cout << "Batch size (records per thread) = " << batch_size << std::endl;
+            }
+
         } else {
             // Set the batch size to the number of records
             batch_size = num_records;
