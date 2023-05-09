@@ -2,9 +2,8 @@
 FROM continuumio/miniconda3
 
 # Copy the project directory
-ENV APP_HOME=/app
-COPY . $APP_HOME/longreadsum
-WORKDIR $APP_HOME/longreadsum
+COPY . /app/longreadsum
+WORKDIR /app/longreadsum
 
 # Install build tools
 RUN apt-get update && apt-get install build-essential -y
@@ -31,4 +30,4 @@ RUN make
 ENV HDF5_PLUGIN_PATH="/longreadsum/lib/"
 
 # The code to run when container is started:
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "lrst_py39", "python", "$APP_HOME/longreadsum"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "lrst_py39", "python", "/app/longreadsum"]
