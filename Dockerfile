@@ -4,7 +4,7 @@ FROM continuumio/miniconda3
 # Copy the project directory
 ENV APP_HOME=/app
 COPY . $APP_HOME/longreadsum
-WORKDIR longreadsum
+WORKDIR $APP_HOME/longreadsum
 
 # Install build tools
 RUN apt-get update && apt-get install build-essential -y
