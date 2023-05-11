@@ -93,7 +93,14 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
             int thread_index = 0;
             for (auto& t : thread_vector){
                 std::cout<<"Joining thread "<< thread_index+1 << "..." << std::endl;
-                t.join();
+
+                // Join the thread if it is joinable
+                if (t.joinable()){
+                    t.join();
+                } else {
+                    std::cout << "Thread " << thread_index+1 << " is not joinable." << std::endl;
+                }
+
                 //cout_mutex.lock();
                 std::cout<<"Joined. "<< thread_index+1 << std::endl;
                 //cout_mutex.unlock();
@@ -127,9 +134,8 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
     // Read the next N records
     reader.readNextRecords(batch_size, record_output, bam_mutex);
 
-    // DEBUG: SF test
-//    // Update the final output
-//    output_mutex.lock();
-//    final_output.add(record_output);
-//    output_mutex.unlock();
+    // Update the final output
+    output_mutex.lock();
+    final_output.add(record_output);
+    output_mutex.unlock();
 }
