@@ -95,17 +95,21 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
     this->total_tu_cnt += basic_qc.total_tu_cnt;
     this->total_n_cnt += basic_qc.total_n_cnt;
 
+    // Update total number of reads
+    this->total_num_reads += basic_qc.total_num_reads;
+
     // Update total number of bases
     this->total_num_bases += basic_qc.total_num_bases;
 
-    // Update read counts
-    this->total_num_reads += basic_qc.total_num_reads;
+    // Add read lengths if not empty
+    if (!basic_qc.read_lengths.empty()) {
+        this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
+    }
 
-    // Add read lengths
-    this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
-
-    // Add GC content
-    this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
+    // Add GC content if not empty
+    if (!basic_qc.read_gc_content_count.empty()) {
+        this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
+    }
 }
 
 // Calculates NXX scores and GC content for BAM files
@@ -320,51 +324,51 @@ void Basic_Seq_Quality_Statistics::global_sum(){
 
 // BAM output constructor
 Output_BAM::Output_BAM(){
-   map_quality_distribution.resize( MAX_MAP_QUALITY );
-   for(int _i_=0; _i_<MAX_MAP_QUALITY; _i_++){
-      map_quality_distribution[ _i_ ] = ZeroDefault;
-   }
-   accuracy_per_read.resize( PERCENTAGE_ARRAY_SIZE );
-   for(int _i_=0; _i_<PERCENTAGE_ARRAY_SIZE; _i_++){
-      accuracy_per_read[ _i_ ] = ZeroDefault;
-   }
 }
 
 Output_BAM::~Output_BAM(){
 }
 
 void Output_BAM::add(Output_BAM& output_data){
-    num_primary_alignment += output_data.num_primary_alignment;
-    num_secondary_alignment += output_data.num_secondary_alignment;
-    num_supplementary_alignment += output_data.num_supplementary_alignment;
-    
-    // Update the supplementary alignment information
-    this->reads_with_supplementary.insert( output_data.reads_with_supplementary.begin(), output_data.reads_with_supplementary.end() );
-    this->num_reads_with_supplementary_alignment = this->reads_with_supplementary.size();
+    this->num_primary_alignment += output_data.num_primary_alignment;
+    this->num_secondary_alignment += output_data.num_secondary_alignment;
+    this->num_supplementary_alignment += output_data.num_supplementary_alignment;
 
     // Update the secondary alignment information
     this->reads_with_secondary.insert( output_data.reads_with_secondary.begin(), output_data.reads_with_secondary.end() );
     this->num_reads_with_secondary_alignment = this->reads_with_secondary.size();
 
-    forward_alignment += output_data.forward_alignment;
-    reverse_alignment += output_data.reverse_alignment;
+    // Update the supplementary alignment information
+    this->reads_with_supplementary.insert( output_data.reads_with_supplementary.begin(), output_data.reads_with_supplementary.end() );
+    this->num_reads_with_supplementary_alignment = this->reads_with_supplementary.size();
 
-    // Update the base quality vector
-    for (int i=0; i<MAX_READ_QUALITY; i++){
-        this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
+    // Update the forward and reverse alignment information
+    this->forward_alignment += output_data.forward_alignment;
+    this->reverse_alignment += output_data.reverse_alignment;
+
+    // Resize the base quality vector if it is empty
+    if ( this->seq_quality_info.base_quality_distribution.empty() ){
+        this->seq_quality_info.base_quality_distribution.resize( MAX_READ_QUALITY );
     }
 
-    num_matched_bases += output_data.num_matched_bases;
-    num_mismatched_bases += output_data.num_mismatched_bases;
-    num_ins_bases += output_data.num_ins_bases;
-    num_del_bases += output_data.num_del_bases;
-    num_clip_bases += output_data.num_clip_bases;
+    // Update the base quality vector if it is not empty
+    if ( !output_data.seq_quality_info.base_quality_distribution.empty() ){
+        for (int i=0; i<MAX_READ_QUALITY; i++){
+            this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
+        }
+    }
 
-    mapped_long_read_info.add(output_data.mapped_long_read_info);
-    unmapped_long_read_info.add(output_data.unmapped_long_read_info);
+    this->num_matched_bases += output_data.num_matched_bases;
+    this->num_mismatched_bases += output_data.num_mismatched_bases;
+    this->num_ins_bases += output_data.num_ins_bases;
+    this->num_del_bases += output_data.num_del_bases;
+    this->num_clip_bases += output_data.num_clip_bases;
 
-    long_read_info.add(output_data.mapped_long_read_info);
-    long_read_info.add(output_data.unmapped_long_read_info);
+    this->mapped_long_read_info.add(output_data.mapped_long_read_info);
+    this->unmapped_long_read_info.add(output_data.unmapped_long_read_info);
+
+    this->long_read_info.add(output_data.mapped_long_read_info);
+    this->long_read_info.add(output_data.unmapped_long_read_info);
 }
 
 void Output_BAM::global_sum(){
@@ -383,9 +387,6 @@ void Output_BAM::global_sum(){
             this->num_reads_with_both_secondary_supplementary_alignment++;
         }
     }
-
-    if ( min_map_quality==MoneDefault){ min_map_quality=ZeroDefault; }
-    if ( max_map_quality==MoneDefault){ max_map_quality=ZeroDefault; }
 }
 
 // Save the output to a file

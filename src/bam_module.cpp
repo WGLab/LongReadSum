@@ -90,10 +90,11 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
             std::cout<<"Joining threads..."<<std::endl;
             int thread_index = 0;
             for (auto& t : thread_vector){
+                std::cout<<"Joining thread "<< thread_index+1 << "..." << std::endl;
                 t.join();
-                cout_mutex.lock();
-                //std::cout<<"Joined thread "<< thread_index+1 << std::endl;
-                cout_mutex.unlock();
+                //cout_mutex.lock();
+                std::cout<<"Joined. "<< thread_index+1 << std::endl;
+                //cout_mutex.unlock();
                 thread_index++;
             }
             std::cout << "All threads joined." << std::endl;
@@ -119,12 +120,19 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
 
 void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& input_params, Output_BAM& final_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex)
 {
-    // Read the next N records
     Output_BAM record_output;  // Output for the current batch
+
+    // Read the next N records
     reader.readNextRecords(batch_size, record_output, bam_mutex);
 
     // Update the final output
     output_mutex.lock();
     final_output.add(record_output);
     output_mutex.unlock();
+
+//    if (record_output != NULL){
+//        output_mutex.lock();
+//        final_output.add(record_output);
+//        output_mutex.unlock();
+//    }
 }
