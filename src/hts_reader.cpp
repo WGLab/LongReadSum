@@ -104,8 +104,8 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         if (record->core.flag & BAM_FUNMAP) {
             Basic_Seq_Statistics *basic_qc = &output_data.unmapped_long_read_info;
 
-            // Update read and base QC
-            this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
+            // Update read and base QC [DEBUG]
+            //this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
 
         } else {
             // Set up the basic QC object

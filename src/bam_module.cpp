@@ -13,7 +13,6 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 
 
 int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_output){
-    std::cout << "Build no. " << 1 << std::endl;
     int exit_code = 0;
     auto relapse_start_time = std::chrono::high_resolution_clock::now();
 
@@ -75,6 +74,7 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
 
          // Calculate statistics in batches
          while (reader.hasNextRecord()){
+            std::cout << "Build #1" << std::endl;
             std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
