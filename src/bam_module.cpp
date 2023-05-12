@@ -13,6 +13,7 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 
 
 int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_output){
+    std::cout << "Build no. " << 1 << std::endl;
     int exit_code = 0;
     auto relapse_start_time = std::chrono::high_resolution_clock::now();
 

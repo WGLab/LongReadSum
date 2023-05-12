@@ -175,8 +175,8 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 }
                 output_data.num_primary_alignment++;  // Update the number of primary alignments
 
-                // Update read and base QC
-                this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
+                // Update read and base QC [DEBUG]
+                //this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
 
                 // Calculate the percent GC content
                 int percent_gc = round((basic_qc->total_g_cnt + basic_qc->total_c_cnt) / (double) (basic_qc->total_a_cnt + basic_qc->total_c_cnt + basic_qc->total_g_cnt + basic_qc->total_tu_cnt) * 100);
