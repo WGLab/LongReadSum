@@ -74,7 +74,6 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
 
          // Calculate statistics in batches
          while (reader.hasNextRecord()){
-            std::cout << "Build #1" << std::endl;
             std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
@@ -93,20 +92,10 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
             std::cout<<"Joining threads..."<<std::endl;
             int thread_index = 0;
             for (auto& t : thread_vector){
-                std::cout<<"Joining thread "<< thread_index+1 << "..." << std::endl;
-                std::cout << "Does thread " << thread_index+1 << " have an associated thread object? " << std::boolalpha << t.joinable() << std::endl;
-                std::cout << " ID: " << t.get_id() << std::endl;
                 // Join the thread if it is joinable
                 if (t.joinable()){
-                    std::cout << "Thread " << thread_index+1 << " is joinable." << std::endl;
                     t.join();
-                } else {
-                    std::cout << "Thread " << thread_index+1 << " is not joinable." << std::endl;
                 }
-
-                //cout_mutex.lock();
-                std::cout<<"Joined. "<< thread_index+1 << std::endl;
-                //cout_mutex.unlock();
                 thread_index++;
             }
             std::cout << "All threads joined." << std::endl;

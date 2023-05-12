@@ -104,8 +104,8 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         if (record->core.flag & BAM_FUNMAP) {
             Basic_Seq_Statistics *basic_qc = &output_data.unmapped_long_read_info;
 
-            // Update read and base QC [DEBUG]
-            //this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
+            // Update read and base QC
+            this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
 
         } else {
             // Set up the basic QC object
@@ -114,12 +114,9 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // Calculate base alignment statistics on non-secondary alignments
             if (!(record->core.flag & BAM_FSECONDARY)) {
 
-                // Update the number of mismatches
-                uint8_t *nmTag = bam_aux_get(record, "NM");
-                output_data.num_mismatched_bases += bam_aux2i(nmTag);
-
                 // Loop through the cigar string and count the number of insertions, deletions, and matches
                 uint32_t *cigar = bam_get_cigar(record);
+                uint64_t num_mismatches = 0;
                 for (uint32_t i = 0; i < record->core.n_cigar; i++) {
                     int cigar_op = bam_cigar_op(cigar[i]);
                     uint64_t cigar_len = (uint64_t)bam_cigar_oplen(cigar[i]);
@@ -139,10 +136,20 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         case BAM_CHARD_CLIP:
                             output_data.num_clip_bases += cigar_len;
                             break;
+                        case BAM_CDIFF:
+                            num_mismatches += cigar_len;
+                            break;
                         default:
                             break;
                     }
                 }
+
+                // Update the number of mismatches if the NM tag is present (more accurate than CIGAR)
+                uint8_t *nmTag = bam_aux_get(record, "NM");
+                if (nmTag != NULL) {
+                    num_mismatches = (uint64_t) bam_aux2i(nmTag);
+                }
+                output_data.num_mismatched_bases += num_mismatches;
             }
 
             // Determine if this is a secondary alignment (not included in QC, only read count)
@@ -175,8 +182,8 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 }
                 output_data.num_primary_alignment++;  // Update the number of primary alignments
 
-                // Update read and base QC [DEBUG]
-                //this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
+                // Update read and base QC
+                this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
 
                 // Calculate the percent GC content
                 int percent_gc = round((basic_qc->total_g_cnt + basic_qc->total_c_cnt) / (double) (basic_qc->total_a_cnt + basic_qc->total_c_cnt + basic_qc->total_g_cnt + basic_qc->total_tu_cnt) * 100);
