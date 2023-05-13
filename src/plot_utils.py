@@ -210,7 +210,7 @@ def histogram(data, path, font_size):
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False)
-    fig.write_image(path, engine="kaleido")
+    fig.write_image(path, engine="auto")
 
     return html_obj
 
@@ -282,7 +282,7 @@ def read_lengths_histogram(data, path, font_size):
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False)
-    fig.write_image(path, engine="kaleido")
+    fig.write_image(path, engine="auto")
 
     return html_obj
 
@@ -304,7 +304,7 @@ def base_quality(data, path, font_size):
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff=0)
     fig.update_layout(font=dict(size=font_size))  # Set font size
-    fig.write_image(path, engine="kaleido")
+    fig.write_image(path, engine="auto")
 
     return fig.to_html(full_html=False)
 
@@ -322,7 +322,7 @@ def read_avg_base_quality(data, path, font_size):
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
     fig.update_layout(font=dict(size=font_size))  # Set font size
 
-    fig.write_image(path, engine="kaleido")
+    fig.write_image(path, engine="auto")
 
     return fig.to_html(full_html=False)
 

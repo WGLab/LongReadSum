@@ -1,4 +1,4 @@
-name: lrst_py39
+name: lrst_env
 channels:
   - bioconda
   - anaconda
@@ -12,9 +12,10 @@ dependencies:
   - matplotlib
   - plotly=4.14
   - pytest
-  - pip
-  - pip:
-    - kaleido
 
 # conda env create --file=environment.yml
 # conda activate lrst_py39
+# Delete a conda environment:
+# conda env remove --name lrst_py39
+# Create an environment from an environment.yml file:
+# conda env create --file environment.yml
