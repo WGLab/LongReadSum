@@ -4,27 +4,25 @@ cli.py:
 Parse arguments and run the filetype-specific module.
 """
 
+import logging
 import sys
 from glob import glob
 import argparse
 from argparse import RawTextHelpFormatter
 
-# import lrst
 
 # Print the package name
-# print("Package name: " + __name__)
 if __name__ == 'src.cli':
-    # print("Running locally.")
+    # logging.debug("Running locally.")
     from lib import lrst  # For debugging
     from src import generate_html
     from src.plot_utils import *
 else:
-    # print("Running from installed package.")
+    # logging.debug("Running from installed package.")
     import lrst
     import generate_html
     from plot_utils import *
 
-logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 prg_name = "LongReadSum"
 
 
@@ -37,7 +35,7 @@ def get_log_level(level_code):
         4: logging.ERROR,
         5: logging.FATAL,
     }
-    return switch.get(level_code, logging.ERROR)
+    return switch.get(level_code)
 
 
 def get_common_param(margs):
@@ -96,13 +94,34 @@ def get_common_param(margs):
                               param_dict["output_folder"] + " \n"
     param_dict["out_prefix"] = margs.outprefix
 
-    if (margs.log == None or margs.log == ""):
+    if margs.log is None or margs.log == "":
         this_error_str += "No log file is provided. \n"
+
+        # Set up logging to stdout
+        logging.basicConfig(stream=sys.stdout,
+                            level=get_log_level(margs.log_level),
+                            format="%(asctime)s [%(levelname)s] %(message)s")
     else:
-        param_dict["log_file"] = margs.log
-        param_dict["log_level"] = margs.Log_level
-        logging.basicConfig(filename=margs.log, level=get_log_level(margs.Log_level),
-                            filemode='w', format="%(levelname)s: %(message)s")
+        # Create the full path for the log file
+        if os.path.isabs(margs.log):
+            log_abspath = margs.log
+        else:
+            log_abspath = os.path.join(param_dict["output_folder"], margs.log)
+
+            # Create the absolute path for the log file
+            log_abspath = os.path.abspath(log_abspath)
+
+        logging.basicConfig(level=get_log_level(margs.log_level),
+                            format="%(asctime)s [%(levelname)s] %(message)s",
+                            handlers=[
+                                logging.FileHandler(log_abspath),
+                                logging.StreamHandler(sys.stdout)
+                                ]
+                            )
+
+        logging.info("Log file is " + margs.log)
+        param_dict["log_file"] = log_abspath
+        param_dict["log_level"] = margs.log_level
 
     param_dict["downsample_percentage"] = margs.downsample_percentage
 
@@ -131,7 +150,7 @@ def fq_module(margs):
         sys.exit(1001)
     else:
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "fq_";
+        param_dict["out_prefix"] += "fq_"
 
         # Import the SWIG Python wrapper for our C++ module
         input_para = lrst.Input_Para()
@@ -151,6 +170,8 @@ def fq_module(margs):
         fq_output = lrst.Output_FQ()
         exit_code = lrst.callFASTQModule(input_para, fq_output)
         if exit_code == 0:
+            logging.info("QC generated.")
+            logging.info("Generating HTML report...")
             plot_filepaths = create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
@@ -194,7 +215,7 @@ def fa_module(margs):
         exit_code = lrst.callFASTAModule(input_para, fa_output)
         if exit_code == 0:
             logging.info("QC generated.")
-            logging.info("Generating output files...")
+            logging.info("Generating HTML report...")
             from src import fasta_plot
             plot_filepaths = fasta_plot.plot(fa_output, param_dict)
 
@@ -237,7 +258,8 @@ def bam_module(margs):
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
         if exit_code == 0:
-            logging.info("Generating output files...")
+            logging.info("QC generated.")
+            logging.info("Generating HTML report...")
             from src import bam_plot
             plot_filepaths = bam_plot.plot(bam_output, param_dict)
 
@@ -286,7 +308,7 @@ def seqtxt_module(margs):
         exit_code = lrst.callSeqTxtModule(input_para, seqtxt_output)
         if exit_code == 0:
             logging.info("QC generated.")
-            logging.info("Generating output files...")
+            logging.info("Generating HTML report...")
             from src import seqtxt_plot
             plot_filepaths = seqtxt_plot.plot(seqtxt_output, param_dict)
             for static in [True, False]:
@@ -333,7 +355,7 @@ def fast5_module(margs):
         exit_code = lrst.callFAST5Module(input_para, fast5_output)
         if exit_code == 0:
             logging.info("QC generated.")
-            logging.info("Generating output files...")
+            logging.info("Generating HTML report...")
             plot_filepaths = create_base_quality_plots(fast5_output, param_dict, "FAST5: Basic statistics")
             for static in [True, False]:
                 fast5_html_obj = generate_html.ST_HTML_Generator(
@@ -375,7 +397,7 @@ def fast5_signal_module(margs):
 
         if exit_code == 0:
             logging.info("QC generated.")
-            logging.info("Generating output files...")
+            logging.info("Generating HTML report...")
             from src import fast5_signal_plot
             dynamic_plots, plot_filepaths = fast5_signal_plot.plot(fast5_output, param_dict)
 
@@ -439,8 +461,8 @@ input_files_group.add_argument("-p", "--downsample_percentage", type=float, defa
 
 common_grp_param.add_argument(
     "-g", "--log", type=str, default="log_output.log", help="Log file")
-common_grp_param.add_argument("-G", "--Log_level", type=int, default=4,
-                              help="Level for logging: ALL(0) < DEBUG(1) < INFO(2) < WARN(3) < ERROR(4) < FATAL(5) < OFF(6). Default: 4 (ERROR)")
+common_grp_param.add_argument("-G", "--log_level", type=int, default=2,
+                              help="Logging level. 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL. Default: 2.")
 
 common_grp_param.add_argument("-o", "--outputfolder", type=str,
                               default="output_" + prg_name, help="The output folder.")
