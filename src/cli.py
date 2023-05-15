@@ -94,6 +94,7 @@ def get_common_param(margs):
                               param_dict["output_folder"] + " \n"
     param_dict["out_prefix"] = margs.outprefix
 
+    # Set up logging to file and stdout
     if margs.log is None or margs.log == "":
         this_error_str += "No log file is provided. \n"
 
@@ -102,25 +103,16 @@ def get_common_param(margs):
                             level=get_log_level(margs.log_level),
                             format="%(asctime)s [%(levelname)s] %(message)s")
     else:
-        # Create the full path for the log file
-        if os.path.isabs(margs.log):
-            log_abspath = margs.log
-        else:
-            log_abspath = os.path.join(param_dict["output_folder"], margs.log)
-
-            # Create the absolute path for the log file
-            log_abspath = os.path.abspath(log_abspath)
-
         logging.basicConfig(level=get_log_level(margs.log_level),
                             format="%(asctime)s [%(levelname)s] %(message)s",
                             handlers=[
-                                logging.FileHandler(log_abspath),
+                                logging.FileHandler(margs.log),
                                 logging.StreamHandler(sys.stdout)
                                 ]
                             )
 
         logging.info("Log file is " + margs.log)
-        param_dict["log_file"] = log_abspath
+        param_dict["log_file"] = margs.log
         param_dict["log_level"] = margs.log_level
 
     param_dict["downsample_percentage"] = margs.downsample_percentage
