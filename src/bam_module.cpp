@@ -83,6 +83,8 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
 
                 // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
+
+                // Add the thread to the vector
                 thread_vector.push_back(std::move(t));
             }
 
@@ -90,10 +92,10 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
             std::cout<<"Joining threads..."<<std::endl;
             int thread_index = 0;
             for (auto& t : thread_vector){
-                t.join();
-                cout_mutex.lock();
-                //std::cout<<"Joined thread "<< thread_index+1 << std::endl;
-                cout_mutex.unlock();
+                // Join the thread if it is joinable
+                if (t.joinable()){
+                    t.join();
+                }
                 thread_index++;
             }
             std::cout << "All threads joined." << std::endl;
@@ -119,8 +121,9 @@ int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_
 
 void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& input_params, Output_BAM& final_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex)
 {
-    // Read the next N records
     Output_BAM record_output;  // Output for the current batch
+
+    // Read the next N records
     reader.readNextRecords(batch_size, record_output, bam_mutex);
 
     // Update the final output

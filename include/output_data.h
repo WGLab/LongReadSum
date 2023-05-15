@@ -130,10 +130,6 @@ public:
     // Map of reads with secondary alignments
     std::map<std::string, bool> reads_with_secondary;
 
-    std::vector<int> map_quality_distribution;
-    int min_map_quality = MoneDefault; // the minimum mapping quality
-    int max_map_quality = MoneDefault; // the maximum mapping quality
-
     // Similar to Output_FA: below are for mapped.
     uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
     uint64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
