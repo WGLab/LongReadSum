@@ -255,11 +255,10 @@ def bam_module(margs):
             from src import bam_plot
             plot_filepaths = bam_plot.plot(bam_output, param_dict)
 
-            for static in [True, False]:
-                bam_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "map_st", "err_st", "read_length_st", "read_length_hist", "base_st", "basic_info",
-                      "base_quality"], "BAM QC", param_dict], plot_filepaths, static=static)
-                bam_html_gen.generate_st_html()
+            bam_html_gen = generate_html.ST_HTML_Generator(
+                [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
+                  "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
+            bam_html_gen.generate_st_html()
 
         else:
             logging.error("QC did not generate.")

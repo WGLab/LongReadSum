@@ -241,18 +241,18 @@ class ST_HTML_Generator:
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
-        _imki = 0
-        for _imk in self.image_key_list:
+        key_index = 0
+        for plot_key in self.image_key_list:
             self.html_writer.write('<li>')
 
             self.html_writer.write(
-                '<a href="#lrst' + str(_imki) + '">' + self.plot_filepaths[_imk]['title'] + '</a>')
-            _imki += 1;
+                '<a href="#lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['title'] + '</a>')
+            key_index += 1
             self.html_writer.write('</li>')
 
         self.html_writer.write('<li>')
-        self.html_writer.write('<a href="#lrst' + str(_imki) + '">Input File List</a>')
-        _imki += 1;
+        self.html_writer.write('<a href="#lrst' + str(key_index) + '">Input File List</a>')
+        key_index += 1
         self.html_writer.write('</li>')
 
         self.html_writer.write("</ul>")
@@ -260,39 +260,39 @@ class ST_HTML_Generator:
 
     def generate_right(self):
         self.html_writer.write('<div class="main">')
-        _imki = 0
-        for _imk in self.image_key_list:
+        key_index = 0
+        for plot_key in self.image_key_list:
             self.html_writer.write('<div class="module">')
             self.html_writer.write(
-                '<h2 id="lrst' + str(_imki) + '">' + self.plot_filepaths[_imk]['description'] + '</h2><p>')
-            # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[_imk]['file']+'"
-            # alt="'+lrst_global.plot_filenames[_imk]['description']+'" width="600" height="450"/></p>')
+                '<h2 id="lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['description'] + '</h2><p>')
+            # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[plot_key]['file']+'"
+            # alt="'+lrst_global.plot_filenames[plot_key]['description']+'" width="600" height="450"/></p>')
 
-            if 'dynamic' in self.plot_filepaths[_imk] and self.static == False:
-                self.html_writer.write(self.plot_filepaths[_imk]['dynamic'])
+            if 'dynamic' in self.plot_filepaths[plot_key] and self.static == False:
+                self.html_writer.write(self.plot_filepaths[plot_key]['dynamic'])
 
             else:
-                if _imk == "basic_st":
+                if plot_key == "basic_st":
                     self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
                 else:
                     m_image_file = open(
-                        self.input_para["output_folder"] + '/' + self.plot_filepaths[_imk]['file'], 'rb');
+                        self.input_para["output_folder"] + '/' + self.plot_filepaths[plot_key]['file'], 'rb');
                     self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
-                        m_image_file.read()).decode('utf-8') + '" alt="' + self.plot_filepaths[_imk][
+                        m_image_file.read()).decode('utf-8') + '" alt="' + self.plot_filepaths[plot_key][
                                                'description'] + '" width="800" height="600"/></p>')
                     m_image_file.close()
 
             self.html_writer.write('</div>')
 
-            _imki += 1
+            key_index += 1
 
         self.html_writer.write('<div class="module">')
-        self.html_writer.write('<h2 id="lrst' + str(_imki) + '">File count = ' + str(
+        self.html_writer.write('<h2 id="lrst' + str(key_index) + '">File count = ' + str(
             len(self.input_para["input_files"])) + '</h2><p>')
         for _af in self.input_para["input_files"]:
             self.html_writer.write("<br/>" + _af)
         self.html_writer.write('</p></div>')
-        _imki += 1
+        key_index += 1
 
         self.html_writer.write('</div>')
 

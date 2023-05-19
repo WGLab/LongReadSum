@@ -3,11 +3,8 @@ import logging
 import numpy as np
 import itertools
 
-import matplotlib.pyplot as plt
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
-
-logging.getLogger('matplotlib.font_manager').setLevel(logging.ERROR)
 
 
 # Return the default image path
@@ -28,14 +25,14 @@ def getDefaultPlotFilenames():
     plot_filenames = {  # for fq/fa
         "read_length_distr": {'file': default_image_path + "read_length_distr" + default_image_suf,
                               'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
-        "map_st": {'file': default_image_path + "map_st" + default_image_suf, 'title': "Map Information",
+        "read_alignments_bar": {'file': default_image_path + "map_st" + default_image_suf, 'title': "Map Information",
                    'description': "Read Mapping Statistics"},
-        "err_st": {'file': default_image_path + "err_st" + default_image_suf,
+        "base_alignments_bar": {'file': default_image_path + "err_st" + default_image_suf,
                    'title': "Base Alignment and Error Statistics",
                    'description': "Base Alignment and Error Statistics"},
-        "read_length_st": {'file': default_image_path + "read_length_st" + default_image_suf,
+        "read_length_bar": {'file': default_image_path + "read_length_st" + default_image_suf,
                            'title': "Read Length Statistics", 'description': "Read Length Statistics"},
-        "base_st": {'file': default_image_path + "base_st" + default_image_suf, 'title': "Base Count Statistics",
+        "base_counts": {'file': default_image_path + "base_st" + default_image_suf, 'title': "Base Count Statistics",
                     'description': "Base Count Statistics", 'summary': ""},
         "basic_info": {'file': default_image_path + "basic_info" + default_image_suf, 'title': "Basic Statistics",
                        'description': "Basic Statistics", 'summary': ""},
@@ -55,11 +52,6 @@ def getDefaultPlotFilenames():
     return plot_filenames
 
 
-def setDefaultFontSize(font_size):
-    """Set the default font size for matplotlib plots."""
-    plt.rcParams.update({'font.size': font_size})
-
-
 def fmt(x):
     """Format numbers for plots."""
     format_x = "{:,}".format(round(x))
@@ -75,42 +67,99 @@ def wrap(s):
     return '\n'.join([' '.join(x) for x in split])
 
 
-def plot_read_length_stats(data, path, subtitles=None, categories=None):
-    fig, axes = plt.subplots(len(data), sharey=True, figsize=(8, 6))
-
-    numbers_list = [[x.n50_read_length, x.mean_read_length, x.median_read_length] for x in data]
-
+def plot_read_length_stats(bam_output):
+    # Define the three categories
     category = ['N50', 'Mean', 'Median']
-    category_list = itertools.cycle([category])
-    ylabel_list = itertools.cycle(['Length (bp)'])
-    xlabel_list = itertools.cycle([None])
-    subtitle_list = subtitles
-    bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path)
+
+    # Create a bar trace for each type of read length statistic
+    bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
+    data_objects = [bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info]
+    all_traces = []
+    for i in range(3):
+        plot_title = bar_titles[i]
+        data = data_objects[i]
+        values = [data.n50_read_length, data.mean_read_length, data.median_read_length]
+        trace = go.Bar(x=category, y=values, name=plot_title)
+        all_traces.append(trace)
+
+    # Create the layout
+    layout = go.Layout(title='Read Length Statistics', xaxis=dict(title='Statistics'), yaxis=dict(title='Length (bp)'), barmode='group')
+
+    # Create the figure and add the traces
+    fig = go.Figure(data=all_traces, layout=layout)
+
+    # Generate the HTML
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    return html_obj
+
+def plot_base_counts(bam_output):
+    # Define the five categories
+    category = ['A', 'C', 'G', 'T/U', 'N']
+
+    # Create a bar trace for each type of data
+    bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
+    data_objects = [bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info]
+    all_traces = []
+    for i in range(3):
+        plot_title = bar_titles[i]
+        data = data_objects[i]
+        values = [data.total_a_cnt, data.total_c_cnt, data.total_g_cnt, data.total_tu_cnt, data.total_n_cnt]
+        trace = go.Bar(x=category, y=values, name=plot_title)
+        all_traces.append(trace)
+
+    # Create the layout
+    layout = go.Layout(title='Base Counts', xaxis=dict(title='Base'), yaxis=dict(title='Counts'), barmode='group')
+
+    # Create the figure and add the traces
+    fig = go.Figure(data=all_traces, layout=layout)
+
+    # Generate the HTML
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    return html_obj
 
 
-def plot_base_counts(data, path, subtitles=None, categories=None):
-    fig, axes = plt.subplots(len(data), figsize=(8, 6))
+def plot_basic_info(bam_output):
+    # Define the four categories
+    category = ['Number of Reads', 'Number of Bases', 'Longest Read', 'GC Content']
 
-    numbers_list = [[x.total_a_cnt, x.total_c_cnt, x.total_g_cnt, x.total_tu_cnt, x.total_n_cnt] for x in data]
+    # Create a bar trace for each type of data
+    bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
+    data_objects = [bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info]
+    all_traces = []
 
-    category_list = itertools.cycle([['A', 'C', 'G', 'T/U', 'N']])
-    xlabel_list = itertools.cycle([None])
-    ylabel_list = itertools.cycle(['Counts'])
-    subtitle_list = subtitles
-    bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path)
-    # plot_filepaths['base_st']['summary']='GC Content: {:.2%}'.format(bam_output.mapped_long_read_info.gc_cnt)
+    # Create subplots for each category
+    fig = make_subplots(rows=2, cols=2, subplot_titles=("Number of Reads", "Number of Bases", "Longest Read", "GC Content"), horizontal_spacing=0.3, vertical_spacing=0.2)
 
+    # Add traces for each category
+    key_list = ['total_num_reads', 'total_num_bases', 'longest_read_length', 'gc_cnt']
+    for i in range(4):
+        # Get the data for this category
+        key_name = key_list[i]
 
-def plot_basic_info(data, path, subtitles=None, categories=None):
-    fig, axes = plt.subplots(2, 2, figsize=(8, 6))
-    numbers_list = [[x.total_num_reads, x.total_num_bases, x.longest_read_length, x.gc_cnt] for x in data]
-    numbers_list = zip(*numbers_list)
+        # Add the traces for each type of data
+        data = [getattr(data_objects[0], key_name), getattr(data_objects[1], key_name), getattr(data_objects[2], key_name)]
 
-    category_list = itertools.cycle([categories])
-    subtitle_list = ['Number of Reads', 'Number of Bases', 'Longest Read', 'GC Content']
-    xlabel_list = ['Count', 'Count', 'Length (bp)', '%']
-    ylabel_list = itertools.cycle([None])
-    bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='h')
+        # Create the trace
+        trace = go.Bar(x=data, y=bar_titles, orientation='h')
+
+        # Add the trace to the figure
+        fig.add_trace(trace, row=(i // 2) + 1, col=(i % 2) + 1)
+
+    # Create the layout with different y-axis for each category
+    layout = go.Layout(title='', xaxis=dict(title='Statistic'), yaxis=dict(title='Value'), barmode='group', showlegend=False)
+
+    fig.update_layout(showlegend=False)
+
+    # Customize the y-axes titles
+    # fig.update_yaxes(title_text='Y-axis 1', row=1, col=1)
+    # fig.update_yaxes(title_text='Y-axis 2', row=1, col=2)
+
+    # Generate the HTML
+    html_obj = fig.to_html(full_html=False, default_height=800, default_width=1200)
+
+    return html_obj
 
 
 def bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='v',
@@ -210,7 +259,7 @@ def histogram(data, path, font_size):
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False)
-    fig.write_image(path, engine="auto")
+    fig.write_image(path, engine="auto", default_height=500, default_width=700)
 
     return html_obj
 
@@ -281,7 +330,7 @@ def read_lengths_histogram(data, path, font_size):
     fig.update_layout(font=dict(size=font_size), autosize=True)
 
     fig.update_annotations(font_size=annotation_size)
-    html_obj = fig.to_html(full_html=False)
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
     fig.write_image(path, engine="auto")
 
     return html_obj
@@ -306,7 +355,7 @@ def base_quality(data, path, font_size):
     fig.update_layout(font=dict(size=font_size))  # Set font size
     fig.write_image(path, engine="auto")
 
-    return fig.to_html(full_html=False)
+    return fig.to_html(full_html=False, default_height=500, default_width=700)
 
 
 def read_avg_base_quality(data, path, font_size):
@@ -324,7 +373,7 @@ def read_avg_base_quality(data, path, font_size):
 
     fig.write_image(path, engine="auto")
 
-    return fig.to_html(full_html=False)
+    return fig.to_html(full_html=False, default_height=500, default_width=700)
 
 
 def create_statistics_table(module_output, plot_filepaths, table_title="Basic Statistics"):
@@ -365,9 +414,6 @@ def create_base_quality_plots(module_output, para_dict, table_title):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
     get_image_path = lambda x: os.path.join(out_path, plot_filepaths[x]['file'])
-
-    # Set the default matplotlib font size
-    setDefaultFontSize(12)
 
     # Get the font size for plotly plots
     font_size = para_dict["fontsize"]

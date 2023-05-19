@@ -10,39 +10,47 @@ else:
 
 
 def plot_alignment_numbers(data, path):
-    fig, axes = plt.subplots(figsize=(8, 6))
-
-    numbers_list = [[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
-                     data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
-                     data.num_reads_with_both_secondary_supplementary_alignment, data.forward_alignment,
-                     data.reverse_alignment]]
-
     category = ['Primary Alignments', 'Supplementary Alignments', 'Secondary Alignments',
                 'Reads with Supplementary Alignments', 'Reads with Secondary Alignments',
                 'Reads with Secondary and Supplementary Alignments', 'Forward Alignments', 'Reverse Alignments']
     category = [wrap(x) for x in category]
 
-    category_list = itertools.cycle([category])
-    xlabel_list = itertools.cycle(['Counts'])
-    ylabel_list = itertools.cycle([''])
-    subtitle_list = [None]
-    bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='h')
+    # Create a horizontally aligned bar plot trace from the data using plotly
+    trace = go.Bar(x=[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
+                                    data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
+                                    data.num_reads_with_both_secondary_supplementary_alignment, data.forward_alignment,
+                                    data.reverse_alignment], y=category, orientation='h')
+
+    # Create the layout for the plot
+    layout = go.Layout(title=go.layout.Title(text=""), xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text="Counts")), yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="")))
+
+    # Create the figure object
+    fig = go.Figure(data=[trace], layout=layout)
+
+    # Generate the HTML object for the plot
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=1000)
+
+    return html_obj
 
 
 def plot_errors(bam_output, path):
-    fig, axes = plt.subplots(1, 1, figsize=(8, 6))
-
-    numbers_list = [[bam_output.num_matched_bases, bam_output.num_mismatched_bases, bam_output.num_ins_bases,
-                     bam_output.num_del_bases, bam_output.num_clip_bases]]
-
     category = ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases']
     category = [wrap(x) for x in category]
 
-    category_list = itertools.cycle([category])
-    xlabel_list = itertools.cycle(['Counts'])
-    ylabel_list = itertools.cycle([None])
-    subtitle_list = [None]
-    bar_plot(fig, numbers_list, category_list, xlabel_list, ylabel_list, subtitle_list, path, orientation='h')
+    # Create a horizontally aligned bar plot trace from the data using plotly
+    trace = go.Bar(x=[bam_output.num_matched_bases, bam_output.num_mismatched_bases, bam_output.num_ins_bases,
+                        bam_output.num_del_bases, bam_output.num_clip_bases], y=category, orientation='h')
+
+    # Create the layout for the plot
+    layout = go.Layout(title=go.layout.Title(text=""), xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text="Counts")), yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="")))
+
+    # Create the figure object
+    fig = go.Figure(data=[trace], layout=layout)
+
+    # Generate the HTML object for the plot
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    return html_obj
 
 
 def create_summary_table(bam_output, plot_filepaths):
@@ -94,9 +102,6 @@ def plot(bam_output, para_dict):
     plot_filepaths = getDefaultPlotFilenames()
     get_image_path = lambda x: os.path.join(out_path, plot_filepaths[x]['file'])
 
-    # Set the default matplotlib font size
-    setDefaultFontSize(12)
-
     # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
 
@@ -104,21 +109,17 @@ def plot(bam_output, para_dict):
     create_summary_table(bam_output, plot_filepaths)
 
     # Generate plots
-    plot_alignment_numbers(bam_output, get_image_path('map_st'))
-    plot_errors(bam_output, get_image_path('err_st'))
-
-    plot_read_length_stats(
-        [bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info],
-        get_image_path('read_length_st'), subtitles=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
-    plot_base_counts([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info],
-                     get_image_path('base_st'), subtitles=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
-    plot_basic_info([bam_output.long_read_info, bam_output.mapped_long_read_info, bam_output.unmapped_long_read_info],
-                    get_image_path('basic_info'), categories=['All Reads', 'Mapped Reads', 'Unmapped Reads'])
-
+    plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(bam_output, get_image_path('read_alignments_bar'))
+    plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(bam_output, get_image_path('base_alignments_bar'))
+    plot_filepaths['base_counts']['dynamic'] = plot_base_counts(bam_output)
+    plot_filepaths['basic_info']['dynamic'] = plot_basic_info(bam_output)
     plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(bam_output.long_read_info,
                                                               get_image_path('read_length_hist'),
                                                               font_size)
+
     plot_filepaths['base_quality']['dynamic'] = base_quality(bam_output.seq_quality_info,
                                                              get_image_path('base_quality'), font_size)
+
+    plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(bam_output)
 
     return plot_filepaths
