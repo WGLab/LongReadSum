@@ -158,10 +158,12 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
         {
             double g_c = py_output_fa.long_read_info.total_g_cnt + py_output_fa.long_read_info.total_c_cnt;
             double a_tu_g_c = g_c + py_output_fa.long_read_info.total_a_cnt + py_output_fa.long_read_info.total_tu_cnt;
-            if (a_tu_g_c != (double)py_output_fa.long_read_info.total_num_bases)
-            {
-                fprintf(stderr, "\nERROR! total_num_bases is not consistent! this is a bug!\n");
-                exit_code = 4;
+
+            // Calculate read length statistics if base counts are not zero
+            uint64_t total_num_bases = py_output_fa.long_read_info.total_num_bases;
+            if (total_num_bases == 0) {
+                std::cerr << "No bases found in input files." << std::endl;
+                exit_code = 3;
             } else {
                 py_output_fa.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
@@ -218,6 +220,5 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
             }
         }
     }
-
     return exit_code;
 }

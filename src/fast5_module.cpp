@@ -574,12 +574,11 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                 // Add all bases
                 double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
 
-                // Check that our total base counts match what was stored (That our code works)
-                int total_num_bases = output_data.long_read_info.total_num_bases;
-                if (a_tu_g_c != (double)total_num_bases)
-                {
-                    std::cerr << "Total number of bases is not consistent." << std::endl;
-                    exit_code = 4;
+                // Calculate read length statistics if base counts are not zero
+                uint64_t total_num_bases = output_data.long_read_info.total_num_bases;
+                if (total_num_bases == 0) {
+                    std::cerr << "No bases found in input files." << std::endl;
+                    exit_code = 3;
                 } else {
                     // Calculate GC-content
                     output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;

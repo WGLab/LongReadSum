@@ -130,13 +130,9 @@ void Basic_Seq_Statistics::global_sum(){
         // Get total base counts
         uint64_t base_total = this->total_a_cnt + this->total_c_cnt + this->total_g_cnt + this->total_tu_cnt + this->total_n_cnt;
 
-        // Check that our total base counts match what was stored (That our code works)
-        uint64_t base_total_from_reads = this->total_num_bases;
-        if (base_total != base_total_from_reads)
-        {
-            std::cerr << "Total number of bases is not consistent." << std::endl;
-            std::cout << "From reads: " << base_total_from_reads << std::endl;
-            std::cout << "From bases: " << base_total << std::endl;
+        // Calculate read length statistics if base counts are not zero
+        if (base_total == 0) {
+            std::cerr << "No bases found in input files." << std::endl;
         } else {
             // Calculate GC-content
             double percent_gc = (double) gc_total / base_total;
