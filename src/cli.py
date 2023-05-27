@@ -164,10 +164,11 @@ def fq_module(margs):
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")
-            plot_filepaths = create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
+            #plot_filepaths = create_base_quality_plots(fq_output, param_dict, "FASTQ: Basic statistics")
+            plot_filepaths = plot_fastq(fq_output, param_dict)
             for static in [True, False]:
                 fq_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_st", "read_length_hist", "base_st", "basic_info", "base_quality",
+                    [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
                       "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=static)
                 fq_html_gen.generate_st_html()
 
@@ -254,10 +255,9 @@ def bam_module(margs):
             logging.info("Generating HTML report...")
             from src import bam_plot
             plot_filepaths = bam_plot.plot(bam_output, param_dict)
-
             bam_html_gen = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
-                  "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
+                  "base_quality", "read_avg_base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
             bam_html_gen.generate_st_html()
 
         else:
