@@ -67,19 +67,30 @@ def wrap(s):
     return '\n'.join([' '.join(x) for x in split])
 
 
-def plot_read_length_stats(output_data):
+def plot_read_length_stats(output_data, file_type):
     # Define the three categories
     category = ['N50', 'Mean', 'Median']
-
-    # Create a bar trace for each type of read length statistic
-    bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
-    data_objects = [output_data.long_read_info, output_data.mapped_long_read_info, output_data.unmapped_long_read_info]
     all_traces = []
-    for i in range(3):
-        plot_title = bar_titles[i]
-        data = data_objects[i]
-        values = [data.n50_read_length, data.mean_read_length, data.median_read_length]
-        trace = go.Bar(x=category, y=values, name=plot_title)
+
+    if file_type == 'BAM':
+        # Create a bar trace for each type of read length statistic
+        bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
+        data_objects = [output_data.long_read_info, output_data.mapped_long_read_info, output_data.unmapped_long_read_info]
+        for i in range(3):
+            plot_title = bar_titles[i]
+            data = data_objects[i]
+            values = [data.n50_read_length, data.mean_read_length, data.median_read_length]
+            trace = go.Bar(x=category, y=values, name=plot_title)
+            all_traces.append(trace)
+    else:
+        # Get the data for all reads
+        key_list = ['n50_read_length', 'mean_read_length', 'median_read_length']
+
+        # Create a bar trace
+        bar_title = 'All Reads'
+        data = output_data.long_read_info
+        values = [getattr(data, key_name) for key_name in key_list]
+        trace = go.Bar(x=category, y=values, name=bar_title)
         all_traces.append(trace)
 
     # Create the layout
@@ -92,6 +103,7 @@ def plot_read_length_stats(output_data):
     html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
 
     return html_obj
+
 
 def plot_base_counts(output_data, filetype):
     # Define the five categories
@@ -109,14 +121,11 @@ def plot_base_counts(output_data, filetype):
             trace = go.Bar(x=category, y=values, name=plot_title)
             all_traces.append(trace)
     else:
-        bar_titles = ['All Reads']
-        data_objects = [output_data.long_read_info]
-        for i in range(1):
-            plot_title = bar_titles[i]
-            data = data_objects[i]
-            values = [data.total_a_cnt, data.total_c_cnt, data.total_g_cnt, data.total_tu_cnt, data.total_n_cnt]
-            trace = go.Bar(x=category, y=values, name=plot_title)
-            all_traces.append(trace)
+        plot_title = 'All Reads'
+        data = output_data.long_read_info
+        values = [data.total_a_cnt, data.total_c_cnt, data.total_g_cnt, data.total_tu_cnt, data.total_n_cnt]
+        trace = go.Bar(x=category, y=values, name=plot_title)
+        all_traces.append(trace)
 
     # Create the layout
     layout = go.Layout(title='Base Counts', xaxis=dict(title='Base'), yaxis=dict(title='Counts'), barmode='group')
@@ -160,17 +169,25 @@ def plot_basic_info(output_data, file_type):
             fig.add_trace(trace, row=(i // 2) + 1, col=(i % 2) + 1)
 
     else:
-        bar_titles = ['All Reads']
-        data_objects = [output_data.long_read_info]
-        all_traces = []
+        # Get the data for all reads
+        key_list = ['total_num_reads', 'total_num_bases', 'longest_read_length', 'gc_cnt']
 
         # Create subplots for each category
-        fig = make_subplots(rows=2, cols=2, subplot_titles=("Number of Reads", "Number of Bases", "Longest Read", "GC Content"), horizontal_spacing=0.3, vertical_spacing=0.2)
+        fig = make_subplots(rows=2, cols=2, horizontal_spacing=0.3, vertical_spacing=0.2)
 
-        # Add traces for each category
-        key_list = ['total_num_reads', 'total_num_bases', 'longest_read_length', 'gc_cnt']
+        # Create a trace for each category
+        categories = ["Number of Reads", "Number of Bases", "Longest Read", "GC Content"]
         for i in range(4):
+            # Get the data for this category
+            key_name = key_list[i]
+            data = getattr(output_data.long_read_info, key_name)
 
+            # Create the trace
+            category_name = categories[i]
+            trace = go.Bar(x=[data], y=[category_name], orientation='h')
+
+            # Add the trace to the figure
+            fig.add_trace(trace, row=(i // 2) + 1, col=(i % 2) + 1)
 
     # Create the layout with different y-axis for each category
     layout = go.Layout(title='', xaxis=dict(title='Statistic'), yaxis=dict(title='Value'), barmode='group', showlegend=False)
@@ -497,7 +514,11 @@ def plot(output_data, para_dict, file_type):
     plot_filepaths['base_quality']['dynamic'] = base_quality(output_data.seq_quality_info,
                                                              get_image_path('base_quality'), font_size)
 
-    plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data)
+    plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
+
+    # Read quality histogram
+    read_quality_dynamic = read_avg_base_quality(output_data.seq_quality_info, get_image_path('read_avg_base_quality'), font_size)
+    plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
 
     if file_type == 'BAM':
         plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data,
@@ -511,7 +532,7 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
     plot_filepaths["basic_st"]['title'] = "Summary Table"
-    plot_filepaths["basic_st"]['description'] = "Basic statistics of the {} file.".format(file_type)
+    plot_filepaths["basic_st"]['description'] = "{} Basic statistics".format(file_type)
 
     if file_type == 'BAM':
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n" \

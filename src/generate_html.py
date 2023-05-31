@@ -3,6 +3,7 @@ generate_html.py: Generate the HTML file from our plot images.
 """
 
 import base64
+import logging
 
 
 class ST_HTML_Generator:
@@ -268,19 +269,26 @@ class ST_HTML_Generator:
             # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[plot_key]['file']+'"
             # alt="'+lrst_global.plot_filenames[plot_key]['description']+'" width="600" height="450"/></p>')
 
-            if 'dynamic' in self.plot_filepaths[plot_key] and self.static == False:
-                self.html_writer.write(self.plot_filepaths[plot_key]['dynamic'])
-
+            # if 'dynamic' in self.plot_filepaths[plot_key] and self.static == False:
+            # Check if the dynamic plot exists if not basic_st
+            if plot_key == "basic_st":
+                self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
             else:
-                if plot_key == "basic_st":
-                    self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
-                else:
-                    m_image_file = open(
-                        self.input_para["output_folder"] + '/' + self.plot_filepaths[plot_key]['file'], 'rb');
-                    self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
-                        m_image_file.read()).decode('utf-8') + '" alt="' + self.plot_filepaths[plot_key][
-                                               'description'] + '" width="800" height="600"/></p>')
-                    m_image_file.close()
+                try:
+                    self.html_writer.write(self.plot_filepaths[plot_key]['dynamic'])
+                except KeyError:
+                    logging.error("Missing dynamic plot for " + plot_key)
+
+            # else:
+            #     if plot_key == "basic_st":
+            #         self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
+            #     else:
+            #         m_image_file = open(
+            #             self.input_para["output_folder"] + '/' + self.plot_filepaths[plot_key]['file'], 'rb');
+            #         self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
+            #             m_image_file.read()).decode('utf-8') + '" alt="' + self.plot_filepaths[plot_key][
+            #                                    'description'] + '" width="800" height="600"/></p>')
+            #         m_image_file.close()
 
             self.html_writer.write('</div>')
 
