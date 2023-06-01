@@ -2,7 +2,6 @@
 generate_html.py: Generate the HTML file from our plot images.
 """
 
-import base64
 import logging
 
 
@@ -266,29 +265,17 @@ class ST_HTML_Generator:
             self.html_writer.write('<div class="module">')
             self.html_writer.write(
                 '<h2 id="lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['description'] + '</h2><p>')
-            # self.html_writer.write('<img class="indented" src="'+lrst_global.plot_filenames[plot_key]['file']+'"
-            # alt="'+lrst_global.plot_filenames[plot_key]['description']+'" width="600" height="450"/></p>')
 
-            # if 'dynamic' in self.plot_filepaths[plot_key] and self.static == False:
-            # Check if the dynamic plot exists if not basic_st
+            # Add the plot or the HTML summary table
             if plot_key == "basic_st":
                 self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
             else:
                 try:
-                    self.html_writer.write(self.plot_filepaths[plot_key]['dynamic'])
+                    dynamic_plot = self.plot_filepaths[plot_key]['dynamic']
+                    self.html_writer.write(dynamic_plot)
+
                 except KeyError:
                     logging.error("Missing dynamic plot for " + plot_key)
-
-            # else:
-            #     if plot_key == "basic_st":
-            #         self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
-            #     else:
-            #         m_image_file = open(
-            #             self.input_para["output_folder"] + '/' + self.plot_filepaths[plot_key]['file'], 'rb');
-            #         self.html_writer.write('<img class="indented" src="data:image/png;base64,' + base64.b64encode(
-            #             m_image_file.read()).decode('utf-8') + '" alt="' + self.plot_filepaths[plot_key][
-            #                                    'description'] + '" width="800" height="600"/></p>')
-            #         m_image_file.close()
 
             self.html_writer.write('</div>')
 
@@ -327,7 +314,7 @@ class ST_HTML_Generator:
 
         # Add the input files section link
         self.html_writer.write('<li>')
-        self.html_writer.write('<a href="#lrst' + str(url_index) + '">Input files</a>')
+        self.html_writer.write('<a href="#lrst' + str(url_index) + '">Input Files</a>')
         url_index += 1
         self.html_writer.write('</li>')
         self.html_writer.write("</ul>")
@@ -351,7 +338,7 @@ class ST_HTML_Generator:
             self.html_writer.write('<div class="module">')
 
             # Set the description
-            description_text = "Basecall signal"
+            description_text = "ONT Basecall Signal"
             self.html_writer.write(
                 '<h2 id="lrst' + str(url_index) + '">' + description_text + '</h2><p>')
 
@@ -379,20 +366,23 @@ class ST_HTML_Generator:
         self.html_writer.write("</html>")
         self.html_writer.close()
 
-    def generate_st_html(self, signal_plots=None):
+    def generate_st_html(self, signal_plots=False):
         """
         Top-level function for generating the HTML.
         """
-        if signal_plots is None:
+        if signal_plots:
+            self.generate_header()
+            # Get the signal plots
+            signal_plots = self.plot_filepaths["ont_signal"]['dynamic']
+            read_names = signal_plots.keys()
+            self.generate_left_signal_data(read_names)
+            self.generate_right_signal_data(read_names, signal_plots)
+            self.generate_end()
+        else:
             # Format base QC
             self.generate_header()
             self.generate_left()
             self.generate_right()
             self.generate_end()
-        else:
-            # Format signal QC
-            self.generate_header()
-            read_names = signal_plots.keys()
-            self.generate_left_signal_data(read_names)
-            self.generate_right_signal_data(read_names, signal_plots)
-            self.generate_end()
+
+

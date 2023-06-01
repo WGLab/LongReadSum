@@ -1,7 +1,7 @@
 import os
-import logging
 import numpy as np
-import itertools
+import csv
+from random import sample
 
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
@@ -47,6 +47,8 @@ def getDefaultPlotFilenames():
 
         "pos_quality": {'file': default_image_path + "pos_quality" + default_image_suf,
                         'title': "Base Position Quality", 'description': "Base Position Quality"},
+        "ont_signal": {'file': default_image_path + "ont_signal" + default_image_suf,
+                       'title': "ONT Signal", 'description': "ONT Signal"},
     }
 
     return plot_filenames
@@ -460,13 +462,14 @@ def plot(output_data, para_dict, file_type):
     else:
         long_read_data = output_data.long_read_info
 
-    plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(long_read_data,
+    if file_type != 'FAST5s':
+        plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(long_read_data,
                                                                            get_image_path('read_length_hist'),
                                                                            font_size)
 
-    plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
+        plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
 
-    if file_type != 'FASTA':
+    if file_type != 'FASTA' and file_type != 'FAST5s':
         if file_type == 'SeqTxt':
             seq_quality_info = output_data.all_long_read_info.seq_quality_info
         else:
@@ -485,7 +488,121 @@ def plot(output_data, para_dict, file_type):
                                                                                   get_image_path('read_alignments_bar'))
         plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data, get_image_path('base_alignments_bar'))
 
+    elif file_type == 'FAST5s':
+        plot_filepaths['ont_signal']['dynamic'] = plot_signal(output_data, para_dict)
+
     return plot_filepaths
+
+
+def plot_signal(output_data, para_dict):
+    """Plot the ONT FAST5 signal data"""
+    # Get input parameters
+    output_dir = para_dict["output_folder"]
+    font_size = para_dict["fontsize"]
+    marker_size = para_dict["markersize"]
+    read_count_max = para_dict["read_count"]
+    
+    # Get read and base counts
+    read_count = output_data.getReadCount()
+
+    # Randomly sample a small set of reads if it is a large dataset
+    read_sample_size = min(read_count_max, read_count)
+    unsampled_indices = list(range(0, read_sample_size))
+    read_indices = sample(unsampled_indices, read_sample_size)
+
+    # Plot the reads
+    output_html_plots = {}
+    for read_index in read_indices:
+        # Create the figure
+        fig = go.Figure()
+
+        # Get the read data
+        nth_read_name = output_data.getNthReadName(read_index)
+        nth_read_data = output_data.getNthReadBaseSignals(read_index)
+        nth_read_means = output_data.getNthReadBaseMeans(read_index)
+        nth_read_stds = output_data.getNthReadBaseStds(read_index)
+        nth_read_medians = output_data.getNthReadBaseMedians(read_index)
+        nth_read_skewness = output_data.getNthReadPearsonSkewnessCoeff(read_index)
+        nth_read_kurtosis = output_data.getNthReadKurtosis(read_index)
+        nth_read_sequence = output_data.getNthReadSequence(read_index)
+        sequence_length = len(nth_read_data)
+
+        # Check if sequence data is available
+        sequence_available = True if nth_read_sequence else False
+
+        # Set up the output CSVs
+        csv_qc_filepath = os.path.join(output_dir, nth_read_name + '_QC.csv')
+        qc_file = open(csv_qc_filepath, 'w')
+        qc_writer = csv.writer(qc_file)
+        qc_writer.writerow(["Base", "Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
+
+        # Loop through the data
+        first_index = 0
+        last_index = sequence_length
+        start_index = 0
+        sequence_list = list(nth_read_sequence)
+        base_tick_values = []  # Append the last indices of the base signal to use for tick values
+        for i in range(first_index, last_index):
+            base_signals = nth_read_data[i]  # Get the base's signal
+            signal_length = len(base_signals)
+            end_index = start_index + signal_length
+            base_tick_values.append(end_index)
+
+            # Plot
+            x = np.arange(start_index, end_index, 1)
+            fig.add_trace(go.Scatter(
+                x=x, y=base_signals,
+                mode='markers',
+                marker=dict(color='LightSkyBlue',
+                            size=5,
+                            line=dict(color='MediumPurple', width=2)),
+                opacity=0.5))
+
+            # Update CSVs
+            base_value = sequence_list[i] if sequence_available else ''
+            signal_mean = nth_read_means[i]
+            signal_median = nth_read_medians[i]
+            signal_stds = nth_read_stds[i]
+            signal_skewness = nth_read_skewness[i]
+            signal_kurtosis = nth_read_kurtosis[i]
+            raw_row = \
+                [base_value, base_signals, signal_length,
+                 signal_mean, signal_median, signal_stds,
+                 signal_skewness, signal_kurtosis]
+
+            qc_writer.writerow(raw_row)
+
+            # Update the index
+            start_index = end_index
+
+        # Close CSVs
+        qc_file.close()
+
+        # Update the plot style
+        fig.update_layout(
+            title=nth_read_name,
+            yaxis_title="Signal",
+            showlegend=False,
+            font=dict(size=font_size)
+        )
+        fig.update_traces(marker={'size': marker_size})
+
+        if sequence_available:
+            # Set up X tick labels
+            x_tick_labels = sequence_list[first_index:last_index]
+            fig.update_xaxes(title="Base",
+                             tickangle=0,
+                             tickmode='array',
+                             tickvals=base_tick_values,
+                             ticktext=x_tick_labels)
+        else:
+            fig.update_xaxes(title="Index")
+
+        # Append the dynamic HTML object to the output structure
+        dynamic_html = fig.to_html(full_html=False)
+        output_html_plots.update({nth_read_name: dynamic_html})
+
+    return output_html_plots
 
 
 def create_summary_table(output_data, plot_filepaths, file_type):
@@ -559,10 +676,19 @@ def create_summary_table(output_data, plot_filepaths, file_type):
                                                output_data.passed_long_read_info.long_read_info.median_read_length,
                                                output_data.failed_long_read_info.long_read_info.median_read_length,
                                                output_data.all_long_read_info.long_read_info.median_read_length)
-        table_str += "\n</tbody>\n</table>"
 
-        plot_filepaths["basic_st"]['detail'] = table_str
-        
+    elif file_type == 'FAST5s':
+        # Get values
+        read_count = output_data.getReadCount()
+        total_base_count = output_data.getTotalBaseCount()
+
+        # Set up the HTML table
+        table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
+        table_str += "\n<tbody>"
+        int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
+        table_str += int_str_for_format.format("#Total Reads", read_count)
+        table_str += int_str_for_format.format("#Total Bases", total_base_count)
+
     else:
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
         table_str += "\n<tbody>"
