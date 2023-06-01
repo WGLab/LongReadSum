@@ -85,9 +85,6 @@ def get_common_param(margs):
         try:
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
-            if not os.path.isdir(output_dir + '/' + getDefaultImageFolder()):
-                os.makedirs(output_dir + '/' +
-                            getDefaultImageFolder())
 
         except OSError as e:
             this_error_str += "Cannot create folder for " + \

@@ -7,58 +7,30 @@ import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
 
-# Return the default image path
-def getDefaultImageFolder():
-    return 'img/'
-
-
-# Return the default image suffix
-def getDefaultImageSuffix():
-    return '.png'
-
-
 # Return a dictionary of default plot filenames
 def getDefaultPlotFilenames():
-    default_image_path = getDefaultImageFolder()
-    default_image_suf = getDefaultImageSuffix()
-
     plot_filenames = {  # for fq/fa
-        "read_length_distr": {'file': default_image_path + "read_length_distr" + default_image_suf,
-                              'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
-        "read_alignments_bar": {'file': default_image_path + "map_st" + default_image_suf, 'title': "Map Information",
+        "read_length_distr": {'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
+        "read_alignments_bar": {'title': "Map Information",
                    'description': "Read Mapping Statistics"},
-        "base_alignments_bar": {'file': default_image_path + "err_st" + default_image_suf,
-                   'title': "Base Alignment and Error Statistics",
+        "base_alignments_bar": {'title': "Base Alignment and Error Statistics",
                    'description': "Base Alignment and Error Statistics"},
-        "read_length_bar": {'file': default_image_path + "read_length_st" + default_image_suf,
-                           'title': "Read Length Statistics", 'description': "Read Length Statistics"},
-        "base_counts": {'file': default_image_path + "base_st" + default_image_suf, 'title': "Base Count Statistics",
+        "read_length_bar": {'title': "Read Length Statistics", 'description': "Read Length Statistics"},
+        "base_counts": {'title': "Base Count Statistics",
                     'description': "Base Count Statistics", 'summary': ""},
-        "basic_info": {'file': default_image_path + "basic_info" + default_image_suf, 'title': "Basic Statistics",
+        "basic_info": {'title': "Basic Statistics",
                        'description': "Basic Statistics", 'summary': ""},
-        "read_length_hist": {'file': default_image_path + "read_length_hist" + default_image_suf,
-                             'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
+        "read_length_hist": {'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
 
-        "base_quality": {'file': default_image_path + "base_quality" + default_image_suf,
-                         'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
+        "base_quality": {'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
 
-        "read_avg_base_quality": {'file': default_image_path + "read_avg_base_quality" + default_image_suf,
-                                  'title': "Read Base Quality Histogram", 'description': "Read Base Quality Histogram"},
+        "read_avg_base_quality": {'title': "Read Base Quality Histogram", 'description': "Read Base Quality Histogram"},
 
-        "pos_quality": {'file': default_image_path + "pos_quality" + default_image_suf,
-                        'title': "Base Position Quality", 'description': "Base Position Quality"},
-        "ont_signal": {'file': default_image_path + "ont_signal" + default_image_suf,
-                       'title': "ONT Signal", 'description': "ONT Signal"},
+        "pos_quality": {'title': "Base Position Quality", 'description': "Base Position Quality"},
+        "ont_signal": {'title': "ONT Signal", 'description': "ONT Signal"},
     }
 
     return plot_filenames
-
-
-def fmt(x):
-    """Format numbers for plots."""
-    format_x = "{:,}".format(round(x))
-
-    return format_x
 
 
 def wrap(s):
@@ -294,12 +266,11 @@ def histogram(data, path, font_size):
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False)
-    fig.write_image(path, engine="auto", default_height=500, default_width=700)
 
     return html_obj
 
 
-def read_lengths_histogram(data, path, font_size):
+def read_lengths_histogram(data, font_size):
     """Plot the read length histograms."""
     annotation_size = 10  # Annotation font size
     mean, median, n50 = data.mean_read_length, data.median_read_length, data.n50_read_length
@@ -366,12 +337,11 @@ def read_lengths_histogram(data, path, font_size):
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
-    fig.write_image(path, engine="auto")
 
     return html_obj
 
 
-def base_quality(data, path, font_size):
+def base_quality(data, font_size):
     """
     Save the 'Base quality' plot image.
     """
@@ -388,12 +358,11 @@ def base_quality(data, path, font_size):
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff=0)
     fig.update_layout(font=dict(size=font_size))  # Set font size
-    fig.write_image(path, engine="auto")
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
 
-def read_avg_base_quality(data, path, font_size):
+def read_avg_base_quality(data, font_size):
     """
     Save the 'Average base quality' plot image.
     """
@@ -405,8 +374,6 @@ def read_avg_base_quality(data, path, font_size):
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
     fig.update_layout(font=dict(size=font_size))  # Set font size
-
-    fig.write_image(path, engine="auto")
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
@@ -444,7 +411,6 @@ def create_statistics_table(output_data, plot_filepaths, table_title="Basic Stat
 def plot(output_data, para_dict, file_type):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
-    get_image_path = lambda x: os.path.join(out_path, plot_filepaths[x]['file'])
 
     # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
@@ -463,9 +429,7 @@ def plot(output_data, para_dict, file_type):
         long_read_data = output_data.long_read_info
 
     if file_type != 'FAST5s':
-        plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(long_read_data,
-                                                                           get_image_path('read_length_hist'),
-                                                                           font_size)
+        plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(long_read_data, font_size)
 
         plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
 
@@ -476,18 +440,16 @@ def plot(output_data, para_dict, file_type):
             seq_quality_info = output_data.seq_quality_info
 
         # Base quality histogram
-        plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info,
-                                                                 get_image_path('base_quality'), font_size)
+        plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
 
         # Read quality histogram
-        read_quality_dynamic = read_avg_base_quality(seq_quality_info, get_image_path('read_avg_base_quality'), font_size)
+        read_quality_dynamic = read_avg_base_quality(seq_quality_info, font_size)
         plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
 
     if file_type == 'BAM':
-        plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data,
-                                                                                  get_image_path('read_alignments_bar'))
-        plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data, get_image_path('base_alignments_bar'))
-
+        plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data)
+        plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data)
+        
     elif file_type == 'FAST5s':
         plot_filepaths['ont_signal']['dynamic'] = plot_signal(output_data, para_dict)
 
@@ -609,7 +571,13 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
     plot_filepaths["basic_st"]['title'] = "Summary Table"
-    plot_filepaths["basic_st"]['description'] = "{} Basic statistics".format(file_type)
+
+    # Decide the file type label
+    file_type_label = file_type
+    if file_type == 'FAST5s':
+        file_type_label = 'FAST5'
+
+    plot_filepaths["basic_st"]['description'] = "{} Basic statistics".format(file_type_label)
 
     if file_type == 'BAM':
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n" \
@@ -713,7 +681,7 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     plot_filepaths["basic_st"]['detail'] = table_str
 
 
-def plot_alignment_numbers(data, path):
+def plot_alignment_numbers(data):
     category = ['Primary Alignments', 'Supplementary Alignments', 'Secondary Alignments',
                 'Reads with Supplementary Alignments', 'Reads with Secondary Alignments',
                 'Reads with Secondary and Supplementary Alignments', 'Forward Alignments', 'Reverse Alignments']
@@ -739,7 +707,7 @@ def plot_alignment_numbers(data, path):
     return html_obj
 
 
-def plot_errors(output_data, path):
+def plot_errors(output_data):
     category = ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases']
     category = [wrap(x) for x in category]
 
