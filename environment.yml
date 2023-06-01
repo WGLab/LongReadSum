@@ -1,4 +1,4 @@
-name: lrst_py39
+name: longreadsum
 channels:
   - bioconda
   - anaconda
@@ -9,12 +9,8 @@ dependencies:
   - hdf5
   - htslib
   - swig
-  - matplotlib
   - plotly=4.14
-  - pytest
-  - pip
-  - pip:
-    - kaleido
+
 
 # conda env create --file=environment.yml
 # conda activate lrst_py39
