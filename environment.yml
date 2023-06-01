@@ -9,8 +9,8 @@ dependencies:
   - hdf5
   - htslib
   - swig
-  - plotly=4.14
-
+  - plotly
+  - pytest
 
 # conda env create --file=environment.yml
-# conda activate lrst_py39
+# conda activate longreadsum
