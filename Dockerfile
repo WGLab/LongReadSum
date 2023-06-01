@@ -16,11 +16,11 @@ RUN tar -xf ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
 RUN conda env create -f environment.yml
 
 # Activate the environment
-RUN echo "conda activate lrst_py39" >> ~/.bashrc
+RUN echo "conda activate longreadsum" >> ~/.bashrc
 SHELL ["/bin/bash", "--login", "-c"]
 
 # Ensure the correct environment is being used
-RUN export PATH="/opt/conda/envs/lrst_py39/bin/python"
+RUN export PATH="/opt/conda/envs/longreadsum/bin/python"
 RUN which python
 
 # Build LongReadSum
@@ -30,4 +30,4 @@ RUN make
 ENV HDF5_PLUGIN_PATH="/longreadsum/lib/"
 
 # The code to run when container is started:
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "lrst_py39", "python", "/app/longreadsum"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "longreadsum", "python", "/app/longreadsum"]
