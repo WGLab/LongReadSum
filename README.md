@@ -6,8 +6,6 @@
 
 LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
 
-## System requirements
-
 ## Software requirements
 Please refer to `environment.yml` for detail. For your quick reference, LongReadSum needs
 ```
@@ -17,8 +15,15 @@ Please refer to `environment.yml` for detail. For your quick reference, LongRead
   - swig
   - matplotlib
 ```
+# Installation using Anaconda (Linux 64-bit)
+First, install [Anaconda](https://www.anaconda.com/).
+LongReadSum can be installed using the following command:
 
-# Installation using Docker (recommended)
+```
+conda install -c bioconda -c wglab longreadsum
+```
+
+# Installation using Docker
 First, install [Docker](https://docs.docker.com/engine/install/).
 Pull the latest image from Docker hub:
 
