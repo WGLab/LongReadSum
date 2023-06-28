@@ -18,9 +18,21 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 %apply unsigned long long { uint64_t };  // Maps uint64_t to unsigned long long in Python
 %apply long { long int };  // Maps long int to long in Python
 
+// Map uint64_t arrays to Python lists
+%typemap(out) uint64_t[ANY] {
+    PyObject *list = PyList_New($1_dim0);
+    for (int i = 0; i < $1_dim0; i++) {
+        PyList_SetItem(list, i, PyLong_FromUnsignedLongLong($1[i]));
+    }
+    $result = list;
+}
+
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>
+
+// Define the conversion for uint64_t arrays
+//%array_class(uint64_t, uint64Array);
 
 %template(IntVector) std::vector<int>;
 %template(DoubleVector) std::vector<double>;

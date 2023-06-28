@@ -33,7 +33,7 @@ class HTSReader {
         bool reading_complete = false;
 
         // Update read and base counts
-        int updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics* basic_qc, std::vector<int>& base_quality_distribution);
+        int updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics* basic_qc, uint64_t *base_quality_distribution);
 
         // Read the next batch of records from the BAM file
         int readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex);

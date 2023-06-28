@@ -28,7 +28,7 @@ HTSReader::~HTSReader(){
 }
 
 // Update read and base counts
-int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *basic_qc, std::vector<int> & base_quality_distribution){
+int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *basic_qc, uint64_t *base_quality_distribution){
     int exit_code = 0;
 
     // Update the total number of reads
@@ -43,7 +43,7 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *bas
     uint8_t *seq = bam_get_seq(record);
     for (int i = 0; i < read_length; i++) {
         // Get the base quality and update the base quality histogram
-        int base_quality = (int)bam_get_qual(record)[i];
+        uint64_t base_quality = (uint64_t)bam_get_qual(record)[i];
         base_quality_distribution[base_quality]++;
 
         // Get the base and update the base count
@@ -80,8 +80,12 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     int record_count = 0;
     int exit_code = 0;
 
-    // Set up the base quality histogram
-    std::vector<int> base_quality_distribution(256, 0);
+    // Access the base quality histogram from the output_data object
+    uint64_t *base_quality_distribution = output_data.seq_quality_info.base_quality_distribution;
+
+    // Set up the base quality histogram as a vector of 256 0s
+//    uint64_t base_quality_distribution[256] = {0};
+    //std::vector<uint64_t> base_quality_distribution(256, 0);
 
     // Loop through each alignment record in the BAM file
     // Do QC on each record and store the results in the output_data object
@@ -203,7 +207,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     }
 
     // Update the base quality histogram
-    output_data.seq_quality_info.base_quality_distribution = base_quality_distribution;
+//    output_data.seq_quality_info.base_quality_distribution = base_quality_distribution;
 
     return exit_code;
 }

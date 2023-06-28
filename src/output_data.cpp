@@ -55,33 +55,6 @@ Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    gc_cnt = _bss.gc_cnt ;
 }
 
-void Basic_Seq_Statistics::reset(){
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_count[ _i_ ] = ZeroDefault;
-   }
-
-   for(size_t _i_=0; _i_<read_gc_content_count.size(); _i_++){
-      read_gc_content_count[ _i_ ] = ZeroDefault;
-   }
- 
-   total_num_reads = ZeroDefault; 
-   total_num_bases = ZeroDefault; 
-
-   longest_read_length = ZeroDefault;
-   n50_read_length = MoneDefault; 
-   n95_read_length = MoneDefault; 
-   n05_read_length = MoneDefault; 
-   mean_read_length = MoneDefault; 
-   median_read_length = MoneDefault; 
-
-   total_a_cnt = ZeroDefault; 
-   total_c_cnt = ZeroDefault; 
-   total_g_cnt = ZeroDefault; 
-   total_tu_cnt = ZeroDefault; 
-   total_n_cnt = ZeroDefault; 
-   gc_cnt = ZeroDefault; 
-}
-
 void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
     // Update the longest read length
    if ( this->longest_read_length < basic_qc.longest_read_length){
@@ -217,18 +190,15 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
       pos_quality_distribution_dev[ _i_ ] = ZeroDefault;
       pos_quality_distribution_count[ _i_ ] = ZeroDefault;
    }
-   base_quality_distribution.resize(MAX_BASE_QUALITY);
-   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
-      base_quality_distribution[ _i_ ] = ZeroDefault;
-   }
+//   base_quality_distribution.resize(MAX_BASE_QUALITY);
+//   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
+//      base_quality_distribution[ _i_ ] = ZeroDefault;
+//   }
 
    read_quality_distribution.resize( MAX_READ_QUALITY );
    for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
       read_quality_distribution[ _i_ ] = ZeroDefault;
    }
-}
-
-Basic_Seq_Quality_Statistics::~Basic_Seq_Quality_Statistics(){
 }
 
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Quality_Statistics& _bsqs){
@@ -240,10 +210,10 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Qual
       pos_quality_distribution_dev[ _i_ ] = _bsqs.pos_quality_distribution_dev[ _i_ ];
       pos_quality_distribution_count[ _i_ ] = _bsqs.pos_quality_distribution_count[ _i_ ];
    }
-    base_quality_distribution.resize(MAX_BASE_QUALITY);
-   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
-      base_quality_distribution[ _i_ ] = _bsqs.base_quality_distribution[ _i_ ];
-   }
+//    base_quality_distribution.resize(MAX_BASE_QUALITY);
+//   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
+//      base_quality_distribution[ _i_ ] = _bsqs.base_quality_distribution[ _i_ ];
+//   }
 
    min_base_quality = _bsqs.min_base_quality;
    max_base_quality = _bsqs.max_base_quality;
@@ -258,27 +228,6 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Qual
    max_read_quality = _bsqs.max_read_quality;
 }
 
-void Basic_Seq_Quality_Statistics::reset(){
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      pos_quality_distribution[ _i_ ] = ZeroDefault;
-      pos_quality_distribution_dev[ _i_ ] = ZeroDefault;
-      pos_quality_distribution_count[ _i_ ] = ZeroDefault;
-   }
-   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
-      base_quality_distribution[ _i_ ] = ZeroDefault;
-   }
-
-   min_base_quality = MoneDefault; 
-   max_base_quality = MoneDefault; 
-
-   max_length = ZeroDefault;
-
-   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
-      read_quality_distribution[ _i_ ] = ZeroDefault;
-   }
-   min_read_quality = MoneDefault;
-   max_read_quality = MoneDefault;
-}
 void Basic_Seq_Quality_Statistics::add(Basic_Seq_Quality_Statistics& t_qual_st){
    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
       pos_quality_distribution[ _i_ ] = t_qual_st.pos_quality_distribution[ _i_ ];
@@ -342,16 +291,15 @@ void Output_BAM::add(Output_BAM& output_data){
     this->forward_alignment += output_data.forward_alignment;
     this->reverse_alignment += output_data.reverse_alignment;
 
-    // Resize the base quality vector if it is empty
-    if ( this->seq_quality_info.base_quality_distribution.empty() ){
-        this->seq_quality_info.base_quality_distribution.resize( MAX_READ_QUALITY );
-    }
+//    // Resize the base quality vector if it is empty
+//    if ( this->seq_quality_info.base_quality_distribution.empty() ){
+//        this->seq_quality_info.base_quality_distribution.resize( MAX_READ_QUALITY );
+//    }
 
     // Update the base quality vector if it is not empty
-    if ( !output_data.seq_quality_info.base_quality_distribution.empty() ){
-        for (int i=0; i<MAX_READ_QUALITY; i++){
-            this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
-        }
+//    if ( !output_data.seq_quality_info.base_quality_distribution.empty() ){
+    for (int i=0; i<MAX_READ_QUALITY; i++){
+        this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
     }
 
     this->num_matched_bases += output_data.num_matched_bases;
@@ -443,20 +391,6 @@ Basic_SeqTxt_Statistics::Basic_SeqTxt_Statistics(){
    }
 }
 
-Basic_SeqTxt_Statistics::~Basic_SeqTxt_Statistics(){
-}
-
-void Basic_SeqTxt_Statistics::reset(){
-   long_read_info.reset();
-   seq_quality_info.reset();
-
-   for (int _i_=0; _i_<MAX_SIGNAL_VALUE; _i_++){
-       signal_range[ _i_ ] = ZeroDefault;
-   }
-   min_signal = MoneDefault;
-   max_signal = MoneDefault;
-}
-
 void Basic_SeqTxt_Statistics::add(Basic_SeqTxt_Statistics& t_output_bSeqTxt){
    long_read_info.add( t_output_bSeqTxt.long_read_info );
    seq_quality_info.add( t_output_bSeqTxt.seq_quality_info );
@@ -477,12 +411,6 @@ void Basic_SeqTxt_Statistics::global_sum(){
 
    if ( min_signal==MoneDefault){ min_signal = ZeroDefault; }
    if ( max_signal==MoneDefault){ max_signal = ZeroDefault; }
-}
-
-void Output_SeqTxt::reset(){
-   all_long_read_info.reset();
-   passed_long_read_info.reset();
-   failed_long_read_info.reset();
 }
 
 void Output_SeqTxt::add(Output_SeqTxt& t_output_SeqTxt){

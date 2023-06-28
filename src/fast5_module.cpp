@@ -280,7 +280,6 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 {
     int exit_code = 0;
     const char * read_name;
-    char baseq;
     double gc_content_pct;
     std::string basecall_group = "Basecall_1D_000";
 
@@ -331,6 +330,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
             int gc_count = 0;
             double read_mean_base_qual = 0;
             char current_base;
+            uint64_t base_quality_value;
             for (int i = 0; i < base_count; i++)
             {
                 current_base = sequence_data_str[i];
@@ -352,9 +352,10 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
                 {
                     long_read_info.total_tu_cnt += 1;
                 }
-                baseq = base_quality_values[i];  // Get the base quality
-                seq_quality_info.base_quality_distribution[baseq] += 1;
-                read_mean_base_qual += baseq;
+                // Get the base quality
+                base_quality_value = (uint64_t)base_quality_values[i];
+                seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+                read_mean_base_qual += (double)base_quality_value;
             }
 
             // Calculate percent guanine & cytosine
@@ -527,7 +528,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
 
         output_data.long_read_info.read_gc_content_count.clear();
         output_data.long_read_info.read_length_count.clear();
-        output_data.seq_quality_info.base_quality_distribution.clear();
+        //output_data.seq_quality_info.base_quality_distribution.clear();
         output_data.seq_quality_info.read_average_base_quality_distribution.clear();
 
         output_data.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
@@ -539,7 +540,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
         output_data.long_read_info.NXX_read_length.resize(101, 0);
         // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
 
-        output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
+        //output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
         // base_quality_distribution[x] means number of bases that quality = x.
 
         output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
@@ -650,7 +651,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
                     fprintf(read_summary_fp, "base quality\tnumber of bases\n");
                     for (int baseq = 0; baseq <= 60; baseq++)
                     {
-                        fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+                        fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
                     }
 
                     fprintf(read_summary_fp, "\n\n");

@@ -255,7 +255,7 @@ void SeqTxt_Module::SeqTxt_do_thread(std::ifstream* file_stream, Input_Para& ref
         if (read_ss_size == 0 ) { continue; }
 
         // Columns used for statistics: passes_filtering, sequence_length_template, mean_qscore_template
-        ref_thread_data.t_output_SeqTxt_.reset();
+        //ref_thread_data.t_output_SeqTxt_.reset();
         ref_thread_data.t_output_SeqTxt_.all_long_read_info.long_read_info.resize();
         ref_thread_data.t_output_SeqTxt_.passed_long_read_info.long_read_info.resize();
         ref_thread_data.t_output_SeqTxt_.failed_long_read_info.long_read_info.resize();

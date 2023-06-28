@@ -57,7 +57,6 @@ public:
     std::vector<int> read_length_count;  // Read length distribution (TODO: Replace usages with read_lengths)
     std::vector<int> read_lengths;  // Length of reads
 
-    void reset();
     void add(Basic_Seq_Statistics &t_seq_st);
     void global_sum();
     void global_sum_no_gc();
@@ -74,7 +73,9 @@ public:
 class Basic_Seq_Quality_Statistics
 {
 public:
-   std::vector<int> base_quality_distribution;
+   //std::vector<uint64_t> base_quality_distribution;
+   // Array of base quality distribution initialized to 0
+   uint64_t base_quality_distribution[MAX_BASE_QUALITY] = {ZeroDefault};
    std::vector<int> read_average_base_quality_distribution;
    int min_base_quality = MoneDefault; // minimum base quality;
    int max_base_quality = MoneDefault; // maximum base quality;
@@ -87,13 +88,11 @@ public:
    int min_read_quality = MoneDefault; // the minimum mapping quality
    int max_read_quality = MoneDefault; // the maximum mapping quality
 
-   void reset();
    void add(Basic_Seq_Quality_Statistics &t_qual_st);
    void global_sum();
 
    Basic_Seq_Quality_Statistics();
    Basic_Seq_Quality_Statistics(const Basic_Seq_Quality_Statistics &_bsqs);
-   ~Basic_Seq_Quality_Statistics();
 };
 
 // FASTA output
@@ -174,12 +173,10 @@ public:
    int min_signal = MoneDefault; // minimum signals;
    int max_signal = MoneDefault; // maximum signals;
 
-   void reset();
    void add(Basic_SeqTxt_Statistics &output_data);
    void global_sum();
 
    Basic_SeqTxt_Statistics();
-   ~Basic_SeqTxt_Statistics();
 };
 
 class Output_SeqTxt : public Output_Info
@@ -189,7 +186,6 @@ public:
    Basic_SeqTxt_Statistics passed_long_read_info;
    Basic_SeqTxt_Statistics failed_long_read_info;
 
-   void reset();
    void add(Output_SeqTxt &output_data);
    void global_sum();
 };

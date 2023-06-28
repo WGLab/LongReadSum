@@ -24,7 +24,6 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
     char *read_seq;
     char *raw_read_qual;
     char *read_name;
-    char baseq;
     int read_len;
     double read_gc_cnt;
     double read_mean_base_qual;
@@ -62,6 +61,7 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
 
             read_gc_cnt = 0;
             read_mean_base_qual = 0;
+            uint64_t base_quality_value;
             for (int i = 0; i < read_len; i++)
             {
                 if (read_seq[i] == 'A' || read_seq[i] == 'a')
@@ -82,9 +82,9 @@ static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_
                 {
                     long_read_info.total_tu_cnt += 1;
                 }
-                baseq = raw_read_qual[i] - fastq_base_qual_offset;
-                seq_quality_info.base_quality_distribution[baseq] += 1;
-                read_mean_base_qual += baseq;
+                base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
+                seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+                read_mean_base_qual += (double) base_quality_value;
             }
             read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
             long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
@@ -191,8 +191,8 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
 
     output_data.long_read_info.read_gc_content_count.clear();
     output_data.long_read_info.read_length_count.clear();
-    output_data.seq_quality_info.base_quality_distribution.clear();
-    output_data.seq_quality_info.read_average_base_quality_distribution.clear();
+    //output_data.seq_quality_info.base_quality_distribution.clear();
+    //output_data.seq_quality_info.read_average_base_quality_distribution.clear();
 
     output_data.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
     // read_length_count[x] is the number of reads that length is equal to x. MAX_READ_LENGTH is a initial max value, the vector can expand if thre are reads longer than MAX_READ_LENGTH.
@@ -203,7 +203,7 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     output_data.long_read_info.NXX_read_length.resize(101, 0);
     // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
 
-    output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
+    //output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
     // base_quality_distribution[x] means number of bases that quality = x.
 
     output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
@@ -309,7 +309,7 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
             fprintf(read_summary_fp, "base quality\tnumber of bases\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
             }
 
             fprintf(read_summary_fp, "\n\n");
