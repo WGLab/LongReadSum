@@ -83,12 +83,9 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     // Access the base quality histogram from the output_data object
     uint64_t *base_quality_distribution = output_data.seq_quality_info.base_quality_distribution;
 
-    // Set up the base quality histogram as a vector of 256 0s
-//    uint64_t base_quality_distribution[256] = {0};
-    //std::vector<uint64_t> base_quality_distribution(256, 0);
-
     // Loop through each alignment record in the BAM file
     // Do QC on each record and store the results in the output_data object
+    bool nm_tag_present = false; // Flag to determine if the NM tag is present
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
         bam1_t* record = bam_init1();
@@ -118,6 +115,13 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // Calculate base alignment statistics on non-secondary alignments
             if (!(record->core.flag & BAM_FSECONDARY)) {
 
+                // Determine if this is a forward or reverse read
+                if (record->core.flag & BAM_FREVERSE) {
+                    output_data.forward_alignment++;
+                } else {
+                    output_data.reverse_alignment++;
+                }
+
                 // Loop through the cigar string and count the number of insertions, deletions, and matches
                 uint32_t *cigar = bam_get_cigar(record);
                 uint64_t num_mismatches = 0;
@@ -134,12 +138,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         case BAM_CDEL:
                             output_data.num_del_bases += cigar_len;
                             break;
-                        case BAM_CSOFT_CLIP:
-                            output_data.num_clip_bases += cigar_len;
-                            break;
-                        case BAM_CHARD_CLIP:
-                            output_data.num_clip_bases += cigar_len;
-                            break;
                         case BAM_CDIFF:
                             num_mismatches += cigar_len;
                             break;
@@ -152,6 +150,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 uint8_t *nmTag = bam_aux_get(record, "NM");
                 if (nmTag != NULL) {
                     num_mismatches = (uint64_t) bam_aux2i(nmTag);
+                    nm_tag_present = true;
                 }
                 output_data.num_mismatched_bases += num_mismatches;
             }
@@ -178,13 +177,24 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
             // Determine if this is a primary alignment
             } else if (!(record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FSUPPLEMENTARY)) {
-                // Determine if this is a forward or reverse read
-                if (record->core.flag & BAM_FREVERSE) {
-                    output_data.forward_alignment++;
-                } else {
-                    output_data.reverse_alignment++;
-                }
                 output_data.num_primary_alignment++;  // Update the number of primary alignments
+
+                // Loop through the cigar string and count the number of clipped bases
+                uint32_t *cigar = bam_get_cigar(record);
+                for (uint32_t i = 0; i < record->core.n_cigar; i++) {
+                    int cigar_op = bam_cigar_op(cigar[i]);
+                    uint64_t cigar_len = (uint64_t)bam_cigar_oplen(cigar[i]);
+                    switch (cigar_op) {
+                        case BAM_CSOFT_CLIP:
+                            output_data.num_clip_bases += cigar_len;
+                            break;
+                        case BAM_CHARD_CLIP:
+                            output_data.num_clip_bases += cigar_len;
+                            break;
+                        default:
+                            break;
+                    }
+                }
 
                 // Update read and base QC
                 this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
@@ -206,8 +216,14 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         record_count++;
     }
 
-    // Update the base quality histogram
-//    output_data.seq_quality_info.base_quality_distribution = base_quality_distribution;
+//    // Print if the NM tag was not present
+//    if (nm_tag_present)
+//        cout_mutex.lock();
+//        std::cout << "NM tag found, used for mismatch count" << std::endl;
+//        cout_mutex.unlock();
+//    } else {
+//        std::cout << "No NM tag, using CIGAR for mismatch count" << std::endl;
+//    }
 
     return exit_code;
 }

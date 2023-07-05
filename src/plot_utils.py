@@ -708,7 +708,8 @@ def plot_alignment_numbers(data):
 
 
 def plot_errors(output_data):
-    category = ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases']
+    category = \
+        ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases\n(Primary Alignments)']
     category = [wrap(x) for x in category]
 
     # Create a horizontally aligned bar plot trace from the data using plotly

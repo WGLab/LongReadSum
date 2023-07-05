@@ -376,7 +376,7 @@ void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Outp
         fprintf(fp, "Total number of mismatched bases\t%ld\n", output_data.num_mismatched_bases);
         fprintf(fp, "Total number of insertions\t%ld\n", output_data.num_ins_bases);
         fprintf(fp, "Total number of deletions\t%ld\n", output_data.num_del_bases);
-        fprintf(fp, "Total number of soft clipped bases\t%ld\n", output_data.num_clip_bases);
+        fprintf(fp, "Total number of primary alignment clipped bases (soft + hard)\t%ld\n", output_data.num_clip_bases);
 
         // Close the file
         fclose(fp);
