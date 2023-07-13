@@ -6,7 +6,9 @@ channels:
   - defaults
 dependencies:
   - python
+  - numpy
   - hdf5
+  - ont_vbz_hdf_plugin
   - htslib
   - swig
   - plotly
