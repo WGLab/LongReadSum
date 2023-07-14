@@ -85,7 +85,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
     // Loop through each alignment record in the BAM file
     // Do QC on each record and store the results in the output_data object
-    bool nm_tag_present = false; // Flag to determine if the NM tag is present
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
         bam1_t* record = bam_init1();
@@ -150,7 +149,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 uint8_t *nmTag = bam_aux_get(record, "NM");
                 if (nmTag != NULL) {
                     num_mismatches = (uint64_t) bam_aux2i(nmTag);
-                    nm_tag_present = true;
                 }
                 output_data.num_mismatched_bases += num_mismatches;
             }

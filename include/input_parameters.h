@@ -6,6 +6,7 @@ Define the Python bindings from our C++ modules
 #ifndef INPUT_PARAMETERS_H
 #define INPUT_PARAMETERS_H
 
+#include <vector>
 #include <string>
 #define MAX_INPUT_FILES 2048
 
@@ -26,6 +27,7 @@ public:
     int32_t user_defined_fastq_base_qual_offset;
     std::string output_folder;  // Output folder
     std::string input_files[MAX_INPUT_FILES];  // Input files
+    std::string read_ids;  // Read IDs comma-separated (FAST5 signal module)
 
     // Functions
     std::string add_input_file(const std::string& _ip_file);

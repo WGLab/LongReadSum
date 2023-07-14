@@ -48,14 +48,20 @@ std::vector<std::string> getFastq(H5::H5File f5, std::string basecall_group)
     H5::Exception::dontPrint();  // Disable error printing
     try {
         // Attempt to access the FASTQ dataset
+        //std::cout << "Opening FASTQ dataset..." << std::endl;
+        std::string fastq_path = basecall_group + "/BaseCalled_template/Fastq";
+        //std::cout << fastq_path << std::endl;
         H5::DataSet dataset;
-        dataset = f5.openDataSet("/Analyses/"+basecall_group+"/BaseCalled_template/Fastq");
-        H5::DataType  datatype   = dataset.getDataType();
+        dataset = f5.openDataSet(fastq_path);
 
         // Read output
+        H5::DataType  datatype   = dataset.getDataType();
         std::string data;
+        //std::cout << "Reading FASTQ data..." << std::endl;
         dataset.read(data, datatype);
+        //std::cout << "FASTQ data read." << std::endl;
         sequence = splitString(data);
+        //std::cout << "FASTQ data split." << std::endl;
     } catch (FileIException &error) {
     }
 
@@ -63,13 +69,21 @@ std::vector<std::string> getFastq(H5::H5File f5, std::string basecall_group)
 }
 
 // Read alignment data from the file to get start and end map positions
-std::vector<int> getMapPositions(H5::H5File f5)
+std::vector<int> getMapPositions(H5::H5File f5, std::string read_name)
 {
     std::vector<int> map_positions;  // Start and end map positions
     H5::Exception::dontPrint();  // Disable error printing
     try {
         // Get the alignment start position
-        H5::Group align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
+        H5::Group align_group_obj;
+        if (read_name == "") {
+            // Single-read FAST5 file
+            align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
+        } else {
+            // Multi-read FAST5 file
+            std::string align_group_path = "/" + read_name + "/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment";
+            align_group_obj = f5.openGroup(align_group_path);
+        }
         H5::Attribute start_map_obj = align_group_obj.openAttribute("mapped_start");
         H5::DataType start_map_datatype= start_map_obj.getDataType();
         int start_map_buffer [1];
@@ -95,15 +109,25 @@ std::vector<int> getMapPositions(H5::H5File f5)
 }
 
 // Read alignment data from the file to get the mapped chromosome
-std::string getChromosome(H5::H5File f5)
+std::string getChromosome(H5::H5File f5, std::string read_name)
 {
     std::string mapped_chrom;  // Start and end map positions
-    std::string error_msg("No mapping found.");  // Message when no basecalling is found.
-    H5::Exception::dontPrint();  // Disable error printing
+    std::string error_msg("No mapping found.");  // Message when no alignment information is found.
+    H5::Exception::dontPrint();  // Disable HDF5 error printing
     try {
         // Get the alignment start position
         std::cout << "Opening mapping group..." << std::endl;
-        H5::Group align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
+
+        // Get the alignment start position
+        H5::Group align_group_obj;
+        if (read_name == "") {
+            // Single-read FAST5 file
+            align_group_obj = f5.openGroup("/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment");
+        } else {
+            // Multi-read FAST5 file
+            std::string align_group_path = "/" + read_name + "/Analyses/RawGenomeCorrected_000/BaseCalled_template/Alignment";
+            align_group_obj = f5.openGroup(align_group_path);
+        }
         H5::Attribute chrom_obj = align_group_obj.openAttribute("mapped_chrom");
         H5::DataType chrom_datatype= chrom_obj.getDataType();
         std::string chrom_buffer;
@@ -131,11 +155,11 @@ std::string getFileReadName(H5::H5File f5) {
 // Format read base signal data from the specified signal group
 Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool single_read)
 {
-    // Get the read name
     std::string sequence_data_str("");
     std::vector<std::vector<int>> basecall_signals;  // Holds signals across bases
     std::string mapped_chrom;
     std::vector<int> map_positions;
+    std::string read_info = read_name;
 
     // Access signal data
     std::string signal_group_str;
@@ -148,34 +172,55 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         signal_dataset_str = signal_group_str + "/Signal";
     }
 
-    //std::cout << "Opening signal group " << signal_group_str << std::endl;
+    std::cout << "Opening signal group " << signal_group_str << std::endl;
     H5::Group signal_group = f5.openGroup(signal_group_str);
 
     // Get the signal dataset
     //std::cout << "Opening dataset " << signal_dataset_str << std::endl;
     H5::DataSet signal_ds = f5.openDataSet(signal_dataset_str);
+
+    //std::cout << "Getting data type..." << std::endl;
     H5::DataType mdatatype= signal_ds.getDataType();
     H5::DataSpace dataspace = signal_ds.getSpace();
     hsize_t dims[2];
+
+    //std::cout << "Getting data dimensions..." << std::endl;
     dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
-    int data_count = dims[0];
+    int data_count = (int) dims[0];
+    std::cout << "Data count = " << data_count << std::endl;
+
+    // Read the signals if available
+    if (data_count == 0) {
+        std::cout << "No signal data found." << std::endl;
+        Base_Signals basecall_obj(read_info, sequence_data_str, basecall_signals);
+        return basecall_obj;
+    }
 
     // Store the signals in an array
+    std::cout << "Reading data..." << std::endl;
     int16_t f5signals_16 [data_count];
     signal_ds.read(f5signals_16, mdatatype);
 
     // Cast signals to int
-    int f5signals [data_count];
+    //std::cout << "Creating int vector..." << std::endl;
+    std::vector<int> f5signals (data_count);
+    //std::cout << "Casting data..." << std::endl;
     for (int i = 0; i < data_count; i++) { f5signals[i] = (int) f5signals_16[i]; };
+    //std::cout << "Data cast." << std::endl;
 
     // Get the sequence string if available
-    std::string basecall_group("Basecall_1D_000");
+    std::cout << "Getting FASTQ..." << std::endl;
+    std::string basecall_group;
+    if (single_read) {
+        basecall_group = "/Analyses/Basecall_1D_000";
+    } else {
+        basecall_group = "/" + read_name + "/Analyses/Basecall_1D_000";
+    }
     std::vector<std::string> fq = getFastq(f5, basecall_group);
     if (fq.empty()){
         // Return the raw signal only
-        int n = sizeof(f5signals) / sizeof(f5signals[0]);
-        std::vector<int> all_signals(f5signals, f5signals + n);
-        basecall_signals.push_back(all_signals);
+        std::cout << "No FASTQ found." << std::endl;
+        basecall_signals.push_back(f5signals);
 
     } else {
         // Access signal basecalling information
@@ -183,8 +228,16 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
 
         // Get the block stride (window length) attribute
         std::cout << "Opening basecall group..." << std::endl;
-        H5::Group group_obj = f5.openGroup("/Analyses/Basecall_1D_000/Summary/basecall_1d_template");
-        H5::Attribute block_stride_obj = group_obj.openAttribute("block_stride");
+        H5::Group group_obj;
+        H5::Attribute block_stride_obj;
+        if (single_read) {
+            group_obj = f5.openGroup("/Analyses/Basecall_1D_000/Summary/basecall_1d_template");
+            block_stride_obj = group_obj.openAttribute("block_stride");
+        } else {
+            group_obj = f5.openGroup("/" + read_name + "/Analyses/Basecall_1D_000/Summary/basecall_1d_template");
+            block_stride_obj = group_obj.openAttribute("block_stride");
+        }
+
         H5::DataType bs_datatype= block_stride_obj.getDataType();
         int bs_buffer [1];
         block_stride_obj.read(bs_datatype, bs_buffer);
@@ -197,17 +250,38 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         seq_length_obj.read(sl_datatype, sl_buffer);
 
         // Get the raw signal basecall start position
-        std::cout << "Opening segmentation group..." << std::endl;
-        H5::Group segm_group_obj = f5.openGroup("/Analyses/Segmentation_000/Summary/segmentation");
+        //std::cout << "Opening segmentation group..." << std::endl;
+        H5::Group segm_group_obj;
+        if (single_read) {
+            segm_group_obj = f5.openGroup("/Analyses/Segmentation_000/Summary/segmentation");
+        } else {
+            segm_group_obj = f5.openGroup("/" + read_name + "/Analyses/Segmentation_000/Summary/segmentation");
+        }
+
+        //std::cout << "Opening start attribute..." << std::endl;
         H5::Attribute start_attr_obj = segm_group_obj.openAttribute("first_sample_template");
+        //std::cout << "Getting data type..." << std::endl;
         H5::DataType st_datatype= start_attr_obj.getDataType();
         int st_buffer [1];
+        //std::cout << "Reading data..." << std::endl;
         start_attr_obj.read(st_datatype, st_buffer);
+        //std::cout << "Data read." << std::endl;
         int start_index = st_buffer[0];
 
         // Get the boolean array of base calls (move)
+        //std::cout << "Opening move dataset..." << std::endl;
         H5::DataSet move_dataset_obj;
-        move_dataset_obj = f5.openDataSet("/Analyses/" + basecall_group + "/BaseCalled_template/Move");
+        if (single_read) {
+            std::string move_group = "/Analyses/Basecall_1D_000/BaseCalled_template/Move";
+            std::cout << "Opening move dataset: " << move_group << std::endl;
+            move_dataset_obj = f5.openDataSet(move_group);
+        } else {
+            std::string move_group = "/" + read_name + "/Analyses/Basecall_1D_000/BaseCalled_template/Move";
+            std::cout << "Opening move dataset: " << move_group << std::endl;
+            move_dataset_obj = f5.openDataSet(move_group);
+        }
+
+        //std::cout << "Getting data type..." << std::endl;
         H5::DataType  move_datatype = move_dataset_obj.getDataType();
         H5::DataSpace move_dataspace  = move_dataset_obj.getSpace();
         hsize_t move_dims[2];
@@ -215,8 +289,13 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         int move_data_count = move_dims[0];
 
         // Get alignment information
-        map_positions = getMapPositions(f5);
-        mapped_chrom = getChromosome(f5);
+        if (single_read) {
+            map_positions = getMapPositions(f5, read_name);
+            mapped_chrom = getChromosome(f5, read_name);
+        } else {
+            map_positions = getMapPositions(f5, read_name);
+            mapped_chrom = getChromosome(f5, read_name);
+        }
 
         // Read the boolean array
         uint8_t move_bool [move_data_count];
@@ -231,11 +310,14 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         {
             // Grab the signal
             int end_index = base_start_index + block_stride_value;
-            std::vector<int> block_signal(block_stride_value);
-            block_signal.assign(f5signals + base_start_index, f5signals + end_index);
+//            std::vector<int> block_signal(block_stride_value);
+
+            // Get the signal from base_start_index to end_index
+//            block_signal = std::vector<int>(f5signals.begin() + base_start_index, f5signals.begin() + end_index);
 
             // Append the signal to the current base signal vector
-            called_base_signal.insert( called_base_signal.end(), block_signal.begin(), block_signal.end() );
+//            called_base_signal.insert( called_base_signal.end(), block_signal.begin(), block_signal.end() );
+            called_base_signal.insert( called_base_signal.end(), f5signals.begin() + base_start_index, f5signals.begin() + end_index );
 
             // Check whether a basecall occurred
             int move_value(move_bool[i]);
@@ -258,7 +340,6 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
     }
 
     // Set up the read information header for the output report
-    std::string read_info = read_name;
     if (!mapped_chrom.empty()) {
         read_info += " " + mapped_chrom;
         if (!map_positions.empty()) {
@@ -386,7 +467,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 
 
 // Add read signal QC to the output data structure and the output details file
-static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data)
+static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data, std::vector<std::string> read_id_list)
 {
     int exit_code = 0;
 
@@ -418,15 +499,31 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
             std::cout << "Multi-read FAST5" << std::endl;
 
             // Loop through each read
+            std::cout << "Reading all reads" << std::endl;
             H5::Group root_group = f5.openGroup("/");
             size_t num_objs = root_group.getNumObjs();
             for (size_t i=0; i < num_objs; i++) {
                 read_name = root_group.getObjnameByIdx(i);
-                //std::cout << read_name << std::endl;
 
-                // Append the basecall signals to the output structure
-                //signal_group_str = "/" + read_name + "/Raw";
+                // Check if the read is in the list of reads to process (if provided)
+                if (read_id_list.size() > 0) {
+                    // First remove the prefix
+                    std::string read_id = read_name.substr(5);
+                    if (std::find(read_id_list.begin(), read_id_list.end(), read_id) == read_id_list.end()) {
+                        //std::cout << "Skipping read ID: " << read_id << std::endl;
+                        continue;
+                    } else {
+                        std::cout << "Processing read ID: " << read_id << std::endl;
+                    }
+                }
+
+                std::cout << "Read: " << read_name << std::endl;
+
+                // Get the basecall signals
+                std::cout << "Getting basecall signals" << std::endl;
                 Base_Signals basecall_obj = getReadBaseSignalData(f5, read_name, false);
+
+                std::cout << "Adding basecall signals" << std::endl;
                 output_data.addReadBaseSignals(basecall_obj);
             }
         }
@@ -485,6 +582,17 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     bool signal_mode = (bool)_input_data.other_flags;
     std::cout << "FAST5 mode: " << ( signal_mode == true? "Signal" : "Base" ) << " QC" << std::endl;
 
+    // Get the list of read IDs to process (if specified)
+    std::vector<std::string> read_id_list;
+    if (_input_data.read_ids.empty() == false) {
+        // Parse the comma-separated list of read IDs
+        std::stringstream ss(_input_data.read_ids);
+        std::string read_id;
+        while (std::getline(ss, read_id, ',')) {
+            read_id_list.push_back(read_id);
+        }
+    }
+
     if (signal_mode == true) {
 //        // Generate the signal data QC output
 //        std::string signal_raw_csv(_input_data.output_folder + "/FAST5_signal_raw.csv");
@@ -498,7 +606,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
             std::cout << "File name: " << input_file << std::endl;
 
             // Write QC details to the file
-            exit_code = writeSignalQCDetails(input_file, output_data);
+            exit_code = writeSignalQCDetails(input_file, output_data, read_id_list);
         }
     } else {
         // Generate the usual read and base QC output

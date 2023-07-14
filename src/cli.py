@@ -371,6 +371,12 @@ def fast5_signal_module(margs):
         input_para.out_prefix = str(param_dict["out_prefix"])
         input_para.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
 
+        # Get the read ID list if specified
+        read_ids = margs.read_ids
+        if read_ids != "":
+            input_para.read_ids = read_ids
+            #print("Read ID list is " + str(read_ids))
+
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
 
@@ -493,6 +499,10 @@ fast5_signal_parser = subparsers.add_parser('f5s',
                                                         "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
                                             formatter_class=RawTextHelpFormatter)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
+
+# Add an argument for specifying the read names to extract
+fast5_signal_parser.add_argument("-r", "--read_ids", type=str, default=None,
+                                 help="A comma-separated list of read IDs to extract from the file.")
 
 # sequencing_summary.txt inputs
 seqtxt_parsers = subparsers.add_parser('seqtxt',
