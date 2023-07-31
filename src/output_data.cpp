@@ -2,6 +2,7 @@
 #include<algorithm>  // std::foreach
 #include <math.h>  // sqrt
 #include <iostream>
+#include <sstream>
 
 #include "output_data.h"
 #include "basic_statistics.h"
@@ -463,6 +464,84 @@ void Output_FAST5::addReadBaseSignals(Base_Signals values){
     this->read_count++;  // Update read count
     int base_count = values.getBaseCount();
     this->base_count += base_count;  // Update base count
+}
+
+// Add read fastq data
+void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_fp)
+{
+    const char * read_name;
+    double gc_content_pct;
+
+    // Access the read name
+    std::string header_str = fq[0];
+    std::istringstream iss_header( header_str );
+    std::string read_name_str;
+    std::getline( iss_header, read_name_str, ' ' );
+    read_name = read_name_str.c_str();
+
+    // Access the sequence data
+    std::string sequence_data_str = fq[1];
+
+    // Update the total number of bases
+    int base_count = sequence_data_str.length();
+    long_read_info.total_num_bases += base_count;
+
+    // Store the read length
+    long_read_info.read_lengths.push_back(base_count);
+
+    // Access base quality data
+    char value;
+    std::vector<int> base_quality_values;
+    std::string base_quality_str = fq[3];
+    std::istringstream iss( base_quality_str );
+    while (iss >> value) {
+        int base_quality_value = value - '!';  // '!' symbol represent 0-quality score
+        base_quality_values.push_back(base_quality_value);
+    }
+
+    // Update the base quality and GC content information
+    int gc_count = 0;
+    double read_mean_base_qual = 0;
+    char current_base;
+    uint64_t base_quality_value;
+    for (int i = 0; i < base_count; i++)
+    {
+        current_base = sequence_data_str[i];
+        if (current_base == 'A' || current_base == 'a')
+        {
+            long_read_info.total_a_cnt += 1;
+        }
+        else if (current_base == 'G' || current_base == 'g')
+        {
+            long_read_info.total_g_cnt += 1;
+            gc_count += 1;
+        }
+        else if (current_base == 'C' || current_base == 'c')
+        {
+            long_read_info.total_c_cnt += 1;
+            gc_count += 1;
+        }
+        else if (current_base == 'T' || current_base == 't' || current_base == 'U' || current_base == 'u')
+        {
+            long_read_info.total_tu_cnt += 1;
+        }
+        // Get the base quality
+        base_quality_value = (uint64_t)base_quality_values[i];
+        seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+        read_mean_base_qual += (double)base_quality_value;
+    }
+
+    // Calculate percent guanine & cytosine
+    gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
+
+    // Look into this section
+    long_read_info.read_gc_content_count[(int)(gc_content_pct + 0.5)] += 1;
+    read_mean_base_qual /= (double) base_count;
+    seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
+    fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);
+
+    // Update the total number of reads
+    long_read_info.total_num_reads += 1;
 }
 
 // Get the read count

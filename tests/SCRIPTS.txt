@@ -1,0 +1,102 @@
+srun --mem=30G -c 12 --pty bash
+conda build -c bioconda -c conda-forge .
+
+swig -c++ -python -outdir lib -Iinclude -o src/lrst_wrap.cpp src/lrst.i
+
+/mnt/isilon/wang_lab/shared/ont_data_of_projects/PeiLab_SingleCell/20221221_SingleCellcDNA_Test/LV_Heart
+
+fq -t 12 -i /mnt/isilon/wang_lab/shared/ont_data_of_projects/PeiLab_SingleCell/20221221_SingleCellcDNA_Test/LV_Heart/20221221_1520_X4_AMY216_b8b78e5b/fastq_pass/AMY216_pass_b8b78e5b_6ced03d2_100.fastq.gz -o SampleOutputs
+
+# CDNA tests:
+/mnt/isilon/wang_lab/shared/datasets/RNA_Modification/datasets/HeLa_104968/guppy6_basecalled/alignment/aligned.grch38.cdna.bam
+bam -t 12 -i /mnt/isilon/wang_lab/shared/datasets/RNA_Modification/datasets/HeLa_104968/guppy6_basecalled/alignment/aligned.grch38.cdna.bam -o SampleOutputs
+bam -t 12 -i /mnt/isilon/wang_lab/shared/datasets/RNA_Modification/datasets/HEK293T_103785/guppy6_basecalled/alignment/aligned.grch38.cdna.bam
+
+samtools view -r chr22 /mnt/isilon/wang_lab/shared/datasets/RNA_Modification/datasets/HeLa_104968/guppy6_basecalled/alignment/aligned.grch38.cdna.bam -o rnaseq_chr22.bam
+bam -t 4 -i SampleData/rnaseq_chr22.bam -o RNAModOut
+
+Performance tests:
+/mnt/isilon/wang_lab/shared/datasets/HG002_NA24385/nanopore/ONT_Official/basecalls/gm24385_q20_2021.10/multi_fast5/20210805_1713_5C_PAH79257_0e41e938/alignment/
+
+Small RNA dataset:
+bam -t 12 -i /mnt/isilon/wang_lab/shared/ont_data_of_projects/directRNA_K562_R9_flowcell/no_sample/20220222_0015_X4_FAO30221_b0226a85 -o RNAOut1
+
+
+# CAG tandem repeats from base index 19675-22000
+
+f5s -t 12 -i /mnt/isilon/wang_lab/shared/datasets/DNA_Methylation/datasets/nanopore-wgs-consortium/WGS/basecalls/chr4/workspace/83/4b070e74-b067-485b-83dd-6c8481d0a3df.fast5 -o CAG_Repeats
+
+# VBZ-compressed fast5s:
+f5s -t 12 -i /mnt/isilon/wang_lab/shared/ont_data_of_projects/PeiLab_SingleCell/20221221_SingleCellcDNA_Test/LV_Heart/20221221_1520_X4_AMY216_b8b78e5b/fast5_pass/AMY216_pass_b8b78e5b_6ced03d2_100.fast5 -o SampleOutputs
+
+# Additional path variables:
+PATH=$PATH:~/miniconda3/envs/lrst_py39/bin;HDF5_PLUGIN_PATH=/home/perdomoj/github/LongReadSum/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin/
+
+# Test VBZ plugin:
+PATH=$PATH:HDF5_PLUGIN_PATH=/home/perdomoj/github/LongReadSum/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin/
+
+# Basic tests:
+bam -t 12 -i SampleData/guppy.bam -o SampleOutputs
+NanoPlot -t 12 --bam SampleData/guppy.bam -o NanoPlot_Out
+
+# RAM usage test:
+python src/ bam -i /mnt/isilon/wang_lab/shared/datasets/RNA_Modification/datasets/HeLa_104968/guppy6_basecalled/alignment/aligned.grch38.cdna.bam -o LargeBAM
+
+
+python src/ bam -t 12 -i SampleData/guppy.bam -o SampleOutputs
+
+
+KidsFirst-like Large BAM file testing:
+/mnt/isilon/wang_lab/shared/datasets/HG002_NA24385/nanopore/guppy.4.2.2/HG002.Guppy_4.2.2_prom.bam
+
+bam -t 12 -i /mnt/isilon/wang_lab/shared/datasets/HG002_NA24385/nanopore/guppy.4.2.2/HG002.Guppy_4.2.2_prom.bam -o KidsFirstBAM
+
+
+Filetype tests:
+
+bam -t 12 -i SampleData/guppy.bam -o BamOut_LessDeps
+bam -t 12 -i SampleData/pacbio_unmapped_trim.bam -o UBAMOut_LessDeps
+fa -i SampleData/fasta_trim1.fa -o FASTAOut_LessDeps
+fq -i SampleData/guppy.fastq -o FASTQOut_LessDeps
+f5 -i SampleData/kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch100_read6082_strand.fast5 -o FAST5Out_LessDeps
+f5s -i SampleData/kelvin_20160810_FN_MN17519_sequencing_run_160810_na12878_PCRSssI_92870_ch100_read6082_strand.fast5 -o FAST5OutSig_LessDeps
+seqtxt -i SampleData/sequencing_summary.txt -o SEQTXTOut_LessDeps
+
+xport LD_LIBRARY_PATH=${LD_LIBRARY_PATH}:/home/perdomoj/github/LongReadSum/lib
+# SCENARIO TESTS
+
+cd /home/perdomoj/github/LongReadSum
+srun --mem=30G -c 12 --pty bash
+conda activate lrst_py39
+conda activate longreadsum
+
+RRMS test:
+python LongReadSum bam -t 12 -i /mnt/isilon/wang_lab/joe/Adaptive_Sampling/RRMS/HG002_RRMS_3/HG002_RRMS_3.sorted.bam -o LongReadSum/output/manuscript/RRMS_HG002
+
+direct mRNA test:
+python LongReadSum bam -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/direct_mRNA/direct_mRNA_merged.bam -o LongReadSum/output/manuscript/dmRNA
+
+cDNA test:
+python LongReadSum bam -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/cDNA/cDNA_merged.bam -o LongReadSum/output/manuscript/cDNA
+
+WGS R9.4 test:
+python LongReadSum bam -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/WGS/WGS_merged.bam -o LongReadSum/M_WGS
+python LongReadSum bam -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/WGS_Kit11_R9_4_1/WGS_merged.bam -o LongReadSum/output/manuscript/WGS_R9
+python LongReadSum fq -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/WGS_Kit11_R9_4_1/merged.fastq -o LongReadSum/output/manuscript/WGS_R9_FQ
+
+WGS R10.4 test:
+python LongReadSum bam -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/WGS_Kit14_R10_4_1/WGS_merged_sorted.bam -o LongReadSum/output/manuscript/WGS_R10_r2
+python LongReadSum fq -t 12 -i /mnt/isilon/wang_lab/perdomoj/data/lrs_testing_data/WGS_Kit14_R10_4_1/merged.fastq -o LongReadSum/output/manuscript/WGS_R10_FQ
+
+Large BAM test:
+python LongReadSum bam --thread 4 --input LongReadSum/SampleData/guppy.bam --log test.log --outprefix test_basename --outputfolder LongReadSum/KidsFirstTest
+
+python LongReadSum bam --thread 4 --input /mnt/isilon/wang_lab/shared/datasets/HG002_NA24385/nanopore/guppy.4.2.2/HG002.Guppy_4.2.2_prom.bam --log test.log --outprefix test_basename --outputfolder LongReadSum/KidsFirstTest2
+
+Aquizu BAM test:
+sbatch --mem=30G -c 12 --pty bash
+python LongReadSum bam --thread 12 --input /mnt/isilon/wang_lab/shared/datasets/HG002_NA24385/nanopore/guppy.4.2.2/HG002.Guppy_4.2.2_prom.bam --log test.log --outprefix test_basename --outputfolder LongReadSum/KidsFirstTest2
+
+# Repeat regions:
+python . f5s -i /scr1/users/ahsanm1/ont_kit14/basecalls/20221109_1654_5A_PAG65784_f306681d/workspace/PAG65784_pass_f306681d_16a70748_102.fast5 -o output/G4C2_RepeatRegion
+python . f5s -i InputRepeat/PAG65784_pass_f306681d_16a70748_102.fast5 -o output/G4C2_RepeatRegion -r 41208c6c-aa37-4df5-86a8-7795015a36a7,41208c6c-aa37-4df5-86a8-7795015a36a7,d57e5a3b-8647-4853-8f8f-166302ab045a,32fedea8-a42e-415b-a945-a50f33dc47a6,77f52939-46a2-48c4-9949-95597ae7b854,5eabff89-c20e-4639-b345-30d17b9feed2,4d57ff17-3489-4ff6-bf51-2a6e111f7f59,eff47b76-de1d-492a-8ec2-f95999b256fb,741a5ce0-bdd0-4d3d-8f85-de8a00045b72,e0b5b1d9-bdfc-4899-acad-951edad4f689,8c23e735-2419-4a7a-9142-89d0cf2fa5fb,ea13ea0b-d186-4482-a59d-a5e81b76a55a,13693f20-a759-4126-a472-c7555e2f09fc,ed2e4ea7-f3b7-4282-bd7b-81bf8753e403,a779f471-d9ed-491d-b72a-f9edd830b557,5a33d2c3-99e3-4f86-bfee-a5d0e9856dc2,2ac47147-011d-410c-9216-89efa2378807,5f218fa5-7459-460b-a9b0-e06e0fa9473d,d01a5cd4-d20f-427b-86ea-ba87dce2d785,6367073b-3fea-4458-b4cd-a7a4ea7cdf4f,9e2aef52-a956-45cd-a0d3-83c1fd645901,c8c5e3a3-3d7a-4782-a19e-980fe2c28840,3f062064-c151-485e-86ef-0d3a67fcb98b,50acc532-70da-4b37-894a-53afc59d38b2,4a4e7021-9cb6-4df5-852a-2504fb8d396f,ced37b99-cdcd-4988-8a35-599a5ef9d57c,24c55c33-9cae-4e3d-9b31-a7b5b9c562e4,88f5b081-7f05-411f-a135-0049e10733eb,99f5e3a5-bf3c-4ecf-b5a5-1336c83b89b7,3cfceb00-48d8-4331-92ee-7b04931689ae,4990ca3c-d209-4afd-8fca-5784145f7487,

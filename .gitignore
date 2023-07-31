@@ -1,0 +1,30 @@
+# VSCode
+.vscode
+.idea
+
+# Python
+__pycache__
+
+# SWIG generated files
+lib/*.so
+lib/lrst.py
+src/lrst_wrap.cpp
+
+# Build and dist
+build
+dist
+
+# Conda
+conda
+
+# Outputs
+output
+
+# Sample data
+SampleData
+
+# Logs
+*.log
+
+# Testing scripts
+tests/SCRIPTS.txt

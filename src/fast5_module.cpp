@@ -374,83 +374,50 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
         // Open the file
         H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
 
-        // Get the FASTQ dataset
-        std::vector<std::string> fq = getFastq(f5, basecall_group);
-        if (fq.empty()){
-            std::cerr << "No sequence data found. Signal QC may be generated using the 'f5s' option." << std::endl;
-            exit_code = 2;
+        // Check if it is a multi-read FAST5 file
+        std::string signal_group_str;
+        std::string read_name;
+        std::string basecall_group = "/Analyses/Basecall_1D_000";
+        bool single_read = false;
+        if (f5.nameExists("/Raw")) {
+            single_read = true;
+            std::cout << "Single read FAST5" << std::endl;
+
+            // Get the basecall group
+            basecall_group = "/Analyses/Basecall_1D_000";
+
+            // Get the sequence data
+            std::vector<std::string> fq = getFastq(f5, basecall_group);
+
+            // Append the basecalls to the output structure
+            output_data.addReadFastq(fq, read_details_fp);
+
         } else {
-            // Access the read name
-            std::string header_str = fq[0];
-            std::istringstream iss_header( header_str );
-            std::string read_name_str;
-            std::getline( iss_header, read_name_str, ' ' );
-            read_name = read_name_str.c_str();
+            std::cout << "Multi-read FAST5" << std::endl;
 
-            // Access the sequence data
-            std::string sequence_data_str = fq[1];
+            // Loop through each read
+            std::cout << "Reading all reads" << std::endl;
+            H5::Group root_group = f5.openGroup("/");
+            size_t num_objs = root_group.getNumObjs();
+            for (size_t i=0; i < num_objs; i++) {
+                read_name = root_group.getObjnameByIdx(i);
 
-            // Update the total number of bases
-            int base_count = sequence_data_str.length();
-            long_read_info.total_num_bases += base_count;
+                // First remove the prefix
+                std::string read_id = read_name.substr(5);
+                std::cout << "Processing read ID: " << read_id << std::endl;
+                //std::cout << "Read: " << read_name << std::endl;
 
-            // Store the read length
-            long_read_info.read_lengths.push_back(base_count);
+                // Get the basecall group
+                basecall_group = "/" + read_name + "/Analyses/Basecall_1D_000";
 
-            // Access base quality data
-            char value;
-            std::vector<int> base_quality_values;
-            std::string base_quality_str = fq[3];
-            std::istringstream iss( base_quality_str );
-            while (iss >> value) {
-                int base_quality_value = value - '!';  // '!' symbol represent 0-quality score
-                base_quality_values.push_back(base_quality_value);
+                // Get the sequence data
+                std::vector<std::string> fq = getFastq(f5, basecall_group);
+
+                // Append the basecalls to the output structure
+                output_data.addReadFastq(fq, read_details_fp);
             }
-
-            // Update the base quality and GC content information
-            int gc_count = 0;
-            double read_mean_base_qual = 0;
-            char current_base;
-            uint64_t base_quality_value;
-            for (int i = 0; i < base_count; i++)
-            {
-                current_base = sequence_data_str[i];
-                if (current_base == 'A' || current_base == 'a')
-                {
-                    long_read_info.total_a_cnt += 1;
-                }
-                else if (current_base == 'G' || current_base == 'g')
-                {
-                    long_read_info.total_g_cnt += 1;
-                    gc_count += 1;
-                }
-                else if (current_base == 'C' || current_base == 'c')
-                {
-                    long_read_info.total_c_cnt += 1;
-                    gc_count += 1;
-                }
-                else if (current_base == 'T' || current_base == 't' || current_base == 'U' || current_base == 'u')
-                {
-                    long_read_info.total_tu_cnt += 1;
-                }
-                // Get the base quality
-                base_quality_value = (uint64_t)base_quality_values[i];
-                seq_quality_info.base_quality_distribution[base_quality_value] += 1;
-                read_mean_base_qual += (double)base_quality_value;
-            }
-
-            // Calculate percent guanine & cytosine
-            gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
-
-            // Look into this section
-            long_read_info.read_gc_content_count[(int)(gc_content_pct + 0.5)] += 1;
-            read_mean_base_qual /= (double) base_count;
-            seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-            fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);
-
-            // Update the total number of reads (1 per FAST5 file)
-            output_data.long_read_info.total_num_reads += 1;
         }
+
     } catch (FileIException &error) {
         // If the dataset is missing, continue and ignore this file
         if (error.getFuncName() == "H5File::openDataSet") {

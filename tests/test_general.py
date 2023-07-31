@@ -5,6 +5,11 @@ Test expected values for output statistics using sample input files (FASTA, FAST
 import os
 import pytest
 
+
+# Add the parent directory to the path
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from lib import lrst
 
 

@@ -20,26 +20,26 @@ jobs:
         repo: 'WGLab/LongReadSum'
         version: 'tags/v0.1.0'
         file: 'SampleData.zip'
+        target: 'TestInputs/SampleData.zip'
 
     - name: Unzip assets
       shell: bash --login {0}
-      run: unzip SampleData.zip
+      run: unzip TestInputs/SampleData.zip -d TestInputs
 
     - name: Set up conda environment
       uses: conda-incubator/setup-miniconda@v2
       with:
-        activate-environment: longreadsum
+        activate-environment: lrst_py39
         environment-file: environment.yml
         python-version: 3.9
         auto-activate-base: false
 
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
-      run: |
-        make
+      run: make
 
     - name: Run tests
       shell: bash --login {0}
       run: |
-        mkdir output  # Unit test output folder
-        python -m pytest
+        mkdir output  # Output folder for tests
+        pytest

@@ -225,6 +225,7 @@ public:
     std::string getNthReadName(int read_index);
     std::string getNthReadSequence(int read_index);
     void addReadBaseSignals(Base_Signals values);
+    void addReadFastq(std::vector<std::string> fq, FILE *read_details_fp);
     std::vector<std::vector<int>> getNthReadBaseSignals(int read_index);
     std::vector<double> getNthReadBaseMeans(int read_index);
     std::vector<double> getNthReadBaseStds(int read_index);
