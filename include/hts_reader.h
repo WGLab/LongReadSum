@@ -10,7 +10,6 @@
 #include <mutex>
 #include <stdint.h>
 
-#include "ComStruct.h"
 #include "output_data.h"
 
 #define BAM_UN_OPEN 1

@@ -10,7 +10,6 @@ Class for calling FAST5 statistics modules.
 #include <algorithm>
 
 #include "seqtxt_module.h"
-#include "ComFunction.h"
 
 
 size_t SeqTxt_Module::batch_size_of_record=3000;
@@ -221,7 +220,7 @@ int SeqTxt_Module::generateStatistics( Output_SeqTxt& t_output_SeqTxt_info){
    t_output_SeqTxt_info.global_sum();
  
    auto relapse_end_time = std::chrono::high_resolution_clock::now();
-   std::cout<<"Elapsed time (seconds): "<<round3((relapse_end_time-relapse_start_time).count()/1000000000.0)<<std::endl;
+   std::cout<<"Elapsed time (seconds): "<< std::chrono::duration_cast<std::chrono::seconds>(relapse_end_time - relapse_start_time).count() << std::endl;
 
    std::cout<<"sequencing_summary.txt QC "<< (has_error==0?"generated":"failed") << std::endl;
  

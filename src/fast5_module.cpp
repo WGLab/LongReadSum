@@ -3,27 +3,15 @@ F5_module.cpp:
 Class for calling FAST5 statistics modules.
 
 */
-#include <array>
-#include <algorithm>    // std::sort, copy
-#include <numeric>      // std::accumulate
 #include <iostream>
-#include <vector>  // std::begin, std::end
-#include <string>
 #include <sstream>
-#include <fstream>  // std::ofstream
+#include <thread>
+#include <mutex>
+#include <algorithm>
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <zlib.h>
-#include <ctype.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <iostream>
+#include "H5Cpp.h"
 
 #include "fast5_module.h"
-#include "ComFunction.h"
-#include "H5Cpp.h"
 
 using namespace H5;
 
@@ -310,13 +298,8 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         {
             // Grab the signal
             int end_index = base_start_index + block_stride_value;
-//            std::vector<int> block_signal(block_stride_value);
-
-            // Get the signal from base_start_index to end_index
-//            block_signal = std::vector<int>(f5signals.begin() + base_start_index, f5signals.begin() + end_index);
 
             // Append the signal to the current base signal vector
-//            called_base_signal.insert( called_base_signal.end(), block_signal.begin(), block_signal.end() );
             called_base_signal.insert( called_base_signal.end(), f5signals.begin() + base_start_index, f5signals.begin() + end_index );
 
             // Check whether a basecall occurred
@@ -579,47 +562,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
         // Generate the usual read and base QC output
         read_details_file = _input_data.output_folder + "/FAST5_details.txt";
         read_summary_file = _input_data.output_folder + "/FAST5_summary.txt";
-
-        output_data.long_read_info.total_num_reads = ZeroDefault; // total number of long reads
-        output_data.long_read_info.total_num_bases = ZeroDefault; // total number of bases
-
-        output_data.long_read_info.longest_read_length = ZeroDefault; // the length of longest reads
-        output_data.long_read_info.n50_read_length = MoneDefault;     // N50
-        output_data.long_read_info.n95_read_length = MoneDefault;     // N95
-        output_data.long_read_info.n05_read_length = MoneDefault;     // N05;
-        output_data.long_read_info.mean_read_length = MoneDefault;    // mean of read length
-
-        output_data.long_read_info.NXX_read_length.clear();
-        output_data.long_read_info.median_read_length = MoneDefault; // median of read length
-
-        output_data.long_read_info.total_a_cnt = ZeroDefault;  // A content
-        output_data.long_read_info.total_c_cnt = ZeroDefault;  // C content
-        output_data.long_read_info.total_g_cnt = ZeroDefault;  // G content
-        output_data.long_read_info.total_tu_cnt = ZeroDefault; // T content for DNA, or U content for RNA
-        output_data.long_read_info.total_n_cnt = ZeroDefault;  // N content
-        output_data.long_read_info.gc_cnt = ZeroDefault;       // GC ratio
-
-        //int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
-
-        output_data.long_read_info.read_gc_content_count.clear();
-        output_data.long_read_info.read_length_count.clear();
-        //output_data.seq_quality_info.base_quality_distribution.clear();
-        output_data.seq_quality_info.read_average_base_quality_distribution.clear();
-
-        output_data.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
-        // read_length_count[x] is the number of reads that length is equal to x. MAX_READ_LENGTH is a initial max value, the vector can expand if thre are reads longer than MAX_READ_LENGTH.
-
-        output_data.long_read_info.read_gc_content_count.resize(101, 0);
-        // read_gc_content_count[x], x is a integer in the range of [0, 101). read_gc_content_count[x] means number of reads that average GC is x%.
-
-        output_data.long_read_info.NXX_read_length.resize(101, 0);
-        // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
-
-        //output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
-        // base_quality_distribution[x] means number of bases that quality = x.
-
-        output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
-        // base_quality_distribution[x] means number of reads that average base quality = x.
 
         // Set up the output summary text file
         read_details_fp = fopen(read_details_file.c_str(), "w");

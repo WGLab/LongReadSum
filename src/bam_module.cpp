@@ -9,7 +9,6 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include <cmath>
 
 #include "bam_module.h"
-#include "ComFunction.h"
 
 
 int BAM_Module::calculateStatistics(Input_Para& input_params, Output_BAM& final_output){

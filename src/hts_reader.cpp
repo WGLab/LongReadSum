@@ -13,7 +13,6 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include <math.h>
 
 #include "hts_reader.h"
-#include "ComFunction.h"
 
 // HTSReader constructor
 HTSReader::HTSReader(const std::string & bam_file_name){

@@ -15,10 +15,9 @@ Output_Info::Output_Info(){
 
 // Base class for storing basic QC data
 Basic_Seq_Statistics::Basic_Seq_Statistics(){
-   read_length_count.resize(MAX_READ_LENGTH);
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      read_length_count[ _i_ ] = ZeroDefault;
-   }
+    read_length_count.resize(MAX_READ_LENGTH + 1, ZeroDefault);
+    read_gc_content_count.resize(101, ZeroDefault);
+    NXX_read_length.resize(101, ZeroDefault);
 }
 
 Basic_Seq_Statistics::~Basic_Seq_Statistics(){
@@ -183,42 +182,25 @@ void Basic_Seq_Statistics::global_sum_no_gc(){
 
 // Constructor
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
-   pos_quality_distribution.resize(MAX_READ_LENGTH);
-   pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
-   pos_quality_distribution_count.resize(MAX_READ_LENGTH);
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      pos_quality_distribution[ _i_ ] = ZeroDefault;
-      pos_quality_distribution_dev[ _i_ ] = ZeroDefault;
-      pos_quality_distribution_count[ _i_ ] = ZeroDefault;
-   }
-//   base_quality_distribution.resize(MAX_BASE_QUALITY);
-//   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
-//      base_quality_distribution[ _i_ ] = ZeroDefault;
-//   }
+    pos_quality_distribution.resize(MAX_READ_LENGTH, ZeroDefault);
+    pos_quality_distribution_dev.resize(MAX_READ_LENGTH, ZeroDefault);
+    pos_quality_distribution_count.resize(MAX_READ_LENGTH, ZeroDefault);
 
-   read_quality_distribution.resize( MAX_READ_QUALITY );
-   for(int _i_=0; _i_<MAX_READ_QUALITY; _i_++){
-      read_quality_distribution[ _i_ ] = ZeroDefault;
-   }
+    read_average_base_quality_distribution.resize(MAX_READ_QUALITY, ZeroDefault);
+    read_quality_distribution.resize(MAX_READ_QUALITY, ZeroDefault);
 }
 
 Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics( const Basic_Seq_Quality_Statistics& _bsqs){
     pos_quality_distribution.resize(MAX_READ_LENGTH);
-   pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
-   pos_quality_distribution_count.resize(MAX_READ_LENGTH);
-   for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
-      pos_quality_distribution[ _i_ ] = _bsqs.pos_quality_distribution[ _i_ ];
-      pos_quality_distribution_dev[ _i_ ] = _bsqs.pos_quality_distribution_dev[ _i_ ];
-      pos_quality_distribution_count[ _i_ ] = _bsqs.pos_quality_distribution_count[ _i_ ];
-   }
-//    base_quality_distribution.resize(MAX_BASE_QUALITY);
-//   for(int _i_=0; _i_<MAX_BASE_QUALITY; _i_++){
-//      base_quality_distribution[ _i_ ] = _bsqs.base_quality_distribution[ _i_ ];
-//   }
-
+    pos_quality_distribution_dev.resize(MAX_READ_LENGTH);
+    pos_quality_distribution_count.resize(MAX_READ_LENGTH);
+    for(int _i_=0; _i_<MAX_READ_LENGTH; _i_++){
+        pos_quality_distribution[ _i_ ] = _bsqs.pos_quality_distribution[ _i_ ];
+        pos_quality_distribution_dev[ _i_ ] = _bsqs.pos_quality_distribution_dev[ _i_ ];
+        pos_quality_distribution_count[ _i_ ] = _bsqs.pos_quality_distribution_count[ _i_ ];
+    }
    min_base_quality = _bsqs.min_base_quality;
    max_base_quality = _bsqs.max_base_quality;
-
    max_length = _bsqs.max_length;
 
    read_quality_distribution.resize( MAX_READ_QUALITY );
