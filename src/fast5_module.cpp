@@ -343,13 +343,7 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
 static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
-    const char * read_name;
-    double gc_content_pct;
     std::string basecall_group = "Basecall_1D_000";
-
-    // Access output QC and base quality QC structures
-    Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
-    Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
 
     // Run QC on the HDF5 file
     H5::Exception::dontPrint();  // Disable error printing
@@ -361,9 +355,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
         std::string signal_group_str;
         std::string read_name;
         std::string basecall_group = "/Analyses/Basecall_1D_000";
-        bool single_read = false;
         if (f5.nameExists("/Raw")) {
-            single_read = true;
             std::cout << "Single read FAST5" << std::endl;
 
             // Get the basecall group
