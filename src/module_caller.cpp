@@ -10,7 +10,7 @@ int callBAMModule(Input_Para &_input_data, Output_BAM &py_output_bam)
 {
 //    BAM_Module _bam_module(_input_data);
     BAM_Module module;
-    int exit_code = module.calculateStatistics(_input_data, py_output_bam);
+    int exit_code = module.run(_input_data, py_output_bam);
     return exit_code;
 }
 

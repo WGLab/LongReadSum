@@ -8,6 +8,7 @@ Define the Python bindings from our C++ modules
 
 #include <vector>
 #include <string>
+#include <unordered_set>  // For RRMS read ID filtering
 #define MAX_INPUT_FILES 2048
 
 
@@ -28,6 +29,9 @@ public:
     std::string output_folder;  // Output folder
     std::string input_files[MAX_INPUT_FILES];  // Input files
     std::string read_ids;  // Read IDs comma-separated (FAST5 signal module)
+    std::string rrms_csv;  // CSV file with accepted/rejected read IDs (RRMS module)
+    bool rrms_filter;  // Generate RRMS stats for accepted (true) or rejected (false) reads
+    std::unordered_set<std::string> rrms_read_ids;  // List of read IDs from RRMS CSV file (accepted or rejected)
 
     // Functions
     std::string add_input_file(const std::string& _ip_file);

@@ -11,6 +11,7 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include <fstream>
 #include <htslib/sam.h>
 #include <math.h>
+#include <algorithm>  // std::find
 
 #include "hts_reader.h"
 
@@ -75,9 +76,15 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *bas
 }
 
 // Read the next batch of records from the BAM file and store QC in the output_data object
-int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex){
+int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex, std::unordered_set<std::string>& read_ids){
     int record_count = 0;
     int exit_code = 0;
+
+    // Determine if filtering by read ID
+    bool read_ids_present = false;
+    if (read_ids.size() > 0){
+        read_ids_present = true;
+    }
 
     // Access the base quality histogram from the output_data object
     uint64_t *base_quality_distribution = output_data.seq_quality_info.base_quality_distribution;
@@ -97,6 +104,19 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             this->reading_complete = true;
             bam_destroy1(record);
             break; // error or EOF
+        }
+
+        // Determine if this read should be skipped
+        if (read_ids_present){
+            // Get the alignment's query name (the read name)
+            std::string query_name = bam_get_qname(record);
+            //std::cout << "Query name: " << query_name << std::endl;
+
+            // Determine if this read should be skipped
+            if (read_ids.find(query_name) == read_ids.end()){
+                // std::cout << "Skipping read " << query_name << std::endl;
+                continue;  // Skip this read
+            }
         }
 
         // Determine if this is an unmapped read

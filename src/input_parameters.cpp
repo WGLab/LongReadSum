@@ -10,6 +10,7 @@ Input_Para::Input_Para(){
     downsample_percentage = 100;
     other_flags = 0;
     user_defined_fastq_base_qual_offset = -1;
+    rrms_csv = "";
 }
 
 Input_Para::~Input_Para(){

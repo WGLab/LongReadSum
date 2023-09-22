@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-"""
-cli.py:
-Parse arguments and run the filetype-specific module.
-"""
+# CLI.py: Parse arguments and run the filetype-specific module.
 
 import logging
 import sys
@@ -47,11 +44,11 @@ def get_common_param(margs):
     """
     param_dict = {}
     param_dict["prg_name"] = prg_name
-    this_error_str = ""
+    parsing_error_msg = ""
 
     if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (
             margs.inputPattern == None or margs.inputPattern == ""):
-        this_error_str += "No input file(s) are provided. \n"
+        parsing_error_msg += "No input file(s) are provided. \n"
     else:
         # Group parameters into an array
         param_dict["input_files"] = []
@@ -71,14 +68,14 @@ def get_common_param(margs):
         param_dict["read_count"] = read_count
 
         if len(param_dict["input_files"]) == 0:
-            this_error_str += "No input file(s) can be found. \n"
+            parsing_error_msg += "No input file(s) can be found. \n"
         else:
             for input_filepath in param_dict["input_files"]:
                 if not os.path.isfile(input_filepath):
-                    this_error_str += "Cannot find the input file: " + input_filepath + "\n"
+                    parsing_error_msg += "Cannot find the input file: " + input_filepath + "\n"
 
     if (margs.outputfolder == None or margs.outputfolder == ""):
-        this_error_str += "No output file is provided. \n"
+        parsing_error_msg += "No output file is provided. \n"
     else:
         output_dir = margs.outputfolder
         param_dict["output_folder"] = output_dir
@@ -87,13 +84,13 @@ def get_common_param(margs):
                 os.makedirs(output_dir)
 
         except OSError as e:
-            this_error_str += "Cannot create folder for " + \
+            parsing_error_msg += "Cannot create folder for " + \
                               param_dict["output_folder"] + " \n"
     param_dict["out_prefix"] = margs.outprefix
 
     # Set up logging to file and stdout
     if margs.log is None or margs.log == "":
-        this_error_str += "No log file is provided. \n"
+        parsing_error_msg += "No log file is provided. \n"
 
         # Set up logging to stdout
         logging.basicConfig(stream=sys.stdout,
@@ -114,7 +111,7 @@ def get_common_param(margs):
 
     param_dict["downsample_percentage"] = margs.downsample_percentage
 
-    param_dict["threads"] = margs.thread
+    param_dict["threads"] = margs.threads
 
     param_dict["random_seed"] = margs.seed
 
@@ -124,22 +121,26 @@ def get_common_param(margs):
     param_dict["fontsize"] = margs.fontsize
     param_dict["markersize"] = margs.markersize
 
-    return param_dict, this_error_str
+    # Reset the param_dict if there are parsing errors
+    if parsing_error_msg != "":
+        param_dict = {}
+        logging.error(parsing_error_msg)
+
+    return param_dict
 
 
 def fq_module(margs):
-    """
-    Run the FASTQ filetype module.
-    """
-    # Format a dict object to contain our input files/output folder parameters
-    param_dict, error_msg = get_common_param(margs)
-    if not error_msg == "":
-        logging.error(error_msg)
+    # Run the FASTQ filetype module.
+
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
         parser.parse_args(['fq', '--help'])
-        sys.exit(1001)
+        sys.exit(0)
+
     else:
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "fq_"
+        param_dict["out_prefix"] += "fastq"
 
         # Import the SWIG Python wrapper for our C++ module
         input_para = lrst.Input_Para()
@@ -173,21 +174,18 @@ def fq_module(margs):
 
 
 def fa_module(margs):
-    """
-    Run the FASTA filetype module.
-    """
-    # Format a dict object to contain our input files/output folder parameters
-    param_dict, error_msg = get_common_param(margs)
+    # Run the FASTA filetype module.
 
-    if not error_msg == "":
-        # If there are parse errors, display the filetype-specific help instructions
-        logging.error(error_msg)
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
         parser.parse_args(['fa', '--help'])
-        sys.exit(1002)
+        sys.exit(0)
+        
     else:
         # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "fa_"
+        param_dict["out_prefix"] += "fasta"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
@@ -217,18 +215,15 @@ def fa_module(margs):
 
 
 def bam_module(margs):
-    """
-    Run the BAM filetype module.
-    """
-    param_dict, error_msg = get_common_param(margs)
-
-    if not error_msg == "":
-        logging.error(error_msg)
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
         parser.parse_args(['bam', '--help'])
-        sys.exit(1003)
+        sys.exit(0)
+
     else:
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "bam_";
+        param_dict["out_prefix"] += "bam";
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
@@ -257,20 +252,72 @@ def bam_module(margs):
 
         logging.info("Done.")
 
-
-def seqtxt_module(margs):
-    """
-    Run the sequencing_summary.txt filetype module.
-    """
-    param_dict, error_msg = get_common_param(margs)
-
-    if not error_msg == "":
-        logging.error(error_msg)
-        parser.parse_args(['seqtxt', '--help'])
-        sys.exit(1004)
+def rrms_module(margs):
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
+        parser.parse_args(['rrms', '--help'])
+        sys.exit(0)
     else:
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "seqtxt_";
+        input_para = lrst.Input_Para()
+        input_para.threads = param_dict["threads"]
+        input_para.rdm_seed = param_dict["random_seed"]
+        input_para.downsample_percentage = param_dict["downsample_percentage"]
+        input_para.other_flags = (1 if param_dict["detail"] > 0 else 0);
+        input_para.output_folder = str(param_dict["output_folder"])
+        input_para.out_prefix = str(param_dict["out_prefix"])
+        for _ipf in param_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        # Set the RRMS input CSV file
+        input_para.rrms_csv = margs.csv
+        logging.info("RRMS CSV file is " + input_para.rrms_csv)
+
+        # Get the output prefix
+        output_prefix = param_dict["out_prefix"]
+
+        # Run QC for both accepted and rejected reads
+        rrms_filter = [True, False]
+        for filter_type in rrms_filter:
+
+            # Set the RRMS filter type
+            input_para.rrms_filter = filter_type
+
+            # Set the output prefix
+            param_dict["out_prefix"] = output_prefix + "rrms_" + ("accepted" if filter_type else "rejected")
+
+            # Run the QC module
+            logging.info("Running QC for " + ("accepted" if filter_type else "rejected") + " reads...")
+            bam_output = lrst.Output_BAM()
+            exit_code = lrst.callBAMModule(input_para, bam_output)
+            if exit_code == 0:
+                logging.info("QC generated.")
+                logging.info("Generating HTML report...")
+                plot_filepaths = plot(bam_output, param_dict, 'BAM')
+
+                # Generate the HTML report
+                bam_html_gen = generate_html.ST_HTML_Generator(
+                    [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
+                    "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
+                bam_html_gen.generate_st_html()
+
+            else:
+                logging.error("QC did not generate.")
+
+        logging.info("Done.")
+        
+
+def seqtxt_module(margs):
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
+        parser.parse_args(['seqtxt', '--help'])
+        sys.exit(0)
+        
+    else:
+        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        param_dict["out_prefix"] += "seqtxt"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
@@ -310,18 +357,15 @@ def seqtxt_module(margs):
 
 
 def fast5_module(margs):
-    """
-    Run the FAST5 filetype module.
-    """
-    param_dict, error_msg = get_common_param(margs)
-
-    if not error_msg == "":
-        logging.error(error_msg)
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
         parser.parse_args(['f5', '--help'])
-        sys.exit(1004)
+        sys.exit(0)
+
     else:
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "f5_"
+        param_dict["out_prefix"] += "FAST5"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
@@ -351,18 +395,15 @@ def fast5_module(margs):
 
 
 def fast5_signal_module(margs):
-    """
-    Run the FAST5 filetype module with signal statistics output.
-    """
-    param_dict, error_msg = get_common_param(margs)
-
-    if not error_msg == "":
-        logging.error(error_msg)
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
         parser.parse_args(['f5s', '--help'])
-        sys.exit(1004)
+        sys.exit(0)
+
     else:
         logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "f5s_"
+        param_dict["out_prefix"] += "fast5_signal"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
@@ -398,7 +439,6 @@ def fast5_signal_module(margs):
     logging.info("Done.")
 
 
-# =====
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
                                  epilog="Example with single inputs:\n"
@@ -453,36 +493,36 @@ common_grp_param.add_argument("-G", "--log_level", type=int, default=2,
 
 common_grp_param.add_argument("-o", "--outputfolder", type=str,
                               default="output_" + prg_name, help="The output folder.")
-common_grp_param.add_argument("-t", "--thread", type=int,
+common_grp_param.add_argument("-t", "--threads", type=int,
                               default=1, help="The number of threads used. Default: 1.")
 common_grp_param.add_argument("-Q", "--outprefix", type=str,
-                              default="st_", help="The prefix of output. Default: `st_`.")
+                              default="QC_", help="The prefix of output. Default: `QC_`.")
 common_grp_param.add_argument(
     "-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
 common_grp_param.add_argument("-d", "--detail", type=int, default=0,
                               help="Will output detail in files? Default: 0(no).")
 
-# FASTA inputs
-fa_parsers = subparsers.add_parser('fa',
+# FASTA input file
+fa_parser = subparsers.add_parser('fa',
                                    parents=[parent_parser],
                                    help="FASTA file input",
                                    description="For example:\n"
                                                "python %(prog)s -i input.fasta -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
-fa_parsers.set_defaults(func=fa_module)
+fa_parser.set_defaults(func=fa_module)
 
-# FASTQ inputs
-fq_parsers = subparsers.add_parser('fq',
+# FASTQ input file
+fq_parser = subparsers.add_parser('fq',
                                    parents=[parent_parser],
                                    help="FASTQ file input",
                                    description="For example:\n"
                                                "python %(prog)s -i input.fastq -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
-fq_parsers.add_argument("-u", "--udqual", type=int, default=-1,
+fq_parser.add_argument("-u", "--udqual", type=int, default=-1,
                         help="User defined quality offset for bases in fq. Default: -1.")
-fq_parsers.set_defaults(func=fq_module)
+fq_parser.set_defaults(func=fq_module)
 
-# FAST5 inputs
+# FAST5 input file
 fast5_parser = subparsers.add_parser('f5',
                                      parents=[parent_parser],
                                      help="FAST5 file input",
@@ -491,7 +531,7 @@ fast5_parser = subparsers.add_parser('f5',
                                      formatter_class=RawTextHelpFormatter)
 fast5_parser.set_defaults(func=fast5_module)
 
-# FAST5 signal mode inputs
+# FAST5 input file in signal statistics mode
 fast5_signal_parser = subparsers.add_parser('f5s',
                                             parents=[parent_parser],
                                             help="FAST5 file input with signal statistics output",
@@ -504,31 +544,50 @@ fast5_signal_parser.set_defaults(func=fast5_signal_module)
 fast5_signal_parser.add_argument("-r", "--read_ids", type=str, default=None,
                                  help="A comma-separated list of read IDs to extract from the file.")
 
-# sequencing_summary.txt inputs
-seqtxt_parsers = subparsers.add_parser('seqtxt',
+# Sequencing summary text file input
+seqtxt_parser = subparsers.add_parser('seqtxt',
                                        parents=[parent_parser],
                                        help="sequencing_summary.txt input",
                                        description="For example:\n"
                                                    "python %(prog)s -i sequencing_summary.txt -o /output_directory/",
                                        formatter_class=RawTextHelpFormatter)
-seqtxt_parsers.add_argument("-S", "--seq", type=int, default=1,
+seqtxt_parser.add_argument("-S", "--seq", type=int, default=1,
                             help="sequencing_summary.txt only? Default: 1(yes).")
-seqtxt_parsers.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
+seqtxt_parser.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
                             help="Different fields in sequencing_summary.txt. Default: 1.")
 
-seqtxt_parsers.set_defaults(func=seqtxt_module)
+seqtxt_parser.set_defaults(func=seqtxt_module)
 
-# BAM inputs
-bam_parsers = subparsers.add_parser('bam',
+# BAM file input
+bam_parser = subparsers.add_parser('bam',
                                     parents=[parent_parser],
                                     help="BAM file input",
                                     description="For example:\n"
                                                 "python %(prog)s -i input.bam -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
-bam_parsers.set_defaults(func=bam_module)
+bam_parser.set_defaults(func=bam_module)
+
+# RRMS BAM file input (Splits accepted and rejected reads)
+rrms_bam_parser = subparsers.add_parser('rrms',
+                                         parents=[parent_parser],
+                                         help="RRMS BAM file input",
+                                         description="For example:\n"
+                                                     "python %(prog)s -i input.bam -c input.csv -o /output_directory/",
+                                         formatter_class=RawTextHelpFormatter)
+
+# Add required input CSV file for RRMS
+rrms_help_str = "CSV file containing read IDs to extract from the BAM file.\n" \
+                "The CSV file should contain a read id column with the header 'read_id' as well as a column " \
+                "containing the accepted/rejected status of the read with the header 'decision'.\n" \
+                "Accepted reads should have a value of 'stop_receiving' in the 'decision' column, while rejected reads " \
+                "should have a value of 'unblock'."
+                
+rrms_bam_parser.add_argument("-c", "--csv", type=str, required=True,
+                                help=rrms_help_str)
+
+rrms_bam_parser.set_defaults(func=rrms_module)
 
 
-# =====
 def main():
     if sys.version_info[0] < 2:
         logging.info(prg_name +
