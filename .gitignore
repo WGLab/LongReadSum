@@ -27,4 +27,4 @@ SampleData
 *.log
 
 # Testing scripts
-tests/SCRIPTS.txt
+scripts/

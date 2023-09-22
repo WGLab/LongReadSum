@@ -14,9 +14,8 @@ Define the output structures for each module.
 #include "input_parameters.h"
 
 #define MAX_READ_LENGTH 10485760
-#define MAX_MAP_QUALITY 256
-#define MAX_BASE_QUALITY 256
-#define MAX_READ_QUALITY 256
+#define MAX_BASE_QUALITY 100
+#define MAX_READ_QUALITY 100
 #define MAX_SIGNAL_VALUE 5000
 #define PERCENTAGE_ARRAY_SIZE 101
 #define ZeroDefault 0

@@ -20,12 +20,8 @@ class ST_HTML_Generator:
             self.more_input_files = False
 
     def generate_header(self):
-        if self.static:
-            self.html_writer = open(
-                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "statistics.html", 'w')
-        else:
-            self.html_writer = open(
-                self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + "statistics_dynamic.html", 'w')
+        html_filepath = self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + ".html"
+        self.html_writer = open(html_filepath, 'w')
         self.html_writer.write("<html>")
         self.html_writer.write("<head>")
         self.html_writer.write("<title>")
@@ -290,9 +286,9 @@ class ST_HTML_Generator:
         key_index += 1
 
         self.html_writer.write('</div>')
-
+    
+    # Generate links in the left panel
     def generate_left_signal_data(self, read_names):
-        """Generate links in the left panel."""
         self.html_writer.write('<div class="summary">');
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
@@ -320,8 +316,8 @@ class ST_HTML_Generator:
         self.html_writer.write("</ul>")
         self.html_writer.write('</div>')
 
+    # Generate tables and plots in the right section
     def generate_right_signal_data(self, read_names, signal_plot):
-        """Generate tables and plots in the right section."""
 
         self.html_writer.write('<div class="main">')
 
@@ -366,10 +362,8 @@ class ST_HTML_Generator:
         self.html_writer.write("</html>")
         self.html_writer.close()
 
+    # Main function for generating the HTML.
     def generate_st_html(self, signal_plots=False):
-        """
-        Top-level function for generating the HTML.
-        """
         if signal_plots:
             self.generate_header()
             # Get the signal plots

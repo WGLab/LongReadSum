@@ -7,14 +7,10 @@
 LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
 
 ## Software requirements
-Please refer to `environment.yml` for detail. For your quick reference, LongReadSum needs
-```
-  - python=3.9
-  - hdf5
-  - htslib
-  - swig
-  - matplotlib
-```
+Please refer to the conda
+[environment.yml](https://github.com/WGLab/LongReadSum/blob/main/environment.yml)
+file for all required packages.
+
 # Installation using Anaconda (Linux 64-bit)
 First, install [Anaconda](https://www.anaconda.com/).
 LongReadSum can be installed using the following command:
@@ -71,34 +67,20 @@ export HDF5_PLUGIN_PATH=/full/path/to/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/h
 
 
 ## Running
-Activate the conda environment:
-
-`conda activate lrst_py39`
-
-To test that you are using the correct Python interpreter, run:
-
-`which python`
-
-This should point to the environment's Python interpreter path:
-
-`~/miniconda3/envs/lrst_py39/bin/python`
-
-If the path is incorrect, export its location to `PATH`:
-
-`export PATH=~/miniconda3/envs/lrst_py39/bin:$PATH`
-
-Then you can run LongReadSum using the following command:
-
-`python /path/to/LongReadSum [arguments]`
+Activate the conda environment and then run with arguments:
+```
+conda activate longreadsum
+python longreadsum [arguments]
+```
 
 # General Usage
 
 Specifying input files:
 
 ```
-usage: LongReadSum [-h] {fa,fq,f5,seqtxt,bam} ...
+usage: longreadsum [-h] {fa,fq,f5,f5s,seqtxt,bam,rrms} ...
 
-QC tools for long-read sequencing data
+Fast and comprehensive QC for long read sequencing data.
 
 positional arguments:
   {fa,fq,f5,seqtxt,bam}
@@ -108,16 +90,23 @@ positional arguments:
     f5s                 FAST5 file input with signal statistics output    
     seqtxt              sequencing_summary.txt input
     bam                 BAM file input
+    rrms                RRMS BAM file input
 
 optional arguments:
   -h, --help            show this help message and exit
 
 Example with single inputs:
-	python LongReadSum bam -i path/to/input.bam -o /output_directory/
+	longreadsum bam -i input.bam -o output_directory -t 12
 
 Example with multiple inputs:
-	python LongReadSum bam -I "path/to/input1.bam, path/to/input2.bam" -o /output_directory/
-	python LongReadSum bam -P "path/to/*.bam" -o /output_directory/
+	longreadsum bam -I input1.bam, input2.bam -o output_directory
+	longreadsum bam -P *.bam -o output_directory
+
+RRMS example:
+  longreadsum rrms --csv rrms_results.csv --input input.bam --output output_directory --threads 12
+
+FAST5 signal mode example:
+  longreadsum f5s --input input.fast5 --output output_directory
 ```
 
 # Revision history

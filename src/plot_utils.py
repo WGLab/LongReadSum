@@ -6,18 +6,22 @@ from random import sample
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+# Constants
+MAX_BASE_QUALITY = 100
+MAX_READ_QUALITY = 100
+PLOT_FONT_SIZE = 16
 
 # Return a dictionary of default plot filenames
 def getDefaultPlotFilenames():
     plot_filenames = {  # for fq/fa
         "read_length_distr": {'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
-        "read_alignments_bar": {'title': "Map Information",
-                   'description': "Read Mapping Statistics"},
-        "base_alignments_bar": {'title': "Base Alignment and Error Statistics",
-                   'description': "Base Alignment and Error Statistics"},
+        "read_alignments_bar": {'title': "Read Alignments",
+                   'description': "Read Alignments"},
+        "base_alignments_bar": {'title': "Base Alignment and Error",
+                   'description': "Base Alignment and Error"},
         "read_length_bar": {'title': "Read Length Statistics", 'description': "Read Length Statistics"},
-        "base_counts": {'title': "Base Count Statistics",
-                    'description': "Base Count Statistics", 'summary': ""},
+        "base_counts": {'title': "Base Counts",
+                    'description': "Base Counts", 'summary': ""},
         "basic_info": {'title': "Basic Statistics",
                        'description': "Basic Statistics", 'summary': ""},
         "read_length_hist": {'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
@@ -32,16 +36,31 @@ def getDefaultPlotFilenames():
 
     return plot_filenames
 
+# Wrap the text in the table 
+def wrap(label):
+    # First split the string into a list of words
+    words = label.split(' ')
 
-def wrap(s):
-    l = s.split(' ')
-    split = list(zip(*[iter(l)] * 3))
-    if len(l) % 3:
-        split.append(tuple(l[-(len(l) % 3):]))
-    return '\n'.join([' '.join(x) for x in split])
+    # Then join the words back together with <br> tags if the total length is greater than 30
+    new_label = ''
+    current_length = 0
+    max_length = 30
+    for word in words:
+        if current_length > max_length:
+            new_label += '<br>'
+            current_length = 0
 
+        new_label += word + ' '
+        current_length = len(new_label)
 
+    # Remove the last space
+    new_label = new_label[:-1]
+
+    return new_label
+
+# Plot the read alignment numbers
 def plot_read_length_stats(output_data, file_type):
+
     # Define the three categories
     category = ['N50', 'Mean', 'Median']
     all_traces = []
@@ -80,7 +99,7 @@ def plot_read_length_stats(output_data, file_type):
         all_traces.append(trace)
 
     # Create the layout
-    layout = go.Layout(title='Read Length Statistics', xaxis=dict(title='Statistics'), yaxis=dict(title='Length (bp)'), barmode='group')
+    layout = go.Layout(title='', xaxis=dict(title='Statistics'), yaxis=dict(title='Length (bp)'), barmode='group', font=dict(size=PLOT_FONT_SIZE))
 
     # Create the figure and add the traces
     fig = go.Figure(data=all_traces, layout=layout)
@@ -90,7 +109,7 @@ def plot_read_length_stats(output_data, file_type):
 
     return html_obj
 
-
+# Plot the base counts
 def plot_base_counts(output_data, filetype):
     # Define the five categories
     category = ['A', 'C', 'G', 'T/U', 'N']
@@ -125,7 +144,7 @@ def plot_base_counts(output_data, filetype):
         all_traces.append(trace)
 
     # Create the layout
-    layout = go.Layout(title='Base Counts', xaxis=dict(title='Base'), yaxis=dict(title='Counts'), barmode='group')
+    layout = go.Layout(title='', xaxis=dict(title='Base'), yaxis=dict(title='Counts'), barmode='group', font=dict(size=PLOT_FONT_SIZE))
 
     # Create the figure and add the traces
     fig = go.Figure(data=all_traces, layout=layout)
@@ -135,9 +154,8 @@ def plot_base_counts(output_data, filetype):
 
     return html_obj
 
-
+# Plot basic information about the reads in bar chart format
 def plot_basic_info(output_data, file_type):
-    """Plot basic information about the reads."""
     html_obj = ''
     if file_type == 'BAM':
 
@@ -164,8 +182,11 @@ def plot_basic_info(output_data, file_type):
             fig.add_trace(trace, row=(i // 2) + 1, col=(i % 2) + 1)
             fig.update_layout(showlegend=False)
 
-            # Generate the HTML
-            html_obj = fig.to_html(full_html=False, default_height=800, default_width=1200)
+        # Update the layout
+        fig.update_layout(showlegend=False, font=dict(size=PLOT_FONT_SIZE))
+
+        # Generate the HTML
+        html_obj = fig.to_html(full_html=False, default_height=800, default_width=1200)
 
     elif file_type == 'SeqTxt':
 
@@ -190,88 +211,18 @@ def plot_basic_info(output_data, file_type):
 
             # Add the trace to the figure
             fig.add_trace(trace, row=1, col=i + 1)
-            fig.update_layout(showlegend=False)
 
-            # Generate the HTML
-            html_obj = fig.to_html(full_html=False, default_height=500, default_width=1600)
+        # Update the layout
+        fig.update_layout(showlegend=False, font=dict(size=PLOT_FONT_SIZE))
 
-    return html_obj
-
-
-def histogram(data, path, font_size):
-    """Plot a histogram."""
-    annotation_size = 10  # Annotation font size
-    mat = data.read_length_count
-    mean, median, n50 = int(data.mean_read_length), data.median_read_length, data.n50_read_length
-
-    mat = np.array(mat)[:, np.newaxis]
-    mat = mat[:data.longest_read_length + 1]
-    bin_size = 1000
-    mat_full = np.vstack([mat, np.zeros(bin_size - len(mat) % bin_size)[:, np.newaxis]])
-    mat_full = mat_full.ravel()
-
-    lengths = np.arange(0, len(mat_full))
-
-    binsize = 1000
-    hist, bins = np.histogram(lengths, weights=mat_full, bins=np.arange(0, len(lengths) + 1, bin_size))
-    log_hist, log_bins = np.histogram(np.log10(lengths + 1), weights=mat_full, bins=len(lengths) // binsize)
-
-    fig = make_subplots(
-        rows=2, cols=1,
-        subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.3)
-    fig.update_layout(showlegend=False, autosize=True)
-
-    xd = bins[1:]
-    customdata = np.dstack((bins[:-1], bins[1:], hist))[0, :, :]
-    yd = hist
-    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
-                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
-                         marker_color='#36a5c7'), row=1, col=1)
-
-    fig.add_vline(mean, line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
-                  annotation_textangle=90, row=1, col=1)
-    fig.add_vline(median, line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
-                  annotation_textangle=90, row=1, col=1)
-    fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
-                  annotation_textangle=90, row=1, col=1)
-
-    xd = log_bins[1:]
-    customdata = np.dstack((np.power(10, log_bins)[:-1], np.power(10, log_bins)[1:], log_hist))[0, :, :]
-    yd = log_hist
-    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
-                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
-                         marker_color='#36a5c7'), row=2, col=1)
-
-    fig.add_vline(np.log10(mean), line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
-                  annotation_textangle=90, row=2, col=1)
-    fig.add_vline(np.log10(median), line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
-                  annotation_textangle=90, row=2, col=1)
-    fig.add_vline(np.log10(n50), line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
-                  annotation_textangle=90, row=2, col=1)
-    fig.update_annotations(font=dict(color="white"))
-
-    fig.update_xaxes(
-        tickmode='array',
-        tickvals=list(range(0, 12)),
-        ticktext=['0'] + ['{:,}'.format(10 ** x) for x in range(1, 12)],
-        ticks="outside", row=2, col=1)
-
-    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1)
-    fig.update_xaxes(ticks="outside", title_text='Read Length (Log scale)', title_standoff=0, row=2, col=1)
-    fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
-
-    # Set font sizes
-    fig.update_layout(showlegend=False, autosize=True,
-                      font=dict(size=font_size))
-
-    fig.update_annotations(font_size=annotation_size)
-    html_obj = fig.to_html(full_html=False)
+        # Generate the HTML
+        html_obj = fig.to_html(full_html=False, default_height=500, default_width=1600)
 
     return html_obj
 
 
+# Plot the read length histograms
 def read_lengths_histogram(data, font_size):
-    """Plot the read length histograms."""
     annotation_size = 10  # Annotation font size
     mean, median, n50 = data.mean_read_length, data.median_read_length, data.n50_read_length
 
@@ -285,7 +236,6 @@ def read_lengths_histogram(data, font_size):
     fig = make_subplots(
         rows=2, cols=1,
         subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.3)
-    fig.update_layout(showlegend=False, autosize=False)
 
     customdata = np.dstack((edges[:-1], edges[1:], hist))[0, :, :]
     fig.add_trace(go.Bar(x=edges, y=hist, customdata=customdata,
@@ -332,20 +282,20 @@ def read_lengths_histogram(data, font_size):
     fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1)
     fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
 
+    # Update the layout
+    fig.update_layout(showlegend=False, autosize=True, font=dict(size=PLOT_FONT_SIZE))
     # Set font sizes
-    fig.update_layout(font=dict(size=font_size), autosize=True)
+    # fig.update_layout(showlegend=False, autosize=False)
+    # fig.update_layout(font=dict(size=font_size), autosize=True)
 
     fig.update_annotations(font_size=annotation_size)
     html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
 
     return html_obj
 
-
+# Save the 'Base quality' plot image.
 def base_quality(data, font_size):
-    """
-    Save the 'Base quality' plot image.
-    """
-    xd = np.arange(256)
+    xd = np.arange(MAX_BASE_QUALITY)
     yd = np.array(data.base_quality_distribution)
     fig = go.Figure()
 
@@ -357,57 +307,24 @@ def base_quality(data, font_size):
 
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff=0)
-    fig.update_layout(font=dict(size=font_size))  # Set font size
+    fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
-
+# Save the 'Average base quality' plot image.
 def read_avg_base_quality(data, font_size):
-    """
-    Save the 'Average base quality' plot image.
-    """
-    xd = np.arange(256)
+    xd = np.arange(MAX_READ_QUALITY)
     yd = np.array(data.read_average_base_quality_distribution)
     fig = go.Figure()
     fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
 
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
-    fig.update_layout(font=dict(size=font_size))  # Set font size
+    fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
-
-def create_statistics_table(output_data, plot_filepaths, table_title="Basic Statistics"):
-    plot_filepaths["basic_st"] = {}
-    plot_filepaths["basic_st"]['file'] = ""
-    plot_filepaths["basic_st"]['title'] = "Summary Table"
-    plot_filepaths["basic_st"]['description'] = table_title
-    table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
-    table_str += "\n<tbody>"
-    int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
-    double_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:.1f}</td></tr>"
-    table_str += int_str_for_format.format("#Total Reads",
-                                           output_data.long_read_info.total_num_reads)
-    table_str += int_str_for_format.format("#Total Bases",
-                                           output_data.long_read_info.total_num_bases)
-    table_str += int_str_for_format.format("Longest Read Length",
-                                           output_data.long_read_info.longest_read_length)
-    table_str += int_str_for_format.format("N50",
-                                           output_data.long_read_info.n50_read_length)
-    table_str += double_str_for_format.format("GC Content(%)",
-                                              output_data.long_read_info.gc_cnt * 100)
-    table_str += double_str_for_format.format("Mean Read Length",
-                                              output_data.long_read_info.mean_read_length)
-    table_str += int_str_for_format.format("Median Read Length",
-                                           output_data.long_read_info.median_read_length)
-    table_str += "\n</tbody>\n</table>"
-
-    plot_filepaths["basic_st"]['detail'] = table_str
-
-    return plot_filepaths
-
-
+# Main plot function
 def plot(output_data, para_dict, file_type):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
@@ -455,9 +372,9 @@ def plot(output_data, para_dict, file_type):
 
     return plot_filepaths
 
-
+# Plot the ONT FAST5 signal data
 def plot_signal(output_data, para_dict):
-    """Plot the ONT FAST5 signal data"""
+    
     # Get input parameters
     output_dir = para_dict["output_folder"]
     font_size = para_dict["fontsize"]
@@ -545,7 +462,7 @@ def plot_signal(output_data, para_dict):
             title=nth_read_name,
             yaxis_title="Signal",
             showlegend=False,
-            font=dict(size=font_size)
+            font=dict(size=PLOT_FONT_SIZE)
         )
         fig.update_traces(marker={'size': marker_size})
 
@@ -566,7 +483,7 @@ def plot_signal(output_data, para_dict):
 
     return output_html_plots
 
-
+# Create a summary table for the basic statistics
 def create_summary_table(output_data, plot_filepaths, file_type):
     plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
@@ -696,7 +613,8 @@ def plot_alignment_numbers(data):
     # Create the layout for the plot
     layout = go.Layout(title=go.layout.Title(text=""),
                        xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text="Counts")),
-                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="")))
+                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="")),
+                       font=dict(size=PLOT_FONT_SIZE))
 
     # Create the figure object
     fig = go.Figure(data=[trace], layout=layout)
@@ -707,6 +625,7 @@ def plot_alignment_numbers(data):
     return html_obj
 
 
+# Plot base alignment statistics
 def plot_errors(output_data):
     category = \
         ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases\n(Primary Alignments)']
@@ -719,7 +638,8 @@ def plot_errors(output_data):
     # Create the layout for the plot
     layout = go.Layout(title=go.layout.Title(text=""),
                        xaxis=go.layout.XAxis(title=go.layout.xaxis.Title(text="Counts")),
-                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="")))
+                       yaxis=go.layout.YAxis(title=go.layout.yaxis.Title(text="")),
+                       font=dict(size=PLOT_FONT_SIZE))
 
     # Create the figure object
     fig = go.Figure(data=[trace], layout=layout)
