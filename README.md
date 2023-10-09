@@ -13,7 +13,15 @@ file for all required packages.
 
 # Installation using Anaconda (Linux 64-bit)
 First, install [Anaconda](https://www.anaconda.com/).
-LongReadSum can be installed using the following command:
+
+Next, create a new environment. This installation has been tested with Python 3.10:
+
+```
+conda create -n py10 python=3.10
+conda activate py10
+```
+
+LongReadSum can then be installed using the following command:
 
 ```
 conda install -c bioconda -c wglab longreadsum=1.3.1
