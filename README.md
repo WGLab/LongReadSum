@@ -20,7 +20,7 @@ First, install [Anaconda](https://www.anaconda.com/).
 LongReadSum can be installed using the following command:
 
 ```
-conda install -c bioconda -c wglab longreadsum=1.3.0
+conda install -c bioconda -c wglab longreadsum=1.3.1
 ```
 
 # Installation using Docker
