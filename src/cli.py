@@ -414,7 +414,7 @@ def fast5_signal_module(margs):
 
         # Get the read ID list if specified
         read_ids = margs.read_ids
-        if read_ids != "":
+        if read_ids != "" and read_ids is not None:
             input_para.read_ids = read_ids
             #print("Read ID list is " + str(read_ids))
 
