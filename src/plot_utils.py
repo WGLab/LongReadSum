@@ -6,6 +6,10 @@ from random import sample
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+# Set up logging
+import logging
+logging.basicConfig(level=logging.INFO)
+
 # Constants
 MAX_BASE_QUALITY = 100
 MAX_READ_QUALITY = 100
@@ -383,6 +387,7 @@ def plot_signal(output_data, para_dict):
     
     # Get read and base counts
     read_count = output_data.getReadCount()
+    logging.info("Plotting signal data for {} reads".format(read_count))
 
     # Randomly sample a small set of reads if it is a large dataset
     read_sample_size = min(read_count_max, read_count)
@@ -398,6 +403,7 @@ def plot_signal(output_data, para_dict):
         # Get the read data
         nth_read_name = output_data.getNthReadName(read_index)
         nth_read_data = output_data.getNthReadBaseSignals(read_index)
+        logging.info("Signal data count for read {}: {}".format(nth_read_name, len(nth_read_data)))
         nth_read_means = output_data.getNthReadBaseMeans(read_index)
         nth_read_stds = output_data.getNthReadBaseStds(read_index)
         nth_read_medians = output_data.getNthReadBaseMedians(read_index)
