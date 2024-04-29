@@ -394,6 +394,51 @@ def fast5_module(margs):
         logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
 
+def fast5_signal_module(margs):
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
+        parser.parse_args(['f5s', '--help'])
+        sys.exit(0)
+
+    else:
+        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        param_dict["out_prefix"] += "fast5_signal"
+        input_para = lrst.Input_Para()
+        input_para.threads = param_dict["threads"]
+        input_para.rdm_seed = param_dict["random_seed"]
+        input_para.downsample_percentage = param_dict["downsample_percentage"]
+        input_para.output_folder = str(param_dict["output_folder"])
+        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
+
+        # Get the read ID list if specified
+        read_ids = margs.read_ids
+        if read_ids != "" and read_ids is not None:
+            input_para.read_ids = read_ids
+            #print("Read ID list is " + str(read_ids))
+
+        for _ipf in param_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        fast5_output = lrst.Output_FAST5()
+        exit_code = lrst.callFAST5Module(input_para, fast5_output)
+
+        if exit_code == 0:
+            logging.info("QC generated.")
+            logging.info("Generating HTML report...")
+            plot_filepaths = plot(fast5_output, param_dict, 'FAST5s')
+            fast5_html_obj = generate_html.ST_HTML_Generator(
+                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
+                  "read_avg_base_quality", "ont_signal"], "FAST5 QC", param_dict], plot_filepaths, static=False)
+            fast5_html_obj.generate_st_html(signal_plots=True)
+
+        else:
+            logging.error("QC did not generate.")
+
+        logging.info("Done. Output files are in %s", param_dict["output_folder"])
+
+
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
                                  epilog="Example with single inputs:\n"
