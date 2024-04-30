@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # CLI.py: Parse arguments and run the filetype-specific module.
 
-import logging
+import os
 import sys
+import logging
 from glob import glob
 import argparse
 from argparse import RawTextHelpFormatter
@@ -74,7 +75,7 @@ def get_common_param(margs):
                 if not os.path.isfile(input_filepath):
                     parsing_error_msg += "Cannot find the input file: " + input_filepath + "\n"
 
-    if (margs.outputfolder == None or margs.outputfolder == ""):
+    if (margs.outputfolder is None or margs.outputfolder == ""):
         parsing_error_msg += "No output file is provided. \n"
     else:
         output_dir = margs.outputfolder
@@ -83,9 +84,9 @@ def get_common_param(margs):
             if not os.path.isdir(output_dir):
                 os.makedirs(output_dir)
 
-        except OSError as e:
-            parsing_error_msg += "Cannot create folder for " + \
-                              param_dict["output_folder"] + " \n"
+        except OSError:
+            parsing_error_msg += "Cannot create folder for " + param_dict["output_folder"] + " \n"
+
     param_dict["out_prefix"] = margs.outprefix
 
     # Set up logging to file and stdout
@@ -105,7 +106,7 @@ def get_common_param(margs):
                                 ]
                             )
 
-        logging.info("Log file is " + margs.log)
+        logging.info("Log file is %s", margs.log)
         param_dict["log_file"] = margs.log
         param_dict["log_level"] = margs.log_level
 
@@ -139,7 +140,7 @@ def fq_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "fastq"
 
         # Import the SWIG Python wrapper for our C++ module
@@ -168,9 +169,9 @@ def fq_module(margs):
                   "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=False)
             fq_html_gen.generate_st_html()
 
-            logging.info("Completed.")
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
         else:
-            logging.error("Completed with errors.")
+            logging.error("QC did not generate.")
 
 
 def fa_module(margs):
@@ -184,7 +185,7 @@ def fa_module(margs):
         
     else:
         # If there are no parse errors, run the filetype-specific module
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "fasta"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -207,12 +208,10 @@ def fa_module(margs):
                 [["basic_st", "read_length_bar", "read_length_hist", "base_counts"], "FASTA QC",
                  param_dict], plot_filepaths, static=True)
             fa_html_gen.generate_st_html()
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
             logging.error("QC did not generate.")
-
-        logging.info("Done. Output files are in %s", param_dict["output_folder"])
-
 
 def bam_module(margs):
     # Get the filetype-specific parameters
@@ -222,7 +221,7 @@ def bam_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "bam";
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -246,11 +245,11 @@ def bam_module(margs):
                 [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
                   "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
             bam_html_gen.generate_st_html()
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
             logging.error("QC did not generate.")
 
-        logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
 def rrms_module(margs):
     # Get the filetype-specific parameters
@@ -259,7 +258,7 @@ def rrms_module(margs):
         parser.parse_args(['rrms', '--help'])
         sys.exit(0)
     else:
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.rdm_seed = param_dict["random_seed"]
@@ -301,11 +300,10 @@ def rrms_module(margs):
                     [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
                     "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
                 bam_html_gen.generate_st_html()
+                logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
             else:
                 logging.error("QC did not generate.")
-
-        logging.info("Done. Output files are in %s", param_dict["output_folder"])
         
 
 def seqtxt_module(margs):
@@ -316,7 +314,7 @@ def seqtxt_module(margs):
         sys.exit(0)
         
     else:
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "seqtxt"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -350,10 +348,9 @@ def seqtxt_module(margs):
                     [["basic_st", "read_length_bar", "read_length_hist", "basic_info"], "sequencing_summary.txt QC",
                      param_dict], plot_filepaths, static=False)
             seqtxt_html_gen.generate_st_html()
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
         else:
             logging.error("QC did not generate.")
-
-        logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
 
 def fast5_module(margs):
@@ -364,7 +361,7 @@ def fast5_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "FAST5"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -387,11 +384,10 @@ def fast5_module(margs):
                 [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
                   "read_avg_base_quality"], "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_st_html()
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
             logging.error("QC did not generate.")
-
-        logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
 
 def fast5_signal_module(margs):
@@ -402,7 +398,7 @@ def fast5_signal_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are ' + ';'.join(param_dict["input_files"]))
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "fast5_signal"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -432,12 +428,10 @@ def fast5_signal_module(margs):
                 [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
                   "read_avg_base_quality", "ont_signal"], "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_st_html(signal_plots=True)
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
             logging.error("QC did not generate.")
-
-        logging.info("Done. Output files are in %s", param_dict["output_folder"])
-
 
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
@@ -590,11 +584,10 @@ rrms_bam_parser.set_defaults(func=rrms_module)
 
 def main():
     if sys.version_info[0] < 2:
-        logging.info(prg_name +
-                     " could not be run with lower version than python 2.7.")
+        logging.info("%s could not be run with lower version than python 2.7.", prg_name)
     else:
         if sys.version_info[1] < 6:
-            logging.info(prg_name + " could be run with python 2.7.")
+            logging.info("%s could be run with python 2.7.", prg_name)
         else:
             if len(sys.argv) < 2:
                 parser.print_help()
