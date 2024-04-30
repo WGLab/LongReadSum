@@ -426,7 +426,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
                 // Check if the top-level analysis group exists
                 if (f5.nameExists(analysis_group)) {
                     // Check if the basecall group exists
-                    if (f5.nameExists("/" + read_name + basecall_group + "/BaseCalled_template/Fastq")) {
+                    if (f5.nameExists("/" + basecall_group)) {
                         // Get the sequence data if available
                         try {
                             if (f5.nameExists("/" + basecall_group + "/BaseCalled_template/Fastq")) {
