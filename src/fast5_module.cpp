@@ -592,10 +592,6 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
     }
 
     if (signal_mode == true) {
-//        // Generate the signal data QC output
-//        std::string signal_raw_csv(_input_data.output_folder + "/FAST5_signal_raw.csv");
-//        std::string signal_qc_csv(_input_data.output_folder + "/FAST5_signal_QC.csv");
-
         // Loop through each input file and get the QC data across files
         size_t file_count = _input_data.num_input_files;
         for (size_t i = 0; i < file_count; i++)
