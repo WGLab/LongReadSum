@@ -6,155 +6,106 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iostream>
+#include <fstream>
 #include <algorithm>
 
 // "Seqtk is a fast and lightweight tool for processing sequences in the FASTA or FASTQ format":
 // https://github.com/lh3/seqtk
-#include "kseq.h"
-#include "kseq.h"
+// #include "kseq.h"
 #include "fastq_module.h"
 
-KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
+// KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
-static int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &output_data, FILE *read_details_fp)
+// int qc1fastq(const char *input_file, char fastq_base_qual_offset, Basic_Seq_Statistics &long_read_info, Basic_Seq_Quality_Statistics &seq_quality_info, FILE *read_details_fp)
+int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
-    gzFile input_fp;
-    kseq_t *seq;
+    // gzFile input_fp;
+    // kseq_t *seq;
     char *read_seq;
     char *raw_read_qual;
     char *read_name;
     int read_len;
     double read_gc_cnt;
     double read_mean_base_qual;
-
     Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
     Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
-    input_fp = gzopen(input_file, "r");
-    if (!input_fp)
+    long_read_info.total_num_reads = ZeroDefault; // total number of long reads
+    long_read_info.longest_read_length = ZeroDefault; // the length of longest reads
+
+    std::ifstream input_file_stream(input_file);
+    if (!input_file_stream.is_open())
     {
-        std::cerr << "Failed to open file for reading: " << input_file << std::endl;
+        fprintf(stderr, "Failed to open file for reading: %s\n", input_file);
         exit_code = 3;
     } else {
-        seq = kseq_init(input_fp);
-        while ((read_len = kseq_read(seq)) >= 0)
+        std::string line, read_seq, read_name, raw_read_qual;
+        while (std::getline(input_file_stream, line) && !line.empty())
         {
-            if (read_len == 0) {continue;}
-            read_name = seq->name.s;
-            read_seq = seq->seq.s;
-            raw_read_qual = seq->qual.s;
-            if (read_len > long_read_info.longest_read_length)
+            if (line[0] == '@')
             {
-                long_read_info.longest_read_length = read_len;
-            }
-            long_read_info.total_num_reads += 1;
-            long_read_info.total_num_bases += read_len;
-            if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
-                long_read_info.read_length_count[read_len] += 1;
-            } else {
-                long_read_info.read_length_count.resize(read_len + 1000, 0);
-                long_read_info.read_length_count[read_len] += 1;
-            }
-
-            // Store the read length
-            long_read_info.read_lengths.push_back(read_len);
-
-            read_gc_cnt = 0;
-            read_mean_base_qual = 0;
-            uint64_t base_quality_value;
-            for (int i = 0; i < read_len; i++)
-            {
-                if (read_seq[i] == 'A' || read_seq[i] == 'a')
+                read_name = line.substr(1);
+                std::getline(input_file_stream, read_seq);
+                std::getline(input_file_stream, line);
+                std::getline(input_file_stream, raw_read_qual);
+                read_len = read_seq.size();
+                if (read_len == 0) {continue;}
+                if (read_len > long_read_info.longest_read_length)
                 {
-                    long_read_info.total_a_cnt += 1;
+                    long_read_info.longest_read_length = read_len;
                 }
-                else if (read_seq[i] == 'G' || read_seq[i] == 'g')
-                {
-                    long_read_info.total_g_cnt += 1;
-                    read_gc_cnt += 1;
-                }
-                else if (read_seq[i] == 'C' || read_seq[i] == 'c')
-                {
-                    long_read_info.total_c_cnt += 1;
-                    read_gc_cnt += 1;
-                }
-                else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
-                {
-                    long_read_info.total_tu_cnt += 1;
-                }
-                base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
-                seq_quality_info.base_quality_distribution[base_quality_value] += 1;
-                read_mean_base_qual += (double) base_quality_value;
-            }
-            read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
-            long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-            read_mean_base_qual /= (double) read_len;
-            seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-            fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, read_len, read_gc_cnt, read_mean_base_qual);
-        }
-        kseq_destroy(seq);
-    }
-    gzclose(input_fp);
-    return exit_code;
-}
+                long_read_info.total_num_reads += 1;
+                long_read_info.total_num_bases += (uint64_t)read_len;
 
-static uint8_t predict_base_quality_offset(Input_Para &_input_data)
-{
-    const char * input_file;
-    gzFile input_fp;
-    kseq_t *seq;
-    char *raw_read_qual;
-    int read_len;
-    char fastq_base_qual_offset = 0;
-    int max_num_reads;
-    int num_processed_reads;
+                // Update the read length counts
+                if ((uint64_t)read_len < long_read_info.read_length_count.size()) {
+                    long_read_info.read_length_count[read_len] += 1;
+                } else {
+                    long_read_info.read_length_count.resize(read_len + 1000, 0);
+                    long_read_info.read_length_count[read_len] += 1;
+                }
 
-    if (_input_data.num_input_files == 0)
-    {
-        std::cerr << "No input files provided.\n" << std::endl;
-    } else {
-        max_num_reads = 100000;
-        num_processed_reads = 0;
-        for (size_t i = 0; i < _input_data.num_input_files; i++)
-        {
-            if (fastq_base_qual_offset){break;}
-            input_file = _input_data.input_files[i].c_str();
-            input_fp = gzopen(input_file, "r");
-            if (!input_fp)
-            {
-                std::cerr <<  "Failed to open file for reading: %s" << input_file << std::endl;
-            } else {
-                seq = kseq_init(input_fp);
-                while ((read_len = kseq_read(seq)) >= 0)
+                // Store the read length
+                long_read_info.read_lengths.push_back(read_len);
+
+                // Process base and quality information
+                read_gc_cnt = 0;
+                read_mean_base_qual = 0;
+                uint64_t base_quality_value;
+                for (int i = 0; i < read_len; i++)
                 {
-                    if (fastq_base_qual_offset) {break;}
-                    if (read_len == 0) {continue;}
-                    raw_read_qual = seq->qual.s;
-                    for (int j = 0; j < read_len; j++)
+                    if (read_seq[i] == 'A' || read_seq[i] == 'a')
                     {
-                        if (raw_read_qual[j] < 64) {
-                            fastq_base_qual_offset = 33;
-                            break;
-                        }
+                        long_read_info.total_a_cnt += 1;
                     }
-                    num_processed_reads++;
-                    if (num_processed_reads > max_num_reads){
-                        fastq_base_qual_offset = 64;
-                        break;
+                    else if (read_seq[i] == 'G' || read_seq[i] == 'g')
+                    {
+                        long_read_info.total_g_cnt += 1;
+                        read_gc_cnt += 1;
                     }
+                    else if (read_seq[i] == 'C' || read_seq[i] == 'c')
+                    {
+                        long_read_info.total_c_cnt += 1;
+                        read_gc_cnt += 1;
+                    }
+                    else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
+                    {
+                        long_read_info.total_tu_cnt += 1;
+                    }
+                    base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
+                    seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+                    read_mean_base_qual += (double) base_quality_value;
                 }
-                kseq_destroy(seq);
+                read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
+                long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+                read_mean_base_qual /= (double) read_len;
+                seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
+                fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name.c_str(), read_len, read_gc_cnt, read_mean_base_qual);
             }
-            gzclose(input_fp);
         }
+        input_file_stream.close();
     }
-
-    if (fastq_base_qual_offset == 0){
-        fastq_base_qual_offset = 64;
-    }
-//    std::cout << "NOTICE: predicted FASTQ base quality offset is " << fastq_base_qual_offset << std::endl;
-
-    return fastq_base_qual_offset;
+    return exit_code;
 }
 
 int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
@@ -212,10 +163,14 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     if (_input_data.user_defined_fastq_base_qual_offset > 0) {
         fastq_base_qual_offset = _input_data.user_defined_fastq_base_qual_offset;
     } else {
-        fastq_base_qual_offset = predict_base_quality_offset(_input_data);
+        fastq_base_qual_offset = 33;
     }
+    // } else {
+    //     fastq_base_qual_offset = predict_base_quality_offset(_input_data);
+    // }
 
     read_details_fp = fopen(read_details_file.c_str(), "w");
+
     if (NULL == read_details_fp)
     {
         std::cerr << "Failed to write output file: " << read_details_file << std::endl;
@@ -223,12 +178,22 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     } else {
         fprintf(read_details_fp, "#read_name\tlength\tGC\taverage_baseq_quality\n");
 
+        // try {
+
         for (size_t i = 0; i < _input_data.num_input_files; i++)
         {
             input_file = _input_data.input_files[i].c_str();
+            // Basic_Seq_Statistics long_read_info;
+            // Basic_Seq_Quality_Statistics seq_quality_info;
+            // qc1fastq(input_file, fastq_base_qual_offset, long_read_info, seq_quality_info, read_details_fp);
+
+            // output_data.long_read_info.add(long_read_info);
+            // output_data.seq_quality_info.add(seq_quality_info);
             qc1fastq(input_file, fastq_base_qual_offset, output_data, read_details_fp);
         }
         fclose(read_details_fp);
+
+        // try {
 
         // Add the G + C bases
         double g_c = output_data.long_read_info.total_g_cnt + output_data.long_read_info.total_c_cnt;
@@ -237,21 +202,30 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
         double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
 
         // Calculate read length statistics if base counts are not zero
+        try {
         uint64_t total_num_bases = output_data.long_read_info.total_num_bases;
         if (total_num_bases == 0) {
             std::cerr << "No bases found in input files." << std::endl;
             exit_code = 3;
+            return exit_code;
         } else {
             // Calculate GC-content
             output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
 
-            // Sort the read lengths in descending order
-            std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
-            std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int64_t>());
-
             // Get the max read length
-            int64_t max_read_length = read_lengths.at(0);
-            output_data.long_read_info.longest_read_length = max_read_length;
+            std::vector<int> read_lengths = output_data.long_read_info.read_lengths;
+            if (read_lengths.size() == 0) {
+                std::cerr << "No reads found in input files." << std::endl;
+                exit_code = 3;
+                return exit_code;
+            } else {
+                // Sort the read lengths in descending order
+                std::sort(read_lengths.begin(), read_lengths.end(), std::greater<int64_t>());
+
+                // Get the max read length
+                int64_t max_read_length = read_lengths.at(0);
+                output_data.long_read_info.longest_read_length = max_read_length;
+            }
 
             // Get the median read length
             int64_t median_read_length = read_lengths[read_lengths.size() / 2];
@@ -319,8 +293,17 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
                 fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
             }
             fclose(read_summary_fp);
+
+        }
+
+        return exit_code;
+
+        } catch (const std::exception &e) {
+            std::cerr << "Oops! Caught exception: " << e.what() << std::endl;
+
+            return 3;
         }
     }
 
-    return exit_code;
+    // return exit_code;
 }

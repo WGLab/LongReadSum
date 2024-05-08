@@ -30,6 +30,10 @@ void Basic_Seq_Statistics::resize(){
    }
 }
 
+void Basic_Seq_Statistics::addBases(int count){
+   this->total_num_bases += count;
+}
+
 // Base class for storing base quality data
 Basic_Seq_Statistics::Basic_Seq_Statistics( const Basic_Seq_Statistics& _bss){
    read_gc_content_count = _bss.read_gc_content_count;
