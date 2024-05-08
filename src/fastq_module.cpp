@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <zlib.h>
 #include <ctype.h>
 
 #include <sys/types.h>
