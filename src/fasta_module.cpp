@@ -4,84 +4,187 @@ FASTA_module.cpp:
 */
 #include <stdio.h>
 #include <stdlib.h>
-#include <zlib.h>
+// #include <zlib.h>
 #include <ctype.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <iostream>
-#include "kseq.h"
+
+#include <fstream>
+
 #include "fasta_module.h"
 
-KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
 // Helper function for saving formatted read statistics to an output text file
 static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_details_fp)
 {
     int exit_code = 0;
-    gzFile input_fp;
-    kseq_t *seq;
-    char *read_seq;
-    char *read_name;
-    int64_t read_len;
     double read_gc_cnt;
 
     Basic_Seq_Statistics &long_read_info = py_output_fa.long_read_info;
-    input_fp = gzopen(input_file, "r");
-    if (!input_fp)
-    {
-        fprintf(stderr, "\nERROR! Failed to open file for reading: %s\n", input_file);
+    std::ifstream input_file_stream(input_file);
+    if (!input_file_stream.is_open()) {
+        fprintf(stderr, "Failed to open file for reading: %s\n", input_file);
         exit_code = 3;
     } else {
-        seq = kseq_init(input_fp);
-        while ((read_len = kseq_read(seq)) >= 0)
+        std::string line, sequence, sequence_data_str;
+        int gc_count = 0;
+        while (std::getline(input_file_stream, line))
         {
-            if (read_len == 0) {continue;}
-            read_name = seq->name.s;
-            read_seq = seq->seq.s;
-            if ((int64_t)read_len > long_read_info.longest_read_length)
+            if (line.empty())
             {
-                long_read_info.longest_read_length = read_len;
+                continue;
             }
-            long_read_info.total_num_reads += 1;
-            long_read_info.total_num_bases += read_len;
-            if (read_len < (int64_t) long_read_info.read_length_count.size()) {
-                long_read_info.read_length_count[read_len] += 1;
-            } else {
-                long_read_info.read_length_count.resize(read_len + 1000, 0);
-                long_read_info.read_length_count[read_len] += 1;
-            }
-            read_gc_cnt = 0;
 
-            for (int i = 0; i < read_len; i++)
-            {
-                if (read_seq[i] == 'A' || read_seq[i] == 'a')
+            if (line[0] == '>') {  // Header line
+                // Save the last sequence's statistics
+                if (!sequence.empty())
                 {
-                    long_read_info.total_a_cnt += 1;
+                    // Get the base counts
+                    uint64_t base_count = 0;
+                    uint64_t n_count = 0;
+                    for (int i = 0; i < (int)sequence.size(); i++)
+                    {
+                        if (sequence[i] == 'A' || sequence[i] == 'a')
+                        {
+                            long_read_info.total_a_cnt += 1;
+                            base_count += 1;
+                        }
+                        else if (sequence[i] == 'G' || sequence[i] == 'g')
+                        {
+                            long_read_info.total_g_cnt += 1;
+                            gc_count += 1;
+                            base_count += 1;
+                        }
+                        else if (sequence[i] == 'C' || sequence[i] == 'c')
+                        {
+                            long_read_info.total_c_cnt += 1;
+                            gc_count += 1;
+                            base_count += 1;
+                        }
+                        else if (sequence[i] == 'T' || sequence[i] == 't' || sequence[i] == 'U' || sequence[i] == 'u')
+                        {
+                            long_read_info.total_tu_cnt += 1;
+                            base_count += 1;
+                        } else {
+                            n_count += 1;
+                        }
+                    }
+
+                    // Save sequence length statistics
+                    if (base_count > (uint64_t)long_read_info.longest_read_length)
+                    {
+                        long_read_info.longest_read_length = base_count;
+                    }
+                    long_read_info.total_num_reads += 1;
+
+                    // Get the sequence length distribution
+                    if (base_count < long_read_info.read_length_count.size()) {
+                        long_read_info.read_length_count[(int)base_count] += 1;
+                    } else {
+                        long_read_info.read_length_count.resize(base_count + 1000, 0);
+                        long_read_info.read_length_count[(int)base_count] += 1;
+                    }
+
+                    long_read_info.total_num_bases += base_count;
+                    long_read_info.total_n_cnt += n_count;
+                    read_gc_cnt = 100.0 * gc_count / (double)base_count;
+                    long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+
+                    // Remove the newline character from the sequence data
+                    size_t pos = sequence_data_str.find_first_of("\r\n");
+                    if (pos != std::string::npos)
+                    {
+                        std::cerr << "Warning: newline character found in sequence data: " << sequence_data_str << std::endl;
+                        sequence_data_str = sequence_data_str.substr(0, pos);
+                    }
+                    fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str.c_str(), base_count, read_gc_cnt);
+                    sequence.clear();
+                    gc_count = 0;
                 }
-                else if (read_seq[i] == 'G' || read_seq[i] == 'g')
-                {
-                    long_read_info.total_g_cnt += 1;
-                    read_gc_cnt += 1;
-                }
-                else if (read_seq[i] == 'C' || read_seq[i] == 'c')
-                {
-                    long_read_info.total_c_cnt += 1;
-                    read_gc_cnt += 1;
-                }
-                else if (read_seq[i] == 'T' || read_seq[i] == 't' || read_seq[i] == 'U' || read_seq[i] == 'u')
-                {
-                    long_read_info.total_tu_cnt += 1;
-                }
+
+                // Update the new sequence's name
+                sequence_data_str = line.substr(1);
+
+                // Clear the sequence
+                sequence.clear();
+
+            } else {
+                sequence += line;  // T
             }
-            read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
-            long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-            fprintf(read_details_fp, "%s\t%ld\t%.2f\n", read_name, read_len, read_gc_cnt);
+
         }
 
-        kseq_destroy(seq);
+        // Save the last sequence's statistics
+        if (!sequence.empty())
+        {
+            // Get the base counts
+            uint64_t base_count = 0;
+            uint64_t n_count = 0;
+            for (int i = 0; i < (int)sequence.size(); i++)
+            {
+                if (sequence[i] == 'A' || sequence[i] == 'a')
+                {
+                    long_read_info.total_a_cnt += 1;
+                    base_count += 1;
+                }
+                else if (sequence[i] == 'G' || sequence[i] == 'g')
+                {
+                    long_read_info.total_g_cnt += 1;
+                    gc_count += 1;
+                    base_count += 1;
+                }
+                else if (sequence[i] == 'C' || sequence[i] == 'c')
+                {
+                    long_read_info.total_c_cnt += 1;
+                    gc_count += 1;
+                    base_count += 1;
+                }
+                else if (sequence[i] == 'T' || sequence[i] == 't' || sequence[i] == 'U' || sequence[i] == 'u')
+                {
+                    long_read_info.total_tu_cnt += 1;
+                    base_count += 1;
+                } else {
+                    n_count += 1;
+                }
+            }
+
+            // Save sequence length statistics
+            if (base_count > (uint64_t)long_read_info.longest_read_length)
+            {
+                long_read_info.longest_read_length = base_count;
+            }
+            long_read_info.total_num_reads += 1;
+
+            // Get the sequence length distribution
+            if (base_count < long_read_info.read_length_count.size()) {
+                long_read_info.read_length_count[(int)base_count] += 1;
+            } else {
+                long_read_info.read_length_count.resize(base_count + 1000, 0);
+                long_read_info.read_length_count[(int)base_count] += 1;
+            }
+
+            long_read_info.total_num_bases += base_count;
+            long_read_info.total_n_cnt += n_count;
+            read_gc_cnt = 100.0 * gc_count / (double)base_count;
+            long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+
+            // Remove the newline character from the sequence data
+            size_t pos = sequence_data_str.find_first_of("\r\n");
+            if (pos != std::string::npos)
+            {
+                std::cerr << "Warning: newline character found in sequence data: " << sequence_data_str << std::endl;
+                sequence_data_str = sequence_data_str.substr(0, pos);
+            }
+            fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str.c_str(), base_count, read_gc_cnt);
+            sequence.clear();
+            gc_count = 0;
+        }
+
+        // Close the input file
+        input_file_stream.close();
     }
-    gzclose(input_fp);
 
     return exit_code;
 }

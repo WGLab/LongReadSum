@@ -61,6 +61,7 @@ public:
     void global_sum_no_gc();
     void calculate_NXX_scores();  // Calculate N50, N95, N05, etc.
     void resize();
+    void addBases(int count);
 
     Basic_Seq_Statistics();
     Basic_Seq_Statistics(const Basic_Seq_Statistics &_bss);

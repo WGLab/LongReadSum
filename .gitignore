@@ -8,6 +8,7 @@ __pycache__
 # SWIG generated files
 lib/*.so
 lib/lrst.py
+lib/.nfs*
 src/lrst_wrap.cpp
 
 # Build and dist
