@@ -34,6 +34,7 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
             if (line[0] == '@')
             {
                 read_name = line.substr(1);
+                read_name = read_name.substr(0, read_name.find_first_of(" \t"));
                 std::getline(input_file_stream, read_seq);
                 std::getline(input_file_stream, line);
                 std::getline(input_file_stream, raw_read_qual);
