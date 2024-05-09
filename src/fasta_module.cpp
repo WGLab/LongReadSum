@@ -91,6 +91,14 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                     long_read_info.total_n_cnt += n_count;
                     read_gc_cnt = 100.0 * gc_count / (double)base_count;
                     long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+
+                    // Remove the newline character from the sequence data
+                    size_t pos = sequence_data_str.find_first_of("\r\n");
+                    if (pos != std::string::npos)
+                    {
+                        std::cerr << "Warning: newline character found in sequence data: " << sequence_data_str << std::endl;
+                        sequence_data_str = sequence_data_str.substr(0, pos);
+                    }
                     fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str.c_str(), base_count, read_gc_cnt);
                     sequence.clear();
                     gc_count = 0;
@@ -161,6 +169,14 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             long_read_info.total_n_cnt += n_count;
             read_gc_cnt = 100.0 * gc_count / (double)base_count;
             long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
+
+            // Remove the newline character from the sequence data
+            size_t pos = sequence_data_str.find_first_of("\r\n");
+            if (pos != std::string::npos)
+            {
+                std::cerr << "Warning: newline character found in sequence data: " << sequence_data_str << std::endl;
+                sequence_data_str = sequence_data_str.substr(0, pos);
+            }
             fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str.c_str(), base_count, read_gc_cnt);
             sequence.clear();
             gc_count = 0;
