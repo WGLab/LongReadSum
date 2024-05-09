@@ -13,6 +13,8 @@ dependencies:
   - swig
   - plotly
   - pytest
+  - pod5
+  - pyarrow
 
 # conda env create --file=environment.yml
 # conda activate longreadsum

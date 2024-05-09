@@ -15,11 +15,13 @@ if __name__ == 'src.cli':
     from lib import lrst  # For debugging
     from src import generate_html
     from src.plot_utils import *
+    from src.pod5_module import generate_pod5_qc
 else:
     # logging.debug("Running from installed package.")
     import lrst
     import generate_html
     from plot_utils import *
+    from pod5_module import generate_pod5_qc
 
 prg_name = "LongReadSum"
 
@@ -433,6 +435,45 @@ def fast5_signal_module(margs):
         else:
             logging.error("QC did not generate.")
 
+
+def pod5_module(margs):
+    """POD5 file input module."""
+    # Get the filetype-specific parameters
+    param_dict = get_common_param(margs)
+    if param_dict == {}:
+        parser.parse_args(['pod5', '--help'])
+        sys.exit(0)
+
+    else:
+        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
+        param_dict["out_prefix"] += "POD5"
+        input_para = lrst.Input_Para()
+        input_para.threads = param_dict["threads"]
+        input_para.rdm_seed = param_dict["random_seed"]
+        input_para.downsample_percentage = param_dict["downsample_percentage"]
+        input_para.output_folder = str(param_dict["output_folder"])
+        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.other_flags = 0  # 0 for normal QC, 1 for signal statistics output
+
+        for _ipf in param_dict["input_files"]:
+            input_para.add_input_file(str(_ipf))
+
+        fast5_output = lrst.Output_FAST5()
+        exit_code = generate_pod5_qc(input_para, fast5_output)
+        if exit_code == 0:
+            logging.info("QC generated.")
+            logging.info("Generating HTML report...")
+            plot_filepaths = plot(fast5_output, param_dict, 'POD5')
+            fast5_html_obj = generate_html.ST_HTML_Generator(
+                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
+                  "read_avg_base_quality"], "POD5 QC", param_dict], plot_filepaths, static=False)
+            fast5_html_obj.generate_st_html()
+            logging.info("Done. Output files are in %s", param_dict["output_folder"])
+
+        else:
+            logging.error("QC did not generate.")
+
+
 # Set up the argument parser
 parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
                                  epilog="Example with single inputs:\n"
@@ -533,6 +574,15 @@ fast5_signal_parser = subparsers.add_parser('f5s',
                                                         "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
                                             formatter_class=RawTextHelpFormatter)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
+
+# POD5 input file
+pod5_parser = subparsers.add_parser('pod5',
+                                    parents=[parent_parser],
+                                    help="POD5 file input",
+                                    description="For example:\n"
+                                                "python %(prog)s -i input.pod5 -o /output_directory/",
+                                    formatter_class=RawTextHelpFormatter)
+pod5_parser.set_defaults(func=pod5_module)
 
 # Add an argument for specifying the read names to extract
 fast5_signal_parser.add_argument("-r", "--read_ids", type=str, default=None,
