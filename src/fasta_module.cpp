@@ -20,22 +20,10 @@ FASTA_module.cpp:
 static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_details_fp)
 {
     int exit_code = 0;
-    // gzFile input_fp;
-    FILE *input_fp;
-    // kseq_t *seq;
-    // kseq_t *seq;
-    char *read_seq;
-    char *read_name;
     double read_gc_cnt;
 
     Basic_Seq_Statistics &long_read_info = py_output_fa.long_read_info;
     std::ifstream input_file_stream(input_file);
-    // input_fp = fopen(input_file, "r");
-    // if (!input_fp)
-    // {
-    //     fprintf(stderr, "\nERROR! Failed to open file for reading: %s\n", input_file);
-    //     exit_code = 3;
-    // } else {
     if (!input_file_stream.is_open()) {
         fprintf(stderr, "Failed to open file for reading: %s\n", input_file);
         exit_code = 3;
@@ -56,7 +44,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                     // Get the base counts
                     uint64_t base_count = 0;
                     uint64_t n_count = 0;
-                    for (int i = 0; i < sequence.size(); i++)
+                    for (int i = 0; i < (int)sequence.size(); i++)
                     {
                         if (sequence[i] == 'A' || sequence[i] == 'a')
                         {
@@ -85,14 +73,13 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                     }
 
                     // Save sequence length statistics
-                    if (base_count > long_read_info.longest_read_length)
+                    if (base_count > (uint64_t)long_read_info.longest_read_length)
                     {
                         long_read_info.longest_read_length = base_count;
                     }
                     long_read_info.total_num_reads += 1;
 
                     // Get the sequence length distribution
-                    // long_read_info.total_num_bases += (uint64_t)read_len;
                     if (base_count < long_read_info.read_length_count.size()) {
                         long_read_info.read_length_count[(int)base_count] += 1;
                     } else {
@@ -100,12 +87,11 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                         long_read_info.read_length_count[(int)base_count] += 1;
                     }
 
-                    // long_read_info.total_n_cnt += read_len - base_count;
                     long_read_info.total_num_bases += base_count;
                     long_read_info.total_n_cnt += n_count;
                     read_gc_cnt = 100.0 * gc_count / (double)base_count;
                     long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-                    fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str, base_count, read_gc_cnt);
+                    fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str.c_str(), base_count, read_gc_cnt);
                     sequence.clear();
                     gc_count = 0;
                 }
@@ -128,7 +114,7 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             // Get the base counts
             uint64_t base_count = 0;
             uint64_t n_count = 0;
-            for (int i = 0; i < sequence.size(); i++)
+            for (int i = 0; i < (int)sequence.size(); i++)
             {
                 if (sequence[i] == 'A' || sequence[i] == 'a')
                 {
@@ -157,14 +143,13 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
             }
 
             // Save sequence length statistics
-            if (base_count > long_read_info.longest_read_length)
+            if (base_count > (uint64_t)long_read_info.longest_read_length)
             {
                 long_read_info.longest_read_length = base_count;
             }
             long_read_info.total_num_reads += 1;
 
             // Get the sequence length distribution
-            // long_read_info.total_num_bases += (uint64_t)read_len;
             if (base_count < long_read_info.read_length_count.size()) {
                 long_read_info.read_length_count[(int)base_count] += 1;
             } else {
@@ -172,12 +157,11 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                 long_read_info.read_length_count[(int)base_count] += 1;
             }
 
-            // long_read_info.total_n_cnt += read_len - base_count;
             long_read_info.total_num_bases += base_count;
             long_read_info.total_n_cnt += n_count;
             read_gc_cnt = 100.0 * gc_count / (double)base_count;
             long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-            fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str, base_count, read_gc_cnt);
+            fprintf(read_details_fp, "%s\t%ld\t%.2f\n", sequence_data_str.c_str(), base_count, read_gc_cnt);
             sequence.clear();
             gc_count = 0;
         }

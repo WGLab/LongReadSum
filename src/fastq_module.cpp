@@ -8,22 +8,12 @@
 #include <fstream>
 #include <algorithm>
 
-// "Seqtk is a fast and lightweight tool for processing sequences in the FASTA or FASTQ format":
-// https://github.com/lh3/seqtk
-// #include "kseq.h"
 #include "fastq_module.h"
 
-// KSEQ_INIT(gzFile, gzread) // this is a macro defined in kseq.h
 
-// int qc1fastq(const char *input_file, char fastq_base_qual_offset, Basic_Seq_Statistics &long_read_info, Basic_Seq_Quality_Statistics &seq_quality_info, FILE *read_details_fp)
 int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
-    // gzFile input_fp;
-    // kseq_t *seq;
-    char *read_seq;
-    char *raw_read_qual;
-    char *read_name;
     int read_len;
     double read_gc_cnt;
     double read_mean_base_qual;
@@ -137,12 +127,8 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     output_data.long_read_info.total_n_cnt = ZeroDefault;  // N content
     output_data.long_read_info.gc_cnt = ZeroDefault;       // GC ratio
 
-    //int64_t *read_length_count; // statistics of read length: each position is the number of reads with the length of the index;
-
     output_data.long_read_info.read_gc_content_count.clear();
     output_data.long_read_info.read_length_count.clear();
-    //output_data.seq_quality_info.base_quality_distribution.clear();
-    //output_data.seq_quality_info.read_average_base_quality_distribution.clear();
 
     output_data.long_read_info.read_length_count.resize(MAX_READ_LENGTH + 1, 0);
     // read_length_count[x] is the number of reads that length is equal to x. MAX_READ_LENGTH is a initial max value, the vector can expand if thre are reads longer than MAX_READ_LENGTH.
@@ -157,16 +143,12 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     // base_quality_distribution[x] means number of bases that quality = x.
 
     output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
-    // base_quality_distribution[x] means number of reads that average base quality = x.
 
     if (_input_data.user_defined_fastq_base_qual_offset > 0) {
         fastq_base_qual_offset = _input_data.user_defined_fastq_base_qual_offset;
     } else {
         fastq_base_qual_offset = 33;
     }
-    // } else {
-    //     fastq_base_qual_offset = predict_base_quality_offset(_input_data);
-    // }
 
     read_details_fp = fopen(read_details_file.c_str(), "w");
 
@@ -177,22 +159,12 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     } else {
         fprintf(read_details_fp, "#read_name\tlength\tGC\taverage_baseq_quality\n");
 
-        // try {
-
         for (size_t i = 0; i < _input_data.num_input_files; i++)
         {
             input_file = _input_data.input_files[i].c_str();
-            // Basic_Seq_Statistics long_read_info;
-            // Basic_Seq_Quality_Statistics seq_quality_info;
-            // qc1fastq(input_file, fastq_base_qual_offset, long_read_info, seq_quality_info, read_details_fp);
-
-            // output_data.long_read_info.add(long_read_info);
-            // output_data.seq_quality_info.add(seq_quality_info);
             qc1fastq(input_file, fastq_base_qual_offset, output_data, read_details_fp);
         }
         fclose(read_details_fp);
-
-        // try {
 
         // Add the G + C bases
         double g_c = output_data.long_read_info.total_g_cnt + output_data.long_read_info.total_c_cnt;
@@ -201,12 +173,10 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
         double a_tu_g_c = g_c + output_data.long_read_info.total_a_cnt + output_data.long_read_info.total_tu_cnt;
 
         // Calculate read length statistics if base counts are not zero
-        try {
         uint64_t total_num_bases = output_data.long_read_info.total_num_bases;
         if (total_num_bases == 0) {
             std::cerr << "No bases found in input files." << std::endl;
             exit_code = 3;
-            return exit_code;
         } else {
             // Calculate GC-content
             output_data.long_read_info.gc_cnt = g_c / a_tu_g_c;
@@ -292,17 +262,8 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
                 fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
             }
             fclose(read_summary_fp);
-
-        }
-
-        return exit_code;
-
-        } catch (const std::exception &e) {
-            std::cerr << "Oops! Caught exception: " << e.what() << std::endl;
-
-            return 3;
         }
     }
 
-    // return exit_code;
+    return exit_code;
 }

@@ -1,5 +1,5 @@
 {% set version = "1.3.1" %}
-{% set revision = "d81278eeea001251fd59898ca363bf4bf800c229" %}
+{% set revision = "725c239b6c1f4d6daf5788871cd47f8781358e3d" %}
 
 package:
   name: longreadsum
