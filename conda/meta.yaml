@@ -9,6 +9,13 @@ source:
   git_url: https://github.com/WGLab/LongReadSum.git
   git_rev: {{ revision }}
 
+channels:
+  - bioconda
+  - anaconda
+  - conda-forge
+  - jannessp  # for pod5
+  - defaults
+
 build:
   number: 0
   skip: true  # [py2k]
