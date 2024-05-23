@@ -27,6 +27,15 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
     $result = list;
 }
 
+// Map std::string arrays to Python lists
+%typemap(out) std::string[ANY] {
+    PyObject *list = PyList_New($1_dim0);
+    for (int i = 0; i < $1_dim0; i++) {
+        PyList_SetItem(list, i, PyUnicode_FromString($1[i].c_str()));
+    }
+    $result = list;
+}
+
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>

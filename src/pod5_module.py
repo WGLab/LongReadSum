@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import logging
 import pod5 as p5
 
@@ -8,24 +9,124 @@ if __name__ == 'src.pod5_module':
 else:
     import lrst
 
-def generate_pod5_qc(input_data: lrst.Input_Para, output_data: lrst.Output_FAST5) -> int:
+def generate_pod5_qc(input_data: dict) -> dict:
     """Generate QC for POD5"""
-    exit_code = 0
+    logging.info("Generating QC for POD5")
 
-    # Determine which statistics (base or signal) to generate
-    signal_mode = (bool)(input_data.other_flags)
-    logging.info("POD5 mode: %s QC", 'Signal' if signal_mode else 'Base')
+    # Get the list of read IDs to process (if specified)
+    read_id_list = []
+    if (input_data['read_ids']):
+        # Parse the comma-separated list of read IDs
+        read_id_list = input_data['read_ids'].split(',')
+        logging.info("Processing %d read IDs", len(read_id_list))
 
-    # # Get the list of read IDs to process (if specified)
-    # std::vector<std::string> read_id_list;
-    # if (_input_data.read_ids.empty() == false) {
-    #     // Parse the comma-separated list of read IDs
-    #     std::stringstream ss(_input_data.read_ids);
-    #     std::string read_id;
-    #     while (std::getline(ss, read_id, ',')) {
-    #         read_id_list.push_back(read_id);
+    # Generate signal QC
+    # Loop through each input file and get the QC data across files
+    # Dictionary to store read signal QC (key: read_id, [signal, mean_signal, median_signal, std_signal, skewness, kurtosis])
+    read_signal_dict = {}
+    for input_file in input_data['input_files']:
+        logging.info("File name: %s", input_file)
+
+        # Iterate through each read in the file
+        with p5.Reader(input_file) as reader:
+            for read in reader:
+                # Check if the read is in the list of reads to process (if
+                # provided)
+                # Convert the UUID to a string
+                read_id = str(read.read_id)
+                if read_id_list and read_id not in read_id_list:
+                    logging.info("Skipping read ID: %s", read_id)
+                    continue
+                logging.info("Processing read ID: %s", read_id)
+
+                # Get the basecall signals
+                read_signal = read.signal
+
+                read_signal_dict[read_id] = {}
+                # logging.info("Adding read signals")
+                read_signal_dict[read_id]['signal'] = read_signal
+
+                # Calculate QC metrics using numpy
+                # Mean signal
+                mean_signal = np.mean(read_signal)
+                read_signal_dict[read_id]['mean'] = mean_signal
+
+                # Median signal
+                median_signal = np.median(read_signal)
+                read_signal_dict[read_id]['median'] = median_signal
+
+                # Standard deviation
+                std_signal = np.std(read_signal)
+                read_signal_dict[read_id]['std'] = std_signal
+
+                # Pearson skewness coefficient
+                moment3 = np.mean((read_signal - mean_signal) ** 3)
+                moment2 = np.mean((read_signal - mean_signal) ** 2)
+                skewness = moment3 / (moment2 ** 1.5)
+                read_signal_dict[read_id]['skewness'] = skewness
+
+                # Kurtosis
+                moment4 = np.mean((read_signal - mean_signal) ** 4)
+                kurtosis = moment4 / (moment2 ** 2)
+                read_signal_dict[read_id]['kurtosis'] = kurtosis
+
+                
+    return read_signal_dict
+
+        
+    # Write QC details to the file
+    
+
+    
+
+            
+    # try {
+    #     // Open the file
+    #     H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
+
+    #     // Check if it is a multi-read FAST5 file
+    #     std::string signal_group_str;
+    #     std::string read_name;
+    #     if (f5.nameExists("/Raw")) {
+    #         std::cout << "Single read FAST5" << std::endl;
+
+    #         // Append the basecall signals to the output structure
+    #         signal_group_str = "/Raw/Reads";
+    #         read_name = getFileReadName(f5);
+    #         std::cout << read_name << std::endl;
+    #         Base_Signals basecall_obj = getReadBaseSignalData(f5, read_name, true);
+    #         output_data.addReadBaseSignals(basecall_obj);
+    #     } else {
+    #         std::cout << "Multi-read FAST5" << std::endl;
+
+    #         // Loop through each read
+    #         std::cout << "Reading all reads" << std::endl;
+    #         H5::Group root_group = f5.openGroup("/");
+    #         size_t num_objs = root_group.getNumObjs();
+    #         for (size_t i=0; i < num_objs; i++) {
+    #             read_name = root_group.getObjnameByIdx(i);
+
+    #             // Check if the read is in the list of reads to process (if provided)
+    #             if (read_id_list.size() > 0) {
+    #                 // First remove the prefix
+    #                 std::string read_id = read_name.substr(5);
+    #                 if (std::find(read_id_list.begin(), read_id_list.end(), read_id) == read_id_list.end()) {
+    #                     //std::cout << "Skipping read ID: " << read_id << std::endl;
+    #                     continue;
+    #                 } else {
+    #                     std::cout << "Processing read ID: " << read_id << std::endl;
+    #                 }
+    #             }
+    #             // std::cout << "Read: " << read_name << std::endl;
+
+    #             // Get the basecall signals
+    #             // std::cout << "Getting basecall signals" << std::endl;
+    #             Base_Signals basecall_obj = getReadBaseSignalData(f5, read_name, false);
+
+    #             //std::cout << "Adding basecall signals" << std::endl;
+    #             output_data.addReadBaseSignals(basecall_obj);
+    #         }
     #     }
-    # }
 
     # if (signal_mode == true) {
     #     // Loop through each input file and get the QC data across files
@@ -163,5 +264,4 @@ def generate_pod5_qc(input_data: lrst.Input_Para, output_data: lrst.Output_FAST5
     #     }
     # }
 
-    return exit_code
     

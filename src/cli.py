@@ -50,7 +50,7 @@ def get_common_param(margs):
     parsing_error_msg = ""
 
     if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (
-            margs.inputPattern == None or margs.inputPattern == ""):
+            margs.pattern == None or margs.pattern == ""):
         parsing_error_msg += "No input file(s) are provided. \n"
     else:
         # Group parameters into an array
@@ -61,14 +61,15 @@ def get_common_param(margs):
         if not (margs.inputs == None or margs.inputs == ""):
             file_list = [file_str.strip() for file_str in margs.inputs.split(',')]
             param_dict["input_files"].extend(file_list)
-        if not (margs.inputPattern == None or margs.inputPattern == ""):
-            pat_split = margs.inputPattern.split("*")
+        if not (margs.pattern == None or margs.pattern == ""):
+            pat_split = margs.pattern.split("*")
             param_dict["input_files"].extend(
                 glob(os.path.join("*".join(pat_split[:-1]), "*" + pat_split[-1])))
 
         # Number of reads to sample
-        read_count = margs.readCount
+        read_count = int(margs.read_count[0])
         param_dict["read_count"] = read_count
+        logging.info("Number of reads to sample: %d", read_count)
 
         if len(param_dict["input_files"]) == 0:
             parsing_error_msg += "No input file(s) can be found. \n"
@@ -447,27 +448,35 @@ def pod5_module(margs):
     else:
         logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "POD5"
-        input_para = lrst.Input_Para()
-        input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
-        input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
-        input_para.other_flags = 0  # 0 for normal QC, 1 for signal statistics output
+        input_para = {}
+        input_para['threads'] = param_dict["threads"]
+        input_para['rdm_seed'] = param_dict["random_seed"]
+        input_para['downsample_percentage'] = param_dict["downsample_percentage"]
+        input_para['output_folder'] = str(param_dict["output_folder"])
+        input_para['out_prefix'] = str(param_dict["out_prefix"])
+        input_para['other_flags'] = 0  # 0 for normal QC, 1 for signal statistics output
+        input_para['input_files'] = []
+        for input_file in param_dict["input_files"]:
+            input_para['input_files'].append(str(input_file))
 
-        for _ipf in param_dict["input_files"]:
-            input_para.add_input_file(str(_ipf))
+        # Get the read ID list if specified
+        read_ids = margs.read_ids
+        if read_ids != "" and read_ids is not None:
+            input_para['read_ids'] = read_ids
+        else:
+            input_para['read_ids'] = ""
 
-        fast5_output = lrst.Output_FAST5()
-        exit_code = generate_pod5_qc(input_para, fast5_output)
-        if exit_code == 0:
+        read_signal_dict = generate_pod5_qc(input_para)
+        if read_signal_dict is not None:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")
-            plot_filepaths = plot(fast5_output, param_dict, 'POD5')
+            plot_filepaths = plot_pod5(read_signal_dict, param_dict)
+            # plot_filepaths = plot(read_signal_dict, param_dict, 'POD5')
+            webpage_title = "POD5 QC"
             fast5_html_obj = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
-                  "read_avg_base_quality"], "POD5 QC", param_dict], plot_filepaths, static=False)
-            fast5_html_obj.generate_st_html()
+                  "read_avg_base_quality", "ont_signal"], webpage_title, param_dict], plot_filepaths, static=False)
+            fast5_html_obj.generate_st_html(signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
@@ -502,7 +511,7 @@ input_files_group.add_argument(
     help="Multiple comma-separated input filepaths", )
 
 input_files_group.add_argument(
-    "-P", "--inputPattern", type=str, default=None,
+    "-P", "--pattern", type=str, default=None,
     help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
 
 # Plot style parameters
@@ -514,8 +523,8 @@ common_grp_param.add_argument("--markersize", type=int, default=10,
 
 # Number of reads to sample
 common_grp_param.add_argument(
-    "-R", "--readCount", nargs="+", type=int, default=8,
-    help="Set the number of reads to randomly sample from the file. Default: 8.")
+    "-R", "--read-count", nargs="+", type=int, default=8,
+    help="Set the number of reads to randomly sample from the file. Default: 3.")
 
 # Misc. parameters
 input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
@@ -575,6 +584,10 @@ fast5_signal_parser = subparsers.add_parser('f5s',
                                             formatter_class=RawTextHelpFormatter)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
+# Add an argument for specifying the read names to extract
+fast5_signal_parser.add_argument("-r", "--read_ids", type=str, default=None,
+                                 help="A comma-separated list of read IDs to extract from the file.")
+
 # POD5 input file
 pod5_parser = subparsers.add_parser('pod5',
                                     parents=[parent_parser],
@@ -585,8 +598,8 @@ pod5_parser = subparsers.add_parser('pod5',
 pod5_parser.set_defaults(func=pod5_module)
 
 # Add an argument for specifying the read names to extract
-fast5_signal_parser.add_argument("-r", "--read_ids", type=str, default=None,
-                                 help="A comma-separated list of read IDs to extract from the file.")
+pod5_parser.add_argument("-r", "--read_ids", type=str, default=None,
+                            help="A comma-separated list of read IDs to extract from the file.")
 
 # Sequencing summary text file input
 seqtxt_parser = subparsers.add_parser('seqtxt',
