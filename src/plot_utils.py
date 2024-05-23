@@ -6,6 +6,11 @@ from random import sample
 import plotly.graph_objs as go
 from plotly.subplots import make_subplots
 
+if __name__ == 'src.plot_utils':
+    from lib import lrst  # For debugging
+else:
+    import lrst
+
 # Set up logging
 import logging
 logging.basicConfig(level=logging.INFO)
@@ -376,23 +381,116 @@ def plot(output_data, para_dict, file_type):
 
     return plot_filepaths
 
-# Plot the ONT FAST5 signal data
-def plot_signal(output_data, para_dict):
-    
-    # Get input parameters
-    output_dir = para_dict["output_folder"]
+def plot_pod5(output_dict, para_dict):
+    """Plot the ONT POD5 signal data for a random sample of reads."""
+    out_path = para_dict["output_folder"]
+    plot_filepaths = getDefaultPlotFilenames()
+
+    # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
+
+    # Create the summary table
+    create_pod5_table(output_dict, plot_filepaths)
+
+    # Generate the signal plots
     marker_size = para_dict["markersize"]
     read_count_max = para_dict["read_count"]
-    
-    # Get read and base counts
-    read_count = output_data.getReadCount()
+
+    read_count = len(output_dict.keys())
     logging.info("Plotting signal data for {} reads".format(read_count))
 
     # Randomly sample a small set of reads if it is a large dataset
     read_sample_size = min(read_count_max, read_count)
     unsampled_indices = list(range(0, read_sample_size))
     read_indices = sample(unsampled_indices, read_sample_size)
+
+    if read_sample_size < read_count:
+        logging.info("Randomly sampling {} reads from the total of {} reads".format(read_sample_size, read_count))
+    else:
+        logging.info("Plotting signal data for all {} reads".format(read_count))
+
+    # Plot the reads
+    output_html_plots = {}
+    for read_index in read_indices:
+        # Create the figure
+        fig = go.Figure()
+
+        # Get the read data
+        nth_read_name = list(output_dict.keys())[read_index]
+        nth_read_data = output_dict[nth_read_name]['signal']
+        signal_length = len(nth_read_data)
+        logging.info("Signal data count for read {}: {}".format(nth_read_name, signal_length))
+        nth_read_mean = output_dict[nth_read_name]['mean']
+        nth_read_std = output_dict[nth_read_name]['std']
+        nth_read_median = output_dict[nth_read_name]['median']
+        nth_read_skewness = output_dict[nth_read_name]['skewness']
+        nth_read_kurtosis = output_dict[nth_read_name]['kurtosis']
+
+        # Set up the output CSV
+        csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
+        qc_file = open(csv_qc_filepath, 'w')
+        qc_writer = csv.writer(qc_file)
+        qc_writer.writerow(["Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
+        
+        # Loop through the data
+        x = np.arange(signal_length)
+        fig.add_trace(go.Scatter(
+            x=x, y=nth_read_data,
+            mode='markers',
+            marker=dict(color='LightSkyBlue',
+                        size=5,
+                        line=dict(color='MediumPurple', width=2)),
+            opacity=0.5))
+        
+        # Update CSV
+        raw_row = [nth_read_data, signal_length, nth_read_mean, nth_read_median, nth_read_std, nth_read_skewness, nth_read_kurtosis]
+        qc_writer.writerow(raw_row)
+
+        # Close CSV
+        qc_file.close()
+
+        # Update the plot style
+        fig.update_layout(
+            title=nth_read_name,
+            yaxis_title="Signal",
+            showlegend=False,
+            font=dict(size=PLOT_FONT_SIZE)
+        )
+        fig.update_traces(marker={'size': marker_size})
+        fig.update_xaxes(title="Index")
+
+        # Append the dynamic HTML object to the output structure
+        dynamic_html = fig.to_html(full_html=False)
+        output_html_plots.update({nth_read_name: dynamic_html})
+
+    # Update the plot filepaths
+    plot_filepaths['ont_signal']['dynamic'] = output_html_plots
+
+    return plot_filepaths
+
+
+# Plot the ONT FAST5 signal data
+def plot_signal(output_data, para_dict):
+    """Plot the ONT FAST5 signal data for a random sample of reads."""
+    
+    # Get input parameters
+    output_dir = para_dict["output_folder"]
+    # font_size = para_dict["fontsize"]
+    marker_size = para_dict["markersize"]
+    read_count_max = para_dict["read_count"]
+    
+    # Get read and base counts
+    read_count = output_data.getReadCount()
+
+    # Randomly sample a small set of reads if it is a large dataset
+    read_sample_size = min(read_count_max, read_count)
+    unsampled_indices = list(range(0, read_sample_size))
+    read_indices = sample(unsampled_indices, read_sample_size)
+
+    if read_sample_size < read_count:
+        logging.info("Randomly sampling {} reads from the total of {} reads".format(read_sample_size, read_count))
+    else:
+        logging.info("Plotting signal data for all {} reads".format(read_count))
 
     # Plot the reads
     output_html_plots = {}
@@ -489,7 +587,7 @@ def plot_signal(output_data, para_dict):
 
     return output_html_plots
 
-# Create a summary table for the basic statistics
+# Create a summary table for the basic statistics from the C++ output data
 def create_summary_table(output_data, plot_filepaths, file_type):
     plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
@@ -500,7 +598,7 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     if file_type == 'FAST5s':
         file_type_label = 'FAST5'
 
-    plot_filepaths["basic_st"]['description'] = "{} Basic statistics".format(file_type_label)
+    plot_filepaths["basic_st"]['description'] = "{} Basic Statistics".format(file_type_label)
 
     if file_type == 'BAM':
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n" \
@@ -600,6 +698,26 @@ def create_summary_table(output_data, plot_filepaths, file_type):
         table_str += int_str_for_format.format("Median Read Length",
                                                output_data.long_read_info.median_read_length)
         
+    table_str += "\n</tbody>\n</table>"
+    plot_filepaths["basic_st"]['detail'] = table_str
+
+def create_pod5_table(output_dict, plot_filepaths):
+    """Create a summary table for the ONT POD5 signal data."""
+    plot_filepaths["basic_st"] = {}
+    plot_filepaths["basic_st"]['file'] = ""
+    plot_filepaths["basic_st"]['title'] = "Summary Table"
+    file_type_label = "POD5"
+    plot_filepaths["basic_st"]['description'] = f"{file_type_label} Basic Statistics"
+    
+    # Get values
+    read_count = len(output_dict.keys())
+
+    # Set up the HTML table
+    table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
+    table_str += "\n<tbody>"
+    int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
+    table_str += int_str_for_format.format("#Total Reads", read_count)
+
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["basic_st"]['detail'] = table_str
 
