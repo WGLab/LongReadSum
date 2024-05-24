@@ -66,11 +66,9 @@ def get_common_param(margs):
             param_dict["input_files"].extend(
                 glob(os.path.join("*".join(pat_split[:-1]), "*" + pat_split[-1])))
 
-        # Number of reads to sample
-        read_count = int(margs.read_count[0])
+        read_count = int(margs.read_count)
         param_dict["read_count"] = read_count
-        logging.info("Number of reads to sample: %d", read_count)
-
+        
         if len(param_dict["input_files"]) == 0:
             parsing_error_msg += "No input file(s) can be found. \n"
         else:
@@ -523,7 +521,7 @@ common_grp_param.add_argument("--markersize", type=int, default=10,
 
 # Number of reads to sample
 common_grp_param.add_argument(
-    "-R", "--read-count", nargs="+", type=int, default=8,
+    "-R", "--read-count", type=int, default=3,
     help="Set the number of reads to randomly sample from the file. Default: 3.")
 
 # Misc. parameters
