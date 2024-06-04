@@ -10,7 +10,7 @@ dependencies:
   - numpy
   - hdf5
   - ont_vbz_hdf_plugin
-  - htslib
+  - htslib=1.20
   - swig
   - plotly
   - pytest

@@ -91,6 +91,8 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
     // Loop through each alignment record in the BAM file
     // Do QC on each record and store the results in the output_data object
+    // bool nm_tag_present = false;  // Flag to determine if the NM tag is present (for mismatch counting)
+    bool mod_tag_present = false;  // Flag to determine if the base modification tags (MM, ML) are present
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
         bam1_t* record = bam_init1();
@@ -104,6 +106,54 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             this->reading_complete = true;
             bam_destroy1(record);
             break; // error or EOF
+        }
+
+        // Follow here to get base modification tags:
+        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
+        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
+        std::cout << "[TEST] Accessing base modification tags" << std::endl;
+        hts_base_mod_state *state = hts_base_mod_state_alloc();
+        if (bam_parse_basemod(record, state) >= 0) {
+            std::cout << "Base modification tags found" << std::endl;
+            mod_tag_present = true;
+
+            // Iterate over the state object to get the base modification tags
+            // using bam_next_basemod
+            hts_base_mod mods[10];
+            int n = 0;
+            int pos = 0;
+            while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
+                for (int i = 0; i < n; i++) {
+                    std::cout << "Base modification at position " << pos << std::endl;
+                    std::cout << "Base modification type: " << mods[i].modified_base << std::endl;
+                    std::cout << "Base modification likelihood: " << mods[i].qual / 256.0 << std::endl;
+                }
+            }
+
+            // Iterating by position
+            // hts_base_mod mods[10];
+            // int n = bam_mods_at_next_pos(record, state, mods, 10);
+            // for (int i = 0; i < n; i++) {
+            //     std::cout << "Base modification at position " << mods[i].pos << std::endl;
+            //     std::cout << "Base modification type: " << mods[i].type << std::endl;
+            //     std::cout << "Base modification likelihood: " << mods[i].likelihood << std::endl;
+            // }
+            
+
+            // // Get the ML tag (base modification likelihoods) from the state
+            // // object (https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c#L176)
+            // if (state->ml) {
+            //     std::cout << "ML tag found" << std::endl;
+            //     // std::cout << "ML tag: " << state->ml << std::endl;
+            //     // std::cout << "ML tag length: " << state->ml_len << std::endl;
+            //     // std::cout << "ML tag type: " << state->ml_type << std::endl;
+            //     // std::cout << "ML tag num: " << state->ml_num << std::endl;
+            //     // std::cout << "ML tag num length: " << state->ml_num_len << std::endl;
+            //     // std::cout << "ML tag num type: " << state->ml_num_type <<
+            //     // std::endl;
+            // }
+        } else {
+            std::cout << "No base modification tags found" << std::endl;
         }
 
         // Determine if this read should be skipped
@@ -168,6 +218,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 uint8_t *nmTag = bam_aux_get(record, "NM");
                 if (nmTag != NULL) {
                     num_mismatches = (uint64_t) bam_aux2i(nmTag);
+                    // nm_tag_present = true;
                 }
                 output_data.num_mismatched_bases += num_mismatches;
             }
@@ -221,6 +272,19 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
                 // Update the GC content histogram
                 basic_qc->read_gc_content_count.push_back(percent_gc);
+
+                // Determine if the base modification tags are present
+                uint8_t *mmTag = bam_aux_get(record, "MM:Z");
+                uint8_t *mlTag = bam_aux_get(record, "ML:B:C");
+                // uint8_t *mmTag = bam_aux_get(record, "mm");
+                // uint8_t *mlTag = bam_aux_get(record, "ml");
+                // uint8_t *mmTag = bam_aux_get(record, "MM");
+                // uint8_t *mlTag = bam_aux_get(record, "ML");
+
+                if (mmTag != NULL || mlTag != NULL) {
+                    mod_tag_present = true;
+                }
+
             } else {
                 std::cerr << "Error: Unknown alignment type" << std::endl;
                 std::cerr << "Flag: " << record->core.flag << std::endl;
@@ -233,14 +297,21 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         record_count++;
     }
 
-//    // Print if the NM tag was not present
-//    if (nm_tag_present)
-//        cout_mutex.lock();
-//        std::cout << "NM tag found, used for mismatch count" << std::endl;
-//        cout_mutex.unlock();
-//    } else {
-//        std::cout << "No NM tag, using CIGAR for mismatch count" << std::endl;
-//    }
+    // Print if the NM tag was not present
+    // if (nm_tag_present)
+    // {
+    //     std::cout << "NM tag found, used NM tag for mismatch count" << std::endl;
+    // } else {
+    //     std::cout << "No NM tag found, used CIGAR for mismatch count" << std::endl;
+    // }
+
+    // Print if the base modification tags were present
+    if (mod_tag_present)
+    {
+        std::cout << "Base modification tags found" << std::endl;
+    } else {
+        std::cout << "[test2] No base modification tags found" << std::endl;
+    }
 
     return exit_code;
 }
