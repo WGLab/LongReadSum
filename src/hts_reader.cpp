@@ -14,6 +14,7 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include <algorithm>  // std::find
 
 #include "hts_reader.h"
+#include "utils.h"
 
 // HTSReader constructor
 HTSReader::HTSReader(const std::string & bam_file_name){
@@ -111,10 +112,10 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // Follow here to get base modification tags:
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
-        std::cout << "[TEST] Accessing base modification tags" << std::endl;
         hts_base_mod_state *state = hts_base_mod_state_alloc();
         if (bam_parse_basemod(record, state) >= 0) {
-            std::cout << "Base modification tags found" << std::endl;
+            printMessage("Base modification tags found");
+            // std::cout << "Base modification tags found" << std::endl;
             mod_tag_present = true;
 
             // Iterate over the state object to get the base modification tags
@@ -124,9 +125,18 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             int pos = 0;
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
                 for (int i = 0; i < n; i++) {
-                    std::cout << "Base modification at position " << pos << std::endl;
-                    std::cout << "Base modification type: " << mods[i].modified_base << std::endl;
-                    std::cout << "Base modification likelihood: " << mods[i].qual / 256.0 << std::endl;
+                    // Struct definition: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2226
+                    printMessage("Found base modification at position " + std::to_string(pos));
+                    printMessage("Modification type: " + std::string(1, mods[i].modified_base));
+                    printMessage("Canonical base: " + std::string(1, mods[i].canonical_base));
+                    printMessage("Likelihood: " + std::to_string(mods[i].qual / 256.0));
+                    printMessage("Strand: " + std::to_string(mods[i].strand));
+
+                    //
+                    // std::cout << "Base modification at position " << pos << std::endl;
+                    // std::cout << "Base modification type: " << mods[i].modified_base << std::endl;
+                    // std::cout << "Base modification likelihood: " << mods[i].qual / 256.0 << std::endl;
+                    // std::cout << "Base modification strand: " << mods[i].strand << std::endl;
                 }
             }
 

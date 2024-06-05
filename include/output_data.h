@@ -122,6 +122,9 @@ public:
     uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
     uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
     uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
+    int reads_with_mods = ZeroDefault; // Total number of reads with modification tags
+    int reads_with_mods_pos_strand = ZeroDefault; // Total number of reads with modification tags on the positive strand
+    int reads_with_mods_neg_strand = ZeroDefault; // Total number of reads with modification tags on the negative strand
 
     // Map of reads with supplementary alignments
     std::map<std::string, bool> reads_with_supplementary;
