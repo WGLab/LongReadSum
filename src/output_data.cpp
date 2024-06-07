@@ -261,7 +261,34 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::add(Output_BAM& output_data){
+void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg)
+{ 
+    // Add the reference position to the map if it is not in the map
+    if (this->base_modifications.find(ref_pos) == this->base_modifications.end()) {
+        this->base_modifications[ref_pos] = std::map<char, std::tuple<char, double>>();
+    }
+
+    // Add the modification type to the map if it is not in the map
+    else if (this->base_modifications[ref_pos].find(mod_type) == this->base_modifications[ref_pos].end()) {
+        this->base_modifications[ref_pos][mod_type] = std::make_tuple(canonical_base, likelihood);
+
+        // Update the total number of modified bases
+        this->modified_base_count += 1;
+
+        // Update the total number of CpG modified bases
+        if (is_cpg) {
+            this->cpg_modified_base_count += 1;
+        }
+    }
+
+    // If the modification type is already in the map, update the likelihood if it is greater
+    else if (likelihood > std::get<1>(this->base_modifications[ref_pos][mod_type])) {
+        std::get<1>(this->base_modifications[ref_pos][mod_type]) = likelihood;
+    }
+}
+
+void Output_BAM::add(Output_BAM &output_data)
+{
     this->num_primary_alignment += output_data.num_primary_alignment;
     this->num_secondary_alignment += output_data.num_secondary_alignment;
     this->num_supplementary_alignment += output_data.num_supplementary_alignment;

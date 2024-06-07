@@ -118,52 +118,23 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // std::cout << "Base modification tags found" << std::endl;
             mod_tag_present = true;
 
-            // Iterate over the state object to get the base modification tags
-            // using bam_next_basemod
-            hts_base_mod mods[10];
-            int n = 0;
-            int pos = 0;
-            while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
-                for (int i = 0; i < n; i++) {
-                    // Struct definition: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2226
-                    printMessage("Found base modification at position " + std::to_string(pos));
-                    printMessage("Modification type: " + std::string(1, mods[i].modified_base));
-                    printMessage("Canonical base: " + std::string(1, mods[i].canonical_base));
-                    printMessage("Likelihood: " + std::to_string(mods[i].qual / 256.0));
-                    printMessage("Strand: " + std::to_string(mods[i].strand));
-
-                    //
-                    // std::cout << "Base modification at position " << pos << std::endl;
-                    // std::cout << "Base modification type: " << mods[i].modified_base << std::endl;
-                    // std::cout << "Base modification likelihood: " << mods[i].qual / 256.0 << std::endl;
-                    // std::cout << "Base modification strand: " << mods[i].strand << std::endl;
-                }
-            }
-
-            // Iterating by position
+            // // Iterate over the state object to get the base modification tags
+            // // using bam_next_basemod
             // hts_base_mod mods[10];
-            // int n = bam_mods_at_next_pos(record, state, mods, 10);
-            // for (int i = 0; i < n; i++) {
-            //     std::cout << "Base modification at position " << mods[i].pos << std::endl;
-            //     std::cout << "Base modification type: " << mods[i].type << std::endl;
-            //     std::cout << "Base modification likelihood: " << mods[i].likelihood << std::endl;
-            // }
-            
-
-            // // Get the ML tag (base modification likelihoods) from the state
-            // // object (https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c#L176)
-            // if (state->ml) {
-            //     std::cout << "ML tag found" << std::endl;
-            //     // std::cout << "ML tag: " << state->ml << std::endl;
-            //     // std::cout << "ML tag length: " << state->ml_len << std::endl;
-            //     // std::cout << "ML tag type: " << state->ml_type << std::endl;
-            //     // std::cout << "ML tag num: " << state->ml_num << std::endl;
-            //     // std::cout << "ML tag num length: " << state->ml_num_len << std::endl;
-            //     // std::cout << "ML tag num type: " << state->ml_num_type <<
-            //     // std::endl;
+            // int n = 0;
+            // int pos = 0;
+            // while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
+            //     for (int i = 0; i < n; i++) {
+            //         // Struct definition: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2226
+            //         printMessage("Found base modification at position " + std::to_string(pos));
+            //         printMessage("Modification type: " + std::string(1, mods[i].modified_base));
+            //         printMessage("Canonical base: " + std::string(1, mods[i].canonical_base));
+            //         printMessage("Likelihood: " + std::to_string(mods[i].qual / 256.0));
+            //         printMessage("Strand: " + std::to_string(mods[i].strand));
+            //     }
             // }
         } else {
-            std::cout << "No base modification tags found" << std::endl;
+            printMessage("No base modification tags found");
         }
 
         // Determine if this read should be skipped
@@ -257,18 +228,86 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             } else if (!(record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FSUPPLEMENTARY)) {
                 output_data.num_primary_alignment++;  // Update the number of primary alignments
 
-                // Loop through the cigar string and count the number of clipped bases
+                // Loop through the cigar string, count the number of clipped
+                // bases, and also get the reference position of the read if
+                // there is a modification tag
                 uint32_t *cigar = bam_get_cigar(record);
+                int32_t ref_pos = record->core.pos;
+                int query_pos = 0;
                 for (uint32_t i = 0; i < record->core.n_cigar; i++) {
                     int cigar_op = bam_cigar_op(cigar[i]);
                     uint64_t cigar_len = (uint64_t)bam_cigar_oplen(cigar[i]);
                     switch (cigar_op) {
                         case BAM_CSOFT_CLIP:
                             output_data.num_clip_bases += cigar_len;
+                            query_pos += cigar_len; // Consumes query bases
                             break;
                         case BAM_CHARD_CLIP:
                             output_data.num_clip_bases += cigar_len;
                             break;
+
+                        // Read the modification tag if the operation is a match
+                        case BAM_CMATCH:
+                            if (mod_tag_present) {
+                                // Loop through the cigar string and get the
+                                // modification at each position
+                                hts_base_mod_state *state = hts_base_mod_state_alloc();
+                                hts_base_mod mods[10];
+                                char previous_base = 'N';
+                                int mod_ref_pos = ref_pos;
+                                int mod_query_pos = query_pos;
+                                for (uint32_t j = 0; j < cigar_len; j++) {
+                                    if (bam_next_basemod(record, state, mods, 10, &mod_query_pos) > 0) {
+                                        char mod_type = mods[0].modified_base;
+                                        char canonical_base = mods[0].canonical_base;
+                                        double likelihood = mods[0].qual / 256.0;
+                                        int strand = mods[0].strand;  // 0 for forward, 1 for reverse
+
+                                        // Determine if this is a CpG modification
+                                        bool is_cpg = false;
+                                        if (strand == 0 && previous_base == 'C' && canonical_base == 'G') {
+                                            is_cpg = true;
+                                        } else if (strand == 1 && previous_base == 'G' && canonical_base == 'C') {
+                                            is_cpg = true;
+                                        }
+
+                                        // Add the modification to the output data
+                                        output_data.add_modification(mod_ref_pos, mod_type, canonical_base, likelihood, is_cpg);
+
+                                        // Update the previous base
+                                        previous_base = canonical_base;
+                                    } else {
+                                        previous_base = 'N';
+                                        std::cerr << "Error reading base modification" << std::endl;
+                                    }
+
+                                    // Update the reference and query positions
+                                    mod_ref_pos++;
+                                    mod_query_pos++;
+                                }
+                            }
+                            
+                            query_pos += cigar_len;  // Consumes query bases
+                            ref_pos += cigar_len;  // Consumes reference bases
+                            break;
+
+                        case BAM_CINS:
+                            query_pos += cigar_len;  // Consumes query bases
+                            break;
+
+                        case BAM_CDEL:
+                            ref_pos += cigar_len;  // Consumes reference bases
+                            break;
+
+                        case BAM_CREF_SKIP:
+                            ref_pos += cigar_len;  // Consumes reference bases
+                            break;
+
+                        case BAM_CDIFF:
+                            query_pos += cigar_len;  // Consumes query bases
+                            ref_pos += cigar_len;  // Consumes reference bases
+                            break;
+
                         default:
                             break;
                     }
@@ -282,18 +321,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
                 // Update the GC content histogram
                 basic_qc->read_gc_content_count.push_back(percent_gc);
-
-                // Determine if the base modification tags are present
-                uint8_t *mmTag = bam_aux_get(record, "MM:Z");
-                uint8_t *mlTag = bam_aux_get(record, "ML:B:C");
-                // uint8_t *mmTag = bam_aux_get(record, "mm");
-                // uint8_t *mlTag = bam_aux_get(record, "ml");
-                // uint8_t *mmTag = bam_aux_get(record, "MM");
-                // uint8_t *mlTag = bam_aux_get(record, "ML");
-
-                if (mmTag != NULL || mlTag != NULL) {
-                    mod_tag_present = true;
-                }
 
             } else {
                 std::cerr << "Error: Unknown alignment type" << std::endl;

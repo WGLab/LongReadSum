@@ -122,15 +122,8 @@ public:
     uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
     uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
     uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
-    int reads_with_mods = ZeroDefault; // Total number of reads with modification tags
-    int reads_with_mods_pos_strand = ZeroDefault; // Total number of reads with modification tags on the positive strand
-    int reads_with_mods_neg_strand = ZeroDefault; // Total number of reads with modification tags on the negative strand
-
-    // Map of reads with supplementary alignments
-    std::map<std::string, bool> reads_with_supplementary;
-
-    // Map of reads with secondary alignments
-    std::map<std::string, bool> reads_with_secondary;
+    std::map<std::string, bool> reads_with_supplementary;  // Map of reads with supplementary alignments
+    std::map<std::string, bool> reads_with_secondary;  // Map of reads with secondary alignments
 
     // Similar to Output_FA: below are for mapped.
     uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
@@ -142,14 +135,23 @@ public:
     // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
     int num_columns = ZeroDefault; // the number of columns
     double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
-
     std::vector<int> accuracy_per_read;
+
+    // Modified base statistics
+    // Number of modified bases by position in the reference:
+    // <reference position, <modification type, <canonical base, maximum likelihood>>
+    std::map<int32_t, std::map<char, std::tuple<char, double>>> base_modifications;
+    uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases in the genome
+    uint64_t cpg_modified_base_count = ZeroDefault;  // Total number of CpG modified bases in the genome
 
     Basic_Seq_Statistics mapped_long_read_info;
     Basic_Seq_Statistics unmapped_long_read_info;
 
     Basic_Seq_Quality_Statistics mapped_seq_quality_info;
     Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+
+    // Add modified base data
+    void add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg);
 
     // Add a batch of records to the output
     void add(Output_BAM &t_output_bam);
