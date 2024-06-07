@@ -153,6 +153,9 @@ public:
     // Add modified base data
     void add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg);
 
+    // Return the modification information
+    std::map<int32_t, std::map<char, std::tuple<char, double>>> get_modifications();
+
     // Add a batch of records to the output
     void add(Output_BAM &t_output_bam);
 

@@ -236,6 +236,7 @@ def bam_module(margs):
 
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
+        base_modifications = bam_output.get_base_modifications()
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")

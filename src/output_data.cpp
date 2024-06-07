@@ -287,6 +287,11 @@ void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical
     }
 }
 
+std::map<int32_t, std::map<char, std::tuple<char, double>>> Output_BAM::get_modifications()
+{
+    return this->base_modifications;
+}
+
 void Output_BAM::add(Output_BAM &output_data)
 {
     this->num_primary_alignment += output_data.num_primary_alignment;
