@@ -43,6 +43,10 @@ class HTSReader {
         // Return the number of records in the BAM file using the BAM index
         int64_t getNumRecords(const std::string &bam_file_name);
 
+        // Input a query position and return the reference position by querying
+        // the BAM index
+        int getRefPos(const std::string &bam_file_name, const std::string &chromosome, std::vector<int> query_pos, std::vector<int> &ref_pos);
+
         HTSReader(const std::string &bam_file_name);
         ~HTSReader();
 };

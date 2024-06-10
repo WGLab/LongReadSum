@@ -236,7 +236,19 @@ def bam_module(margs):
 
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
-        base_modifications = bam_output.get_base_modifications()
+        base_modifications = bam_output.get_modifications()
+
+        # Test that the base modifications are not empty
+        logging.info("Base modifications size: %d", len(base_modifications))
+
+        # Print keys and values
+        max_print = 40
+        for key, value in base_modifications.items():
+            logging.info("Key: %s, Value: %s", key, value)
+            max_print -= 1
+            if max_print == 0:
+                break
+
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")

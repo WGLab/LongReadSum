@@ -38,18 +38,35 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
 
 // Map std::map<int32_t, std::map<char, std::tuple<char, double>>> to Python
 // dictionary
+// %typemap(out) std::map<int32_t, std::map<char, std::tuple<char, double>>> {
+//     PyObject *dict = PyDict_New();
+//     for (auto const &it : $1) {
+//         PyObject *inner_dict = PyDict_New();
+//         for (auto const &inner_it : it.second) {
+//             PyObject *tuple = PyTuple_Pack(2, PyUnicode_FromString(std::get<0>(inner_it.second).c_str()), PyFloat_FromDouble(std::get<1>(inner_it.second)));
+//             PyDict_SetItem(inner_dict, PyUnicode_FromStringAndSize(&inner_it.first, 1), tuple);
+//         }
+//         PyDict_SetItem(dict, PyLong_FromLong(it.first), inner_dict);
+//     }
+//     $result = dict;
+// }
 %typemap(out) std::map<int32_t, std::map<char, std::tuple<char, double>>> {
     PyObject *dict = PyDict_New();
     for (auto const &it : $1) {
         PyObject *inner_dict = PyDict_New();
         for (auto const &inner_it : it.second) {
-            PyObject *tuple = PyTuple_Pack(2, PyUnicode_FromString(std::get<0>(inner_it.second).c_str()), PyFloat_FromDouble(std::get<1>(inner_it.second)));
-            PyDict_SetItem(inner_dict, PyUnicode_FromStringAndSize(&inner_it.first, 1), tuple);
+            PyObject *tuple = PyTuple_Pack(2, 
+                                           PyUnicode_FromStringAndSize(&std::get<0>(inner_it.second), 1), 
+                                           PyFloat_FromDouble(std::get<1>(inner_it.second)));
+            PyDict_SetItem(inner_dict, 
+                           PyUnicode_FromStringAndSize(&inner_it.first, 1), 
+                           tuple);
         }
         PyDict_SetItem(dict, PyLong_FromLong(it.first), inner_dict);
     }
     $result = dict;
 }
+
 
 %include <std_string.i>
 %include <stdint.i>

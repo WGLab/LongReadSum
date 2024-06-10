@@ -16,6 +16,67 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include "hts_reader.h"
 #include "utils.h"
 
+int HTSReader::getRefPos(const std::string &bam_file_name, const std::string &chromosome, std::vector<int> query_pos, std::vector<int> &ref_pos)
+{
+    htsFile * bam_file = hts_open(bam_file_name.c_str(), "r");
+    if (bam_file == NULL)
+    {
+        std::cerr << "Error opening BAM file: " << bam_file_name << std::endl;
+        return BAM_UN_OPEN;
+    }
+
+    // Read the BAM header
+    bam_hdr_t *header = sam_hdr_read(bam_file);
+    if (header == NULL)
+    {
+        std::cerr << "Error reading BAM header" << std::endl;
+        return BAM_FAILED;
+    }
+
+    // Load the BAM index
+    hts_idx_t *idx = sam_index_load(bam_file, bam_file_name.c_str());
+    if (idx == NULL)
+    {
+        std::cerr << "Error loading BAM index" << std::endl;
+        return BAM_FAILED;
+    }
+
+    // Get the reference ID
+    int ref_id = bam_name2id(header, chromosome.c_str());
+    if (ref_id < 0)
+    {
+        std::cerr << "Error getting reference ID for chromosome: " << chromosome << std::endl;
+        return BAM_FAILED;
+    }
+
+    // Get the reference position
+    for (int i = 0; i < (int)query_pos.size(); i++) {
+        hts_itr_t *iter = sam_itr_queryi(idx, ref_id, query_pos[i], query_pos[i] + 1);
+
+        // Get the reference position
+        int ref_pos_i = -1;
+        if (iter != NULL)
+        {
+            int result = sam_itr_next(bam_file, iter, this->record);
+            if (result >= 0)
+            {
+                ref_pos_i = this->record->core.pos;
+            }
+        }
+
+        // Clean up
+        hts_itr_destroy(iter);
+        ref_pos.push_back(ref_pos_i);
+    }
+
+    // Clean up
+    hts_idx_destroy(idx);
+    bam_hdr_destroy(header);
+    hts_close(bam_file);
+
+    return BAM_OPEN;
+}
+
 // HTSReader constructor
 HTSReader::HTSReader(const std::string & bam_file_name){
     this->bam_file = hts_open(bam_file_name.c_str(), "r");
@@ -113,29 +174,65 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
         hts_base_mod_state *state = hts_base_mod_state_alloc();
+        std::map<int32_t, std::map<char, std::tuple<char, double>>> base_modifications;
         if (bam_parse_basemod(record, state) >= 0) {
-            printMessage("Base modification tags found");
+            // printMessage("Base modification tags found");
             // std::cout << "Base modification tags found" << std::endl;
             mod_tag_present = true;
 
-            // // Iterate over the state object to get the base modification tags
-            // // using bam_next_basemod
-            // hts_base_mod mods[10];
-            // int n = 0;
-            // int pos = 0;
-            // while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
-            //     for (int i = 0; i < n; i++) {
-            //         // Struct definition: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2226
-            //         printMessage("Found base modification at position " + std::to_string(pos));
-            //         printMessage("Modification type: " + std::string(1, mods[i].modified_base));
-            //         printMessage("Canonical base: " + std::string(1, mods[i].canonical_base));
-            //         printMessage("Likelihood: " + std::to_string(mods[i].qual / 256.0));
-            //         printMessage("Strand: " + std::to_string(mods[i].strand));
-            //     }
-            // }
+            // Iterate over the state object to get the base modification tags
+            // using bam_next_basemod
+            hts_base_mod mods[10];
+            int n = 0;
+            int pos = 0;
+            char previous_base = 'N';
+            int cpg_count = 0;
+            int previous_pos = 0;
+            std::vector<int> query_pos;
+            while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
+            // while ((n=bam_mods_at_next_pos(record, state, mods, 10)) > 0) {
+                for (int i = 0; i < n; i++) {
+                    // std::cout << "Base modification at position " << pos << std::endl;
+                    // std::cout << "Base modification type: " << mods[i].modified_base << std::endl;
+                    // std::cout << "Base modification likelihood: " << mods[i].qual / 256.0 << std::endl;
+                    // // Struct definition: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2226
+                    // printMessage("Found base modification at position " + std::to_string(pos));
+                    // printMessage("Modification type: " + std::string(1, mods[i].modified_base));
+                    // printMessage("Canonical base: " + std::string(1, mods[i].canonical_base));
+                    // printMessage("Likelihood: " + std::to_string(mods[i].qual / 256.0));
+                    // printMessage("Strand: " + std::to_string(mods[i].strand));
+                    // printMessage("CpG: " + std::to_string(mods[i].cpg));
+                    // Check if consecutive CpG modifications
+                    // if (previous_pos == pos - 1) {
+                    //     if (mods[i].strand == 0 && previous_base == 'C' && mods[i].canonical_base == 'G') {
+                    //         // printMessage("CpG modification found");
+                    //         cpg_count++;
+                    //     } else if (mods[i].strand == 1 && previous_base == 'G' && mods[i].canonical_base == 'C') {
+                    //         cpg_count++;
+                    //     }
+                    // }
+                    // Append the position
+                    // query_pos.push_back(pos);
+
+                    // Add the modification to the output data
+                    output_data.add_modification(pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, mods[i].cpg);
+                    // base_modifications[pos][mods[i].modified_base] = std::make_tuple(mods[i].canonical_base, mods[i].qual / 256.0);
+
+                    // Update the previous base and position
+                    // previous_base = mods[i].canonical_base;
+                    // previous_pos = pos;
+                }
+            }
+            // TODO: Store ref positions later, then query the sequence to
+            // identify CpG sites
+            printMessage("Number of positions with base modifications: " + std::to_string(output_data.get_modifications().size()));
+
         } else {
             printMessage("No base modification tags found");
         }
+
+        // Deallocate the state object
+        hts_base_mod_state_free(state);
 
         // Determine if this read should be skipped
         if (read_ids_present){
@@ -245,69 +342,21 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         case BAM_CHARD_CLIP:
                             output_data.num_clip_bases += cigar_len;
                             break;
-
-                        // Read the modification tag if the operation is a match
                         case BAM_CMATCH:
-                            if (mod_tag_present) {
-                                // Loop through the cigar string and get the
-                                // modification at each position
-                                hts_base_mod_state *state = hts_base_mod_state_alloc();
-                                hts_base_mod mods[10];
-                                char previous_base = 'N';
-                                int mod_ref_pos = ref_pos;
-                                int mod_query_pos = query_pos;
-                                for (uint32_t j = 0; j < cigar_len; j++) {
-                                    if (bam_next_basemod(record, state, mods, 10, &mod_query_pos) > 0) {
-                                        char mod_type = mods[0].modified_base;
-                                        char canonical_base = mods[0].canonical_base;
-                                        double likelihood = mods[0].qual / 256.0;
-                                        int strand = mods[0].strand;  // 0 for forward, 1 for reverse
-
-                                        // Determine if this is a CpG modification
-                                        bool is_cpg = false;
-                                        if (strand == 0 && previous_base == 'C' && canonical_base == 'G') {
-                                            is_cpg = true;
-                                        } else if (strand == 1 && previous_base == 'G' && canonical_base == 'C') {
-                                            is_cpg = true;
-                                        }
-
-                                        // Add the modification to the output data
-                                        output_data.add_modification(mod_ref_pos, mod_type, canonical_base, likelihood, is_cpg);
-
-                                        // Update the previous base
-                                        previous_base = canonical_base;
-                                    } else {
-                                        previous_base = 'N';
-                                        std::cerr << "Error reading base modification" << std::endl;
-                                    }
-
-                                    // Update the reference and query positions
-                                    mod_ref_pos++;
-                                    mod_query_pos++;
-                                }
-                            }
-                            
-                            query_pos += cigar_len;  // Consumes query bases
-                            ref_pos += cigar_len;  // Consumes reference bases
-                            break;
-
-                        case BAM_CINS:
-                            query_pos += cigar_len;  // Consumes query bases
-                            break;
-
-                        case BAM_CDEL:
-                            ref_pos += cigar_len;  // Consumes reference bases
-                            break;
-
-                        case BAM_CREF_SKIP:
-                            ref_pos += cigar_len;  // Consumes reference bases
-                            break;
-
+                        case BAM_CEQUAL:
                         case BAM_CDIFF:
-                            query_pos += cigar_len;  // Consumes query bases
-                            ref_pos += cigar_len;  // Consumes reference bases
+                            ref_pos += cigar_len;
+                            query_pos += cigar_len;
                             break;
-
+                        case BAM_CINS:
+                            query_pos += cigar_len;
+                            break;
+                        case BAM_CDEL:
+                            ref_pos += cigar_len;
+                            break;
+                        case BAM_CREF_SKIP:
+                            ref_pos += cigar_len;
+                            break;
                         default:
                             break;
                     }
@@ -334,6 +383,9 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         record_count++;
     }
 
+    // Print the size of the modified base map
+    printMessage("[HTS] Size of base modifications map: " + std::to_string(output_data.base_modifications.size()));
+
     // Print if the NM tag was not present
     // if (nm_tag_present)
     // {
@@ -342,13 +394,13 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     //     std::cout << "No NM tag found, used CIGAR for mismatch count" << std::endl;
     // }
 
-    // Print if the base modification tags were present
-    if (mod_tag_present)
-    {
-        std::cout << "Base modification tags found" << std::endl;
-    } else {
-        std::cout << "[test2] No base modification tags found" << std::endl;
-    }
+    // // Print if the base modification tags were present
+    // if (mod_tag_present)
+    // {
+    //     std::cout << "Base modification tags found" << std::endl;
+    // } else {
+    //     std::cout << "[test2] No base modification tags found" << std::endl;
+    // }
 
     return exit_code;
 }

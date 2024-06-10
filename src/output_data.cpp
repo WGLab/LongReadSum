@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "output_data.h"
+#include "utils.h"
 #include "basic_statistics.h"
 
 // Base class for storing error output.
@@ -262,15 +263,29 @@ Output_BAM::~Output_BAM(){
 }
 
 void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg)
-{ 
+{
+    printMessage("[0] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
     // Add the reference position to the map if it is not in the map
-    if (this->base_modifications.find(ref_pos) == this->base_modifications.end()) {
+    try {
+        this->base_modifications.at(ref_pos);
+    } catch (const std::out_of_range& oor) {
         this->base_modifications[ref_pos] = std::map<char, std::tuple<char, double>>();
     }
 
     // Add the modification type to the map if it is not in the map
-    else if (this->base_modifications[ref_pos].find(mod_type) == this->base_modifications[ref_pos].end()) {
+    try {
+        this->base_modifications[ref_pos].at(mod_type);
+
+        // If the modification type is already in the map, update the likelihood
+        // if it is greater
+        if (likelihood > std::get<1>(this->base_modifications[ref_pos][mod_type])) {
+            std::get<1>(this->base_modifications[ref_pos][mod_type]) = likelihood;
+        }
+        printMessage("[1] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
+
+    } catch (const std::out_of_range& oor) {
         this->base_modifications[ref_pos][mod_type] = std::make_tuple(canonical_base, likelihood);
+        printMessage("[2] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
 
         // Update the total number of modified bases
         this->modified_base_count += 1;
@@ -281,10 +296,33 @@ void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical
         }
     }
 
-    // If the modification type is already in the map, update the likelihood if it is greater
-    else if (likelihood > std::get<1>(this->base_modifications[ref_pos][mod_type])) {
-        std::get<1>(this->base_modifications[ref_pos][mod_type]) = likelihood;
-    }
+    // If the modification type is already in the map, update the likelihood if
+    // it is greater
+    // if (likelihood > std::get<1>(this->base_modifications[ref_pos][mod_type])) {
+    //     std::get<1>(this->base_modifications[ref_pos][mod_type]) = likelihood;
+    // }
+    // // Add the reference position to the map if it is not in the map
+    // if (this->base_modifications.find(ref_pos) == this->base_modifications.end()) {
+    //     this->base_modifications[ref_pos] = std::map<char, std::tuple<char, double>>();
+    // }
+
+    // // Add the modification type to the map if it is not in the map
+    // else if (this->base_modifications[ref_pos].find(mod_type) == this->base_modifications[ref_pos].end()) {
+    //     this->base_modifications[ref_pos][mod_type] = std::make_tuple(canonical_base, likelihood);
+
+    //     // Update the total number of modified bases
+    //     this->modified_base_count += 1;
+
+    //     // Update the total number of CpG modified bases
+    //     if (is_cpg) {
+    //         this->cpg_modified_base_count += 1;
+    //     }
+    // }
+
+    // // If the modification type is already in the map, update the likelihood if it is greater
+    // else if (likelihood > std::get<1>(this->base_modifications[ref_pos][mod_type])) {
+    //     std::get<1>(this->base_modifications[ref_pos][mod_type]) = likelihood;
+    // }
 }
 
 std::map<int32_t, std::map<char, std::tuple<char, double>>> Output_BAM::get_modifications()
@@ -332,6 +370,18 @@ void Output_BAM::add(Output_BAM &output_data)
 
     this->long_read_info.add(output_data.mapped_long_read_info);
     this->long_read_info.add(output_data.unmapped_long_read_info);
+
+    // Update the base modification information
+    printMessage("Adding base modification information to the output data, size: " + std::to_string(output_data.base_modifications.size()));
+    for (auto const &it : output_data.base_modifications) {
+        for (auto const &inner_it : it.second) {
+            int32_t ref_pos = it.first;
+            char mod_type = inner_it.first;
+            char canonical_base = std::get<0>(inner_it.second);
+            double likelihood = std::get<1>(inner_it.second);
+            this->add_modification(ref_pos, mod_type, canonical_base, likelihood, false);
+        }
+    }
 }
 
 void Output_BAM::global_sum(){

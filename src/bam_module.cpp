@@ -137,6 +137,11 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         }
     }
 
+    // Print the number of modified base information
+    std::cout << "Number of modified bases: " << final_output.modified_base_count << std::endl;
+    std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
+    std::cout << "Size of base modifications map: " << final_output.base_modifications.size() << std::endl;
+
     // Calculate the global sums across all records
     std::cout << "Calculating summary QC..." << std::endl;
     final_output.global_sum();
