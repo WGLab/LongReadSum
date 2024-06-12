@@ -264,7 +264,7 @@ Output_BAM::~Output_BAM(){
 
 void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg)
 {
-    printMessage("[0] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
+    // printMessage("[0] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
     // Add the reference position to the map if it is not in the map
     try {
         this->base_modifications.at(ref_pos);
@@ -281,11 +281,11 @@ void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical
         if (likelihood > std::get<1>(this->base_modifications[ref_pos][mod_type])) {
             std::get<1>(this->base_modifications[ref_pos][mod_type]) = likelihood;
         }
-        printMessage("[1] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
+        // printMessage("[1] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
 
     } catch (const std::out_of_range& oor) {
         this->base_modifications[ref_pos][mod_type] = std::make_tuple(canonical_base, likelihood);
-        printMessage("[2] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
+        // printMessage("[2] Adding base modification information to the output data, ref_pos: " + std::to_string(ref_pos) + ", mod_type: " + mod_type + ", canonical_base: " + canonical_base + ", likelihood: " + std::to_string(likelihood));
 
         // Update the total number of modified bases
         this->modified_base_count += 1;

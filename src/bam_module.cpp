@@ -13,6 +13,8 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 
 #include "bam_module.h"
 
+#include "utils.h"
+
 // Run the BAM module
 int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
 {
@@ -173,6 +175,12 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
 
     // Update the final output
     output_mutex.lock();
+    // [TEST] Print the number of modified bases to be added to the final output
+    // if > 0
+    if (record_output.get_modifications().size() > 0)
+    {
+        printMessage("Number of modified bases to be added to the final output: " + std::to_string(record_output.get_modifications().size()));
+    }
     final_output.add(record_output);
     output_mutex.unlock();
 }

@@ -215,7 +215,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                     // query_pos.push_back(pos);
 
                     // Add the modification to the output data
-                    output_data.add_modification(pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, mods[i].cpg);
+                    output_data.add_modification(pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, false);
                     // base_modifications[pos][mods[i].modified_base] = std::make_tuple(mods[i].canonical_base, mods[i].qual / 256.0);
 
                     // Update the previous base and position
@@ -225,7 +225,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             }
             // TODO: Store ref positions later, then query the sequence to
             // identify CpG sites
-            printMessage("Number of positions with base modifications: " + std::to_string(output_data.get_modifications().size()));
+            // printMessage("Number of positions with base modifications: " + std::to_string(output_data.get_modifications().size()));
 
         } else {
             printMessage("No base modification tags found");
