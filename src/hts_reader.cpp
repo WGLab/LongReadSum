@@ -16,65 +16,10 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include "hts_reader.h"
 #include "utils.h"
 
-int HTSReader::getRefPos(const std::string &bam_file_name, const std::string &chromosome, std::vector<int> query_pos, std::vector<int> &ref_pos)
+void HTSReader::addModificationToQueryMap(Base_Modification_Map &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, bool is_cpg)
 {
-    htsFile * bam_file = hts_open(bam_file_name.c_str(), "r");
-    if (bam_file == NULL)
-    {
-        std::cerr << "Error opening BAM file: " << bam_file_name << std::endl;
-        return BAM_UN_OPEN;
-    }
-
-    // Read the BAM header
-    bam_hdr_t *header = sam_hdr_read(bam_file);
-    if (header == NULL)
-    {
-        std::cerr << "Error reading BAM header" << std::endl;
-        return BAM_FAILED;
-    }
-
-    // Load the BAM index
-    hts_idx_t *idx = sam_index_load(bam_file, bam_file_name.c_str());
-    if (idx == NULL)
-    {
-        std::cerr << "Error loading BAM index" << std::endl;
-        return BAM_FAILED;
-    }
-
-    // Get the reference ID
-    int ref_id = bam_name2id(header, chromosome.c_str());
-    if (ref_id < 0)
-    {
-        std::cerr << "Error getting reference ID for chromosome: " << chromosome << std::endl;
-        return BAM_FAILED;
-    }
-
-    // Get the reference position
-    for (int i = 0; i < (int)query_pos.size(); i++) {
-        hts_itr_t *iter = sam_itr_queryi(idx, ref_id, query_pos[i], query_pos[i] + 1);
-
-        // Get the reference position
-        int ref_pos_i = -1;
-        if (iter != NULL)
-        {
-            int result = sam_itr_next(bam_file, iter, this->record);
-            if (result >= 0)
-            {
-                ref_pos_i = this->record->core.pos;
-            }
-        }
-
-        // Clean up
-        hts_itr_destroy(iter);
-        ref_pos.push_back(ref_pos_i);
-    }
-
-    // Clean up
-    hts_idx_destroy(idx);
-    bam_hdr_destroy(header);
-    hts_close(bam_file);
-
-    return BAM_OPEN;
+    // Add the modification type to the map
+    base_modifications[pos] = std::make_tuple(mod_type, canonical_base, likelihood);
 }
 
 // HTSReader constructor
@@ -174,7 +119,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
         hts_base_mod_state *state = hts_base_mod_state_alloc();
-        std::map<int32_t, std::map<char, std::tuple<char, double>>> base_modifications;
+        std::map<int32_t, std::tuple<char, char, double>> query_base_modifications;
         if (bam_parse_basemod(record, state) >= 0) {
             // printMessage("Base modification tags found");
             // std::cout << "Base modification tags found" << std::endl;
@@ -215,13 +160,48 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                     // query_pos.push_back(pos);
 
                     // Add the modification to the output data
-                    output_data.add_modification(pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, false);
+                    // output_data.add_modification(pos, mods[i].modified_base,
+                    // mods[i].canonical_base, mods[i].qual / 256.0, false);
+                    
+                    // Add the modification to the query base modifications map
+                    // (will be turned into a reference base modification map
+                    // later, for CpG site identification)
+                    this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, false);
+                    query_pos.push_back(pos);
+                    
+                    // 
                     // base_modifications[pos][mods[i].modified_base] = std::make_tuple(mods[i].canonical_base, mods[i].qual / 256.0);
 
                     // Update the previous base and position
                     // previous_base = mods[i].canonical_base;
                     // previous_pos = pos;
                 }
+
+                // Get the reference positions of the query positions
+                std::vector<int> ref_pos(query_pos.size(), -1);
+                this->getRefPos(record, query_pos, ref_pos);
+
+                // Loop through the query and reference positions and add the
+                // reference positions to the output data if != -1
+                for (size_t i = 0; i < query_pos.size(); i++) {
+                    if (ref_pos[i] != -1) {
+                        // TODO: Later, we will update this structure to store
+                        // CpG sites from the reference sequence
+
+                        // Add the modification to the output data
+                        char mod_type = std::get<0>(query_base_modifications[query_pos[i]]);
+                        char canonical_base = std::get<1>(query_base_modifications[query_pos[i]]);
+                        double likelihood = std::get<1>(query_base_modifications[query_pos[i]]);
+                        output_data.add_modification(ref_pos[i], mod_type, canonical_base, likelihood, false);
+                    }
+                }
+
+                // Get the refence sequence of the read
+
+                // // Print all the query and reference positions
+                // for (size_t i = 0; i < query_pos.size(); i++) {
+                //     printMessage("Query position: " + std::to_string(query_pos[i]) + ", Reference position: " + std::to_string(ref_pos[i]));
+                // }
             }
             // TODO: Store ref positions later, then query the sequence to
             // identify CpG sites
@@ -426,4 +406,49 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename){
     sam_close(bam_file);
 
     return num_reads;
+}
+
+int HTSReader::getRefPos(bam1_t *record, std::vector<int> query_pos, std::vector<int> &ref_pos)
+{
+    // Initialize the starting reference and query positions
+    int32_t ref_start_pos = record->core.pos;
+    int32_t query_start_pos = 0;
+    uint32_t *cigar = bam_get_cigar(record);
+
+    // Initialize an iterator for the query positions
+    auto query_it = query_pos.begin();
+    auto query_end = query_pos.end();
+
+    // Iterate over the CIGAR operations
+    for (uint32_t i = 0; i < record->core.n_cigar && query_it != query_end; i++) {
+        int cigar_op = bam_cigar_op(cigar[i]);
+        uint64_t cigar_len = (uint64_t)bam_cigar_oplen(cigar[i]);
+        
+        switch (cigar_op) {
+            case BAM_CMATCH:
+            case BAM_CEQUAL:
+            case BAM_CDIFF:
+                for (uint64_t j = 0; j < cigar_len && query_it != query_end; j++) {
+                    if (query_start_pos == *query_it) {
+                        ref_pos[query_it - query_pos.begin()] = ref_start_pos;
+                        query_it++;
+                    }
+                    ref_start_pos++;
+                    query_start_pos++;
+                }
+                break;
+            case BAM_CINS:
+            case BAM_CSOFT_CLIP:
+                query_start_pos += cigar_len;
+                break;
+            case BAM_CDEL:
+            case BAM_CREF_SKIP:
+                ref_start_pos += cigar_len;
+                break;
+            default:
+                break;
+        }
+    }
+
+    return 0;
 }

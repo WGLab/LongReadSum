@@ -139,8 +139,8 @@ public:
 
     // Modified base statistics
     // Number of modified bases by position in the reference:
-    // <reference position, <modification type, <canonical base, maximum likelihood>>
-    std::map<int32_t, std::map<char, std::tuple<char, double>>> base_modifications;
+    // reference position -> (modification type, canonical base, maximum likelihood)
+    std::map<int32_t, std::tuple<char, char, double>> base_modifications;
     uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases in the genome
     uint64_t cpg_modified_base_count = ZeroDefault;  // Total number of CpG modified bases in the genome
 
@@ -154,7 +154,7 @@ public:
     void add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg);
 
     // Return the modification information
-    std::map<int32_t, std::map<char, std::tuple<char, double>>> get_modifications();
+    std::map<int32_t, std::tuple<char, char, double>> get_modifications();
 
     // Add a batch of records to the output
     void add(Output_BAM &t_output_bam);
