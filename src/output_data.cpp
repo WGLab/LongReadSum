@@ -262,7 +262,7 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg)
+void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand)
 {
     try {
         this->base_modifications.at(ref_pos);
@@ -271,16 +271,16 @@ void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical
         // type with the highest likelihood
         double previous_likelihood = std::get<2>(this->base_modifications[ref_pos]);
         if (likelihood > previous_likelihood){
-            this->base_modifications[ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood);
+            this->base_modifications[ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
         }
     } catch (const std::out_of_range& oor) {
 
         // If the reference position is not in the map, add the modification
-        this->base_modifications[ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood);
+        this->base_modifications[ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
     }
 }
 
-std::map<int32_t, std::tuple<char, char, double>> Output_BAM::get_modifications()
+std::map<int32_t, Base_Modification> Output_BAM::get_modifications()
 {
     return this->base_modifications;
 }
@@ -333,16 +333,17 @@ void Output_BAM::add(Output_BAM &output_data)
         char mod_type = std::get<0>(it.second);
         char canonical_base = std::get<1>(it.second);
         double likelihood = std::get<2>(it.second);
-        this->add_modification(ref_pos, mod_type, canonical_base, likelihood, false);
+        int strand = std::get<3>(it.second);
+        this->add_modification(ref_pos, mod_type, canonical_base, likelihood, strand);
     }
 }
 
 void Output_BAM::global_sum(){
+    // Calculate the global sums for the basic statistics
     mapped_long_read_info.global_sum();
     unmapped_long_read_info.global_sum();
     mapped_seq_quality_info.global_sum();
     unmapped_seq_quality_info.global_sum();
-
     long_read_info.global_sum();
     seq_quality_info.global_sum();
 
@@ -353,6 +354,41 @@ void Output_BAM::global_sum(){
             this->num_reads_with_both_secondary_supplementary_alignment++;
         }
     }
+
+    // Calculate the number of modified bases in CpG context and total
+    this->modified_base_count = this->base_modifications.size();
+    this->cpg_modified_base_count = 0;
+    char previous_base = 'N';
+    int previous_pos = 0;
+    for (auto const &it : this->base_modifications) {
+        char mod_type = std::get<0>(it.second);
+        char canonical_base = std::get<1>(it.second);
+        double likelihood = std::get<2>(it.second);
+        int strand = std::get<3>(it.second);
+        int current_pos = it.first;
+        
+        if (current_pos - previous_pos == 1) {
+            if (previous_base == 'C' && canonical_base == 'G' && strand == 0) {
+                this->cpg_modified_base_count++;
+
+                // Update the map with the CpG context
+                this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
+            } else if (previous_base == 'G' && canonical_base == 'C' && strand == 1) {
+                this->cpg_modified_base_count++;
+
+                // Update the map with the CpG context
+                this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
+            }
+        }
+        previous_pos = current_pos;
+        previous_base = canonical_base;
+    }
+
+    // Print the number of modified base information
+    std::cout << "[OUTPUTDATA - GLOBAL_SUM]" << std::endl;
+    std::cout << "Number of modified bases: " << this->modified_base_count << std::endl;
+    std::cout << "Number of CpG modified bases: " << this->cpg_modified_base_count << std::endl;
+    std::cout << "Size of base modifications map: " << this->base_modifications.size() << std::endl;
 }
 
 // Save the output to a file

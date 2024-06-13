@@ -16,10 +16,10 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include "hts_reader.h"
 #include "utils.h"
 
-void HTSReader::addModificationToQueryMap(Base_Modification_Map &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, bool is_cpg)
+void HTSReader::addModificationToQueryMap(std::map<int32_t, std::tuple<char, char, double, int>> &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, int strand)
 {
     // Add the modification type to the map
-    base_modifications[pos] = std::make_tuple(mod_type, canonical_base, likelihood);
+    base_modifications[pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand);
 }
 
 // HTSReader constructor
@@ -119,7 +119,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
         hts_base_mod_state *state = hts_base_mod_state_alloc();
-        std::map<int32_t, std::tuple<char, char, double>> query_base_modifications;
+        std::map<int32_t, std::tuple<char, char, double, int>> query_base_modifications;
         if (bam_parse_basemod(record, state) >= 0) {
             // printMessage("Base modification tags found");
             // std::cout << "Base modification tags found" << std::endl;
@@ -135,46 +135,11 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             int previous_pos = 0;
             std::vector<int> query_pos;
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
-            // while ((n=bam_mods_at_next_pos(record, state, mods, 10)) > 0) {
                 for (int i = 0; i < n; i++) {
-                    // std::cout << "Base modification at position " << pos << std::endl;
-                    // std::cout << "Base modification type: " << mods[i].modified_base << std::endl;
-                    // std::cout << "Base modification likelihood: " << mods[i].qual / 256.0 << std::endl;
-                    // // Struct definition: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2226
-                    // printMessage("Found base modification at position " + std::to_string(pos));
-                    // printMessage("Modification type: " + std::string(1, mods[i].modified_base));
-                    // printMessage("Canonical base: " + std::string(1, mods[i].canonical_base));
-                    // printMessage("Likelihood: " + std::to_string(mods[i].qual / 256.0));
-                    // printMessage("Strand: " + std::to_string(mods[i].strand));
-                    // printMessage("CpG: " + std::to_string(mods[i].cpg));
-                    // Check if consecutive CpG modifications
-                    // if (previous_pos == pos - 1) {
-                    //     if (mods[i].strand == 0 && previous_base == 'C' && mods[i].canonical_base == 'G') {
-                    //         // printMessage("CpG modification found");
-                    //         cpg_count++;
-                    //     } else if (mods[i].strand == 1 && previous_base == 'G' && mods[i].canonical_base == 'C') {
-                    //         cpg_count++;
-                    //     }
-                    // }
-                    // Append the position
-                    // query_pos.push_back(pos);
-
-                    // Add the modification to the output data
-                    // output_data.add_modification(pos, mods[i].modified_base,
-                    // mods[i].canonical_base, mods[i].qual / 256.0, false);
-                    
-                    // Add the modification to the query base modifications map
-                    // (will be turned into a reference base modification map
-                    // later, for CpG site identification)
-                    this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, false);
+                    // Print the base modification information
+                    // printMessage("Base modification at position " + std::to_string(pos) + " with modified base " + std::to_string(mods[i].modified_base) + " and canonical base " + std::to_string(mods[i].canonical_base) + " with quality " + std::to_string(mods[i].qual / 256.0) + " and strand " + std::to_string(mods[i].strand));
+                    this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, mods[i].strand);
                     query_pos.push_back(pos);
-                    
-                    // 
-                    // base_modifications[pos][mods[i].modified_base] = std::make_tuple(mods[i].canonical_base, mods[i].qual / 256.0);
-
-                    // Update the previous base and position
-                    // previous_base = mods[i].canonical_base;
-                    // previous_pos = pos;
                 }
 
                 // Get the reference positions of the query positions
@@ -185,28 +150,15 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 // reference positions to the output data if != -1
                 for (size_t i = 0; i < query_pos.size(); i++) {
                     if (ref_pos[i] != -1) {
-                        // TODO: Later, we will update this structure to store
-                        // CpG sites from the reference sequence
-
                         // Add the modification to the output data
                         char mod_type = std::get<0>(query_base_modifications[query_pos[i]]);
                         char canonical_base = std::get<1>(query_base_modifications[query_pos[i]]);
-                        double likelihood = std::get<1>(query_base_modifications[query_pos[i]]);
-                        output_data.add_modification(ref_pos[i], mod_type, canonical_base, likelihood, false);
+                        double likelihood = std::get<2>(query_base_modifications[query_pos[i]]);
+                        int strand = std::get<3>(query_base_modifications[query_pos[i]]);
+                        output_data.add_modification(ref_pos[i], mod_type, canonical_base, likelihood, strand);
                     }
                 }
-
-                // Get the refence sequence of the read
-
-                // // Print all the query and reference positions
-                // for (size_t i = 0; i < query_pos.size(); i++) {
-                //     printMessage("Query position: " + std::to_string(query_pos[i]) + ", Reference position: " + std::to_string(ref_pos[i]));
-                // }
             }
-            // TODO: Store ref positions later, then query the sequence to
-            // identify CpG sites
-            // printMessage("Number of positions with base modifications: " + std::to_string(output_data.get_modifications().size()));
-
         } else {
             printMessage("No base modification tags found");
         }

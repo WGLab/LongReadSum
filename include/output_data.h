@@ -110,6 +110,10 @@ public:
 };
 
 
+// Define the base modification data structure (modification type, canonical
+// base, likelihood, strand: 0 for forward, 1 for reverse, and CpG flag: T/F)
+using Base_Modification = std::tuple<char, char, double, int, bool>;
+
 // BAM output
 class Output_BAM : public Output_FQ
 {
@@ -139,8 +143,9 @@ public:
 
     // Modified base statistics
     // Number of modified bases by position in the reference:
-    // reference position -> (modification type, canonical base, maximum likelihood)
-    std::map<int32_t, std::tuple<char, char, double>> base_modifications;
+    // reference position -> (modification type, canonical base, maximum
+    // likelihood, strand)
+    std::map<int32_t, Base_Modification> base_modifications;
     uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases in the genome
     uint64_t cpg_modified_base_count = ZeroDefault;  // Total number of CpG modified bases in the genome
 
@@ -151,10 +156,10 @@ public:
     Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
 
     // Add modified base data
-    void add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, bool is_cpg);
+    void add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand);
 
     // Return the modification information
-    std::map<int32_t, std::tuple<char, char, double>> get_modifications();
+    std::map<int32_t, Base_Modification> get_modifications();
 
     // Add a batch of records to the output
     void add(Output_BAM &t_output_bam);

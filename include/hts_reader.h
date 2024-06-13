@@ -20,9 +20,6 @@
 #define DNASEQ 1
 #define RNASEQ 2
 
-// Define the modified base map type (position -> mod_type, canonical_base, likelihood)
-typedef std::map<int32_t, std::tuple<char, char, double>> Base_Modification_Map;
-
 // Class representing an HTSlib BAM file
 class HTSReader {
     public:
@@ -52,7 +49,7 @@ class HTSReader {
         // int getRefPos(const std::string &bam_file_name, const std::string &chromosome, std::vector<int> query_pos, std::vector<int> &ref_pos);
 
         // Add a modification to the base modification map
-        void addModificationToQueryMap(Base_Modification_Map &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, bool is_cpg);
+        void addModificationToQueryMap(std::map<int32_t, std::tuple<char, char, double, int>> &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, int strand);
 
         HTSReader(const std::string &bam_file_name);
         ~HTSReader();

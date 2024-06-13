@@ -243,8 +243,13 @@ def bam_module(margs):
 
         # Print keys and values
         max_print = 40
+        previous_value = ('m', 'C', 0.26171875, 0, False)
         for key, value in base_modifications.items():
-            logging.info("Key: %s, Value: %s", key, value)
+            if value != previous_value:
+                logging.info("Key: %s, Value: %s", key, value)
+                
+            previous_value = value
+
             max_print -= 1
             if max_print == 0:
                 break
