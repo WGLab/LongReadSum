@@ -32,6 +32,7 @@ public:
     std::string rrms_csv;  // CSV file with accepted/rejected read IDs (RRMS module)
     bool rrms_filter;  // Generate RRMS stats for accepted (true) or rejected (false) reads
     std::unordered_set<std::string> rrms_read_ids;  // List of read IDs from RRMS CSV file (accepted or rejected)
+    std::string ref_genome;  // Reference genome file for BAM base modification analysis
 
     // Functions
     std::string add_input_file(const std::string& _ip_file);

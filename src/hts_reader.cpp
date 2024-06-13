@@ -104,7 +104,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // Create a record object
         bam1_t* record = bam_init1();
 
-        // read the next record in a thread-safe manner
+        // Read the next record in a thread-safe manner
         read_mutex.lock();
         exit_code = sam_read1(this->bam_file, this->header, record);
         read_mutex.unlock();
@@ -121,9 +121,10 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         hts_base_mod_state *state = hts_base_mod_state_alloc();
         std::map<int32_t, std::tuple<char, char, double, int>> query_base_modifications;
         if (bam_parse_basemod(record, state) >= 0) {
-            // printMessage("Base modification tags found");
-            // std::cout << "Base modification tags found" << std::endl;
             mod_tag_present = true;
+
+            // Get the chromosome
+            std::string chr = this->header->target_name[record->core.tid];
 
             // Iterate over the state object to get the base modification tags
             // using bam_next_basemod
@@ -155,7 +156,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         char canonical_base = std::get<1>(query_base_modifications[query_pos[i]]);
                         double likelihood = std::get<2>(query_base_modifications[query_pos[i]]);
                         int strand = std::get<3>(query_base_modifications[query_pos[i]]);
-                        output_data.add_modification(ref_pos[i], mod_type, canonical_base, likelihood, strand);
+                        output_data.add_modification(chr, ref_pos[i], mod_type, canonical_base, likelihood, strand);
                     }
                 }
             }

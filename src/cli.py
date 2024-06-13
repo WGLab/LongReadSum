@@ -234,8 +234,13 @@ def bam_module(margs):
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
 
+        # Get the reference genome file for base modification analysis
+        input_para.ref_genome = margs.ref
+
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
+
+        # Base modification analysis
         base_modifications = bam_output.get_modifications()
 
         # Test that the base modifications are not empty
@@ -638,6 +643,10 @@ bam_parser = subparsers.add_parser('bam',
                                     description="For example:\n"
                                                 "python %(prog)s -i input.bam -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
+
+bam_parser.add_argument("--ref", type=str, default="",
+                        help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
+
 bam_parser.set_defaults(func=bam_module)
 
 # RRMS BAM file input (Splits accepted and rejected reads)

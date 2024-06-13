@@ -262,25 +262,31 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::add_modification(int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand)
+void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand)
 {
     try {
-        this->base_modifications.at(ref_pos);
+        this->base_modifications.at(chr);
+    } catch (const std::out_of_range& oor) {
+        this->base_modifications[chr] = std::map<int32_t, Base_Modification>();
+    }
+
+    try {
+        this->base_modifications[chr].at(ref_pos);
 
         // If the reference position is already in the map, use the modification
         // type with the highest likelihood
-        double previous_likelihood = std::get<2>(this->base_modifications[ref_pos]);
+        double previous_likelihood = std::get<2>(this->base_modifications[chr][ref_pos]);
         if (likelihood > previous_likelihood){
-            this->base_modifications[ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
+            this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
         }
     } catch (const std::out_of_range& oor) {
 
         // If the reference position is not in the map, add the modification
-        this->base_modifications[ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
+        this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
     }
 }
 
-std::map<int32_t, Base_Modification> Output_BAM::get_modifications()
+std::map<std::string, std::map<int32_t, Base_Modification>> Output_BAM::get_modifications()
 {
     return this->base_modifications;
 }
@@ -303,13 +309,7 @@ void Output_BAM::add(Output_BAM &output_data)
     this->forward_alignment += output_data.forward_alignment;
     this->reverse_alignment += output_data.reverse_alignment;
 
-//    // Resize the base quality vector if it is empty
-//    if ( this->seq_quality_info.base_quality_distribution.empty() ){
-//        this->seq_quality_info.base_quality_distribution.resize( MAX_READ_QUALITY );
-//    }
-
     // Update the base quality vector if it is not empty
-//    if ( !output_data.seq_quality_info.base_quality_distribution.empty() ){
     for (int i=0; i<MAX_READ_QUALITY; i++){
         this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
     }
@@ -329,12 +329,15 @@ void Output_BAM::add(Output_BAM &output_data)
     // Update the base modification information
     printMessage("Adding base modification information to the output data, size: " + std::to_string(output_data.base_modifications.size()));
     for (auto const &it : output_data.base_modifications) {
-        int32_t ref_pos = it.first;
-        char mod_type = std::get<0>(it.second);
-        char canonical_base = std::get<1>(it.second);
-        double likelihood = std::get<2>(it.second);
-        int strand = std::get<3>(it.second);
-        this->add_modification(ref_pos, mod_type, canonical_base, likelihood, strand);
+        std::string chr = it.first;
+        for (auto const &it2 : it.second) {
+            int32_t ref_pos = it2.first;
+            char mod_type = std::get<0>(it2.second);
+            char canonical_base = std::get<1>(it2.second);
+            double likelihood = std::get<2>(it2.second);
+            int strand = std::get<3>(it2.second);
+            this->add_modification(chr, ref_pos, mod_type, canonical_base, likelihood, strand);
+        }
     }
 }
 
@@ -355,40 +358,40 @@ void Output_BAM::global_sum(){
         }
     }
 
-    // Calculate the number of modified bases in CpG context and total
-    this->modified_base_count = this->base_modifications.size();
-    this->cpg_modified_base_count = 0;
-    char previous_base = 'N';
-    int previous_pos = 0;
-    for (auto const &it : this->base_modifications) {
-        char mod_type = std::get<0>(it.second);
-        char canonical_base = std::get<1>(it.second);
-        double likelihood = std::get<2>(it.second);
-        int strand = std::get<3>(it.second);
-        int current_pos = it.first;
+    // // Calculate the number of modified bases in CpG context and total
+    // this->modified_base_count = this->base_modifications.size();
+    // this->cpg_modified_base_count = 0;
+    // char previous_base = 'N';
+    // int previous_pos = 0;
+    // for (auto const &it : this->base_modifications) {
+    //     char mod_type = std::get<0>(it.second);
+    //     char canonical_base = std::get<1>(it.second);
+    //     double likelihood = std::get<2>(it.second);
+    //     int strand = std::get<3>(it.second);
+    //     int current_pos = it.first;
         
-        if (current_pos - previous_pos == 1) {
-            if (previous_base == 'C' && canonical_base == 'G' && strand == 0) {
-                this->cpg_modified_base_count++;
+    //     if (current_pos - previous_pos == 1) {
+    //         if (previous_base == 'C' && canonical_base == 'G' && strand == 0) {
+    //             this->cpg_modified_base_count++;
 
-                // Update the map with the CpG context
-                this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
-            } else if (previous_base == 'G' && canonical_base == 'C' && strand == 1) {
-                this->cpg_modified_base_count++;
+    //             // Update the map with the CpG context
+    //             this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
+    //         } else if (previous_base == 'G' && canonical_base == 'C' && strand == 1) {
+    //             this->cpg_modified_base_count++;
 
-                // Update the map with the CpG context
-                this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
-            }
-        }
-        previous_pos = current_pos;
-        previous_base = canonical_base;
-    }
+    //             // Update the map with the CpG context
+    //             this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
+    //         }
+    //     }
+    //     previous_pos = current_pos;
+    //     previous_base = canonical_base;
+    // }
 
-    // Print the number of modified base information
-    std::cout << "[OUTPUTDATA - GLOBAL_SUM]" << std::endl;
-    std::cout << "Number of modified bases: " << this->modified_base_count << std::endl;
-    std::cout << "Number of CpG modified bases: " << this->cpg_modified_base_count << std::endl;
-    std::cout << "Size of base modifications map: " << this->base_modifications.size() << std::endl;
+    // // Print the number of modified base information
+    // std::cout << "[OUTPUTDATA - GLOBAL_SUM]" << std::endl;
+    // std::cout << "Number of modified bases: " << this->modified_base_count << std::endl;
+    // std::cout << "Number of CpG modified bases: " << this->cpg_modified_base_count << std::endl;
+    // std::cout << "Size of base modifications map: " << this->base_modifications.size() << std::endl;
 }
 
 // Save the output to a file

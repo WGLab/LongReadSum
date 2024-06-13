@@ -11,6 +11,7 @@ Input_Para::Input_Para(){
     other_flags = 0;
     user_defined_fastq_base_qual_offset = -1;
     rrms_csv = "";
+    ref_genome = "";
 }
 
 Input_Para::~Input_Para(){

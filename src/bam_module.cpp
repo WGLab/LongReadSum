@@ -14,6 +14,7 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include "bam_module.h"
 
 #include "utils.h"
+#include "ref_query.h"  // For reference genome analysis
 
 // Run the BAM module
 int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
@@ -67,7 +68,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         // Create a BAM reader
         std::string filepath(input_params.input_files[this->file_index]);
         HTSReader reader(filepath);
-        std::cout<<"Processing file: "<< filepath << std::endl;
+        std::cout << "Processing file: "<< filepath << std::endl;
 
         // Get the number of threads (Set to 1 if the number of threads is not specified/invalid)
         int thread_count = input_params.threads;
@@ -114,9 +115,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
-                //cout_mutex.lock();
-                //::cout<<"Generated thread "<< thread_index+1 <<std::endl;
-                //cout_mutex.unlock();
 
                 // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
@@ -139,10 +137,54 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         }
     }
 
-    // Print the number of modified base information
-    std::cout << "Number of modified bases: " << final_output.modified_base_count << std::endl;
-    std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
-    std::cout << "Size of base modifications map: " << final_output.base_modifications.size() << std::endl;
+    // Print the number of modified base information if available
+    if (final_output.get_modifications().size() > 0){
+        std::cout << "Number of modified bases: " << final_output.modified_base_count << std::endl;
+        std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
+        std::cout << "Size of base modifications map: " << final_output.base_modifications.size() << std::endl;
+
+        // Determine CpG modification rate
+        // First, read the reference genome
+        if (input_params.ref_genome != ""){
+            std::cout << "Reading reference genome for CpG modification rate calculation..." << std::endl;
+            RefQuery ref_query;
+            ref_query.setFilepath(input_params.ref_genome);
+            std::cout << "Reference genome read" << std::endl;
+
+            // Loop through the base modifications and find the CpG
+            // modifications
+            for (auto const &it : final_output.base_modifications) {
+                std::string chr = it.first;
+                std::map<int32_t, Base_Modification> base_mods = it.second;
+                for (auto const &it2 : base_mods) {
+                    int32_t ref_pos = it2.first;
+                    Base_Modification mod = it2.second;
+                    char mod_type = std::get<0>(mod);
+                    char canonical_base = std::get<1>(mod);
+                    double likelihood = std::get<2>(mod);
+                    int strand = std::get<3>(mod);
+
+                    // Get the reference base
+                    char ref_base = ref_query.getBase(chr, ref_pos);
+
+                    // Check if the reference and canonical bases match
+                    if (ref_base != canonical_base){
+                        std::cerr << "Error: Reference base and canonical base do not match" << std::endl;
+                        std::cerr << "Reference base: " << ref_base << std::endl;
+                        
+                        exit_code = 1;
+                        return exit_code;
+                    }
+                }
+            }
+
+
+            // Calculate the CpG modification rate
+            // std::cout << "Calculating CpG modification rate..." << std::endl;
+            // double cpg_mod_rate = final_output.cpg_modified_base_count / (double)final_output.modified_base_count;
+            // std::cout << "CpG modification rate: " << cpg_mod_rate << std::endl;
+        }
+    }
 
     // Calculate the global sums across all records
     std::cout << "Calculating summary QC..." << std::endl;
@@ -175,8 +217,6 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
 
     // Update the final output
     output_mutex.lock();
-    // [TEST] Print the number of modified bases to be added to the final output
-    // if > 0
     if (record_output.get_modifications().size() > 0)
     {
         printMessage("Number of modified bases to be added to the final output: " + std::to_string(record_output.get_modifications().size()));
@@ -249,15 +289,8 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         }
     }
     
-
     // Close the file
     rrms_file.close();
-
-    // // Print the first 10 read IDs
-    // std::cout << "First 10 read IDs:" << std::endl;
-    // for (int i=0; i<10; i++){
-    //     std::cout << rrms_read_ids[i] << std::endl;
-    // }
 
     return rrms_read_ids;
 }
