@@ -153,6 +153,9 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
             // Loop through the base modifications and find the CpG
             // modifications
+            int max_print_count = 35;
+            int success_count = 0;
+            int error_count = 0;
             for (auto const &it : final_output.base_modifications) {
                 std::string chr = it.first;
                 std::map<int32_t, Base_Modification> base_mods = it.second;
@@ -160,29 +163,47 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     int32_t ref_pos = it2.first;
                     Base_Modification mod = it2.second;
                     char mod_type = std::get<0>(mod);
-                    char canonical_base = std::get<1>(mod);
+                    char canonical_base = std::toupper(std::get<1>(mod));
                     double likelihood = std::get<2>(mod);
                     int strand = std::get<3>(mod);
 
-                    // Get the reference base
-                    char ref_base = ref_query.getBase(chr, ref_pos);
+                    // Get the reference base at the position
+                    char ref_base = std::toupper(ref_query.getBase(chr, ref_pos));
 
-                    // Check if the reference and canonical bases match
-                    if (ref_base != canonical_base){
-                        std::cerr << "Error: Reference base and canonical base do not match" << std::endl;
-                        std::cerr << "Reference base: " << ref_base << std::endl;
-                        
-                        exit_code = 1;
-                        return exit_code;
+                    // Skip if the reference base is not found (N), or if it does
+                    // not match the canonical base
+                    if (ref_base == 'N' || ref_base != canonical_base){
+                        continue;
+                    } else {
+                        // Get the CpG context
+                        char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
+                        char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
+
+                        // Check if the context is a CpG site by looking for a
+                        // C->G or G->C transition
+                        std::string cpg_context = std::string(1, previous_base) + std::string(1, canonical_base) + std::string(1, next_base);
+                        if (cpg_context.find("CG") == std::string::npos && cpg_context.find("GC") == std::string::npos){
+                            // Just update the modified base count
+                            final_output.modified_base_count++;
+                        } else {
+                            // Update the modified base count
+                            final_output.modified_base_count++;
+
+                            // Update the CpG modified base count
+                            final_output.cpg_modified_base_count++;
+                            
+                            // Update the CpG modification flag
+                            std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+                        }
                     }
                 }
             }
 
+            // Print the number of CpG modifications
+            std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
 
-            // Calculate the CpG modification rate
-            // std::cout << "Calculating CpG modification rate..." << std::endl;
-            // double cpg_mod_rate = final_output.cpg_modified_base_count / (double)final_output.modified_base_count;
-            // std::cout << "CpG modification rate: " << cpg_mod_rate << std::endl;
+            // Print the total number of modified bases
+            std::cout << "Total number of modified bases: " << final_output.modified_base_count << std::endl;
         }
     }
 

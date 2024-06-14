@@ -146,7 +146,6 @@ public:
     // chr -> reference position -> (modification type, canonical base, maximum
     // likelihood, strand)
     std::map<std::string, std::map<int32_t, Base_Modification>> base_modifications;
-   //  std::map<int32_t, Base_Modification> base_modifications;
     uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases in the genome
     uint64_t cpg_modified_base_count = ZeroDefault;  // Total number of CpG modified bases in the genome
 

@@ -137,20 +137,25 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             std::vector<int> query_pos;
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
                 for (int i = 0; i < n; i++) {
-                    // Print the base modification information
-                    // printMessage("Base modification at position " + std::to_string(pos) + " with modified base " + std::to_string(mods[i].modified_base) + " and canonical base " + std::to_string(mods[i].canonical_base) + " with quality " + std::to_string(mods[i].qual / 256.0) + " and strand " + std::to_string(mods[i].strand));
                     this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, mods[i].strand);
                     query_pos.push_back(pos);
                 }
+            }
 
-                // Get the reference positions of the query positions
+            // Get the reference positions of the query positions
+            if (query_pos.size() > 0) {
+                // Get the query to reference position mapping
+                std::map<int, int> query_to_ref_map = this->getQueryToRefMap(record);
                 std::vector<int> ref_pos(query_pos.size(), -1);
-                this->getRefPos(record, query_pos, ref_pos);
 
                 // Loop through the query and reference positions and add the
                 // reference positions to the output data if != -1
                 for (size_t i = 0; i < query_pos.size(); i++) {
-                    if (ref_pos[i] != -1) {
+                    // Get the reference position from the query to reference
+                    // map
+                    if (query_to_ref_map.find(query_pos[i]) != query_to_ref_map.end()) {
+                        ref_pos[i] = query_to_ref_map[query_pos[i]];
+                        
                         // Add the modification to the output data
                         char mod_type = std::get<0>(query_base_modifications[query_pos[i]]);
                         char canonical_base = std::get<1>(query_base_modifications[query_pos[i]]);
@@ -160,6 +165,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                     }
                 }
             }
+
         } else {
             printMessage("No base modification tags found");
         }
@@ -361,47 +367,50 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename){
     return num_reads;
 }
 
-int HTSReader::getRefPos(bam1_t *record, std::vector<int> query_pos, std::vector<int> &ref_pos)
+// Get the mapping of query positions to reference positions for a given alignment record
+std::map<int, int> HTSReader::getQueryToRefMap(bam1_t *record)
 {
+    std::map<int, int> query_to_ref_map;
+
     // Initialize the starting reference and query positions
-    int32_t ref_start_pos = record->core.pos;
-    int32_t query_start_pos = 0;
+    int32_t current_ref_pos = record->core.pos;  // Get the reference position
+    int current_query_pos = 0;
     uint32_t *cigar = bam_get_cigar(record);
 
-    // Initialize an iterator for the query positions
-    auto query_it = query_pos.begin();
-    auto query_end = query_pos.end();
-
     // Iterate over the CIGAR operations
-    for (uint32_t i = 0; i < record->core.n_cigar && query_it != query_end; i++) {
-        int cigar_op = bam_cigar_op(cigar[i]);
-        uint64_t cigar_len = (uint64_t)bam_cigar_oplen(cigar[i]);
+    int cigar_len = record->core.n_cigar;
+    for (int i = 0; i < cigar_len; i++) {
+        int cigar_op = bam_cigar_op(cigar[i]);  // Get the CIGAR operation
+        int op_len = bam_cigar_oplen(cigar[i]);  // Get the CIGAR operation length
         
         switch (cigar_op) {
+            case BAM_CDIFF:
+                current_ref_pos += op_len;
+                current_query_pos += op_len;
+                break;
             case BAM_CMATCH:
             case BAM_CEQUAL:
-            case BAM_CDIFF:
-                for (uint64_t j = 0; j < cigar_len && query_it != query_end; j++) {
-                    if (query_start_pos == *query_it) {
-                        ref_pos[query_it - query_pos.begin()] = ref_start_pos;
-                        query_it++;
-                    }
-                    ref_start_pos++;
-                    query_start_pos++;
+                // printMessage("[TEST] Processing CIGAR operation CEQUAL with length " + std::to_string(op_len));
+                for (int j = 0; j < op_len; j++) {
+                    current_ref_pos++;
+                    current_query_pos++;
+                    query_to_ref_map[current_query_pos] = current_ref_pos;
+                    // printMessage("[TEST] Query position " + std::to_string(current_query_pos) + " maps to reference position " + std::to_string(current_ref_pos));
                 }
                 break;
             case BAM_CINS:
             case BAM_CSOFT_CLIP:
-                query_start_pos += cigar_len;
+                current_query_pos += op_len;
                 break;
             case BAM_CDEL:
             case BAM_CREF_SKIP:
-                ref_start_pos += cigar_len;
+                current_ref_pos += op_len;
                 break;
             default:
+                // Handle unexpected CIGAR operations if needed
                 break;
         }
     }
 
-    return 0;
+    return query_to_ref_map;
 }

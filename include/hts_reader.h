@@ -43,10 +43,7 @@ class HTSReader {
         // Return the number of records in the BAM file using the BAM index
         int64_t getNumRecords(const std::string &bam_file_name);
 
-        // Input a query position and return the reference position by querying
-        // the BAM index
-        int getRefPos(bam1_t* record, std::vector<int> query_pos, std::vector<int> &ref_pos);
-        // int getRefPos(const std::string &bam_file_name, const std::string &chromosome, std::vector<int> query_pos, std::vector<int> &ref_pos);
+        std::map<int, int> getQueryToRefMap(bam1_t *record);
 
         // Add a modification to the base modification map
         void addModificationToQueryMap(std::map<int32_t, std::tuple<char, char, double, int>> &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, int strand);

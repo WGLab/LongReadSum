@@ -357,41 +357,6 @@ void Output_BAM::global_sum(){
             this->num_reads_with_both_secondary_supplementary_alignment++;
         }
     }
-
-    // // Calculate the number of modified bases in CpG context and total
-    // this->modified_base_count = this->base_modifications.size();
-    // this->cpg_modified_base_count = 0;
-    // char previous_base = 'N';
-    // int previous_pos = 0;
-    // for (auto const &it : this->base_modifications) {
-    //     char mod_type = std::get<0>(it.second);
-    //     char canonical_base = std::get<1>(it.second);
-    //     double likelihood = std::get<2>(it.second);
-    //     int strand = std::get<3>(it.second);
-    //     int current_pos = it.first;
-        
-    //     if (current_pos - previous_pos == 1) {
-    //         if (previous_base == 'C' && canonical_base == 'G' && strand == 0) {
-    //             this->cpg_modified_base_count++;
-
-    //             // Update the map with the CpG context
-    //             this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
-    //         } else if (previous_base == 'G' && canonical_base == 'C' && strand == 1) {
-    //             this->cpg_modified_base_count++;
-
-    //             // Update the map with the CpG context
-    //             this->base_modifications[current_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, true);
-    //         }
-    //     }
-    //     previous_pos = current_pos;
-    //     previous_base = canonical_base;
-    // }
-
-    // // Print the number of modified base information
-    // std::cout << "[OUTPUTDATA - GLOBAL_SUM]" << std::endl;
-    // std::cout << "Number of modified bases: " << this->modified_base_count << std::endl;
-    // std::cout << "Number of CpG modified bases: " << this->cpg_modified_base_count << std::endl;
-    // std::cout << "Size of base modifications map: " << this->base_modifications.size() << std::endl;
 }
 
 // Save the output to a file
