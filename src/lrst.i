@@ -91,6 +91,15 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
     $result = dict;
 }
 
+// Map std::map<char, int> to Python dictionary
+%typemap(out) std::map<char, int> {
+    PyObject *dict = PyDict_New();
+    for (auto const &it : $1) {
+        PyDict_SetItem(dict, PyUnicode_FromStringAndSize(&it.first, 1), PyLong_FromLong(it.second));
+    }
+    $result = dict;
+}
+
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>

@@ -333,9 +333,37 @@ def read_avg_base_quality(data, font_size):
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
+
+def plot_base_modifications(base_modifications):
+    """Plot the base modifications per location."""
+    # Get the modification types
+    modification_types = list(base_modifications.keys())
+
+    # Create the figure
+    fig = go.Figure()
+
+    # Add a trace for each modification type
+    for mod_type in modification_types:
+        # Get the modification data
+        mod_data = base_modifications[mod_type]
+
+        # Create the trace
+        trace = go.Scatter(x=mod_data['positions'], y=mod_data['counts'], mode='markers', name=mod_type)
+
+        # Add the trace to the figure
+        fig.add_trace(trace)
+
+    # Update the layout
+    fig.update_layout(title='Base Modifications', xaxis_title='Position', yaxis_title='Counts', showlegend=True, font=dict(size=PLOT_FONT_SIZE))
+
+    # Generate the HTML
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    return html_obj
+
+
 # Main plot function
 def plot(output_data, para_dict, file_type):
-    out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
 
     # Get the font size for plotly plots
@@ -343,6 +371,16 @@ def plot(output_data, para_dict, file_type):
 
     # Create the summary table
     create_summary_table(output_data, plot_filepaths, file_type)
+
+    # Create the modified base table if available
+    if file_type == 'BAM' and output_data.modified_base_count > 0:
+        create_modified_base_table(output_data, plot_filepaths)
+
+        # Check if the modified base table is available
+        if 'base_mods' in plot_filepaths:
+            logging.info("SUCCESS: Modified base table created")
+        else:
+            logging.warning("WARNING: Modified base table not created")
 
     # Generate plots
     plot_filepaths['base_counts']['dynamic'] = plot_base_counts(output_data, file_type)
@@ -373,6 +411,7 @@ def plot(output_data, para_dict, file_type):
         plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
 
     if file_type == 'BAM':
+        # Plot read alignment QC
         plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data)
         plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data)
         
@@ -587,8 +626,8 @@ def plot_signal(output_data, para_dict):
 
     return output_html_plots
 
-# Create a summary table for the basic statistics from the C++ output data
 def create_summary_table(output_data, plot_filepaths, file_type):
+    """Create the summary table for the basic statistics."""
     plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
     plot_filepaths["basic_st"]['title'] = "Summary Table"
@@ -597,10 +636,10 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     file_type_label = file_type
     if file_type == 'FAST5s':
         file_type_label = 'FAST5'
-
     plot_filepaths["basic_st"]['description'] = "{} Basic Statistics".format(file_type_label)
 
     if file_type == 'BAM':
+        # Add alignment statistics to the summary table
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n" \
                     "</thead> "
         table_str += "\n<tbody>"
@@ -700,6 +739,40 @@ def create_summary_table(output_data, plot_filepaths, file_type):
         
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["basic_st"]['detail'] = table_str
+
+def create_modified_base_table(output_data, plot_filepaths):
+    """Create a summary table for the base modifications."""
+    plot_filepaths["base_mods"] = {}
+    plot_filepaths["base_mods"]['file'] = ""
+    plot_filepaths["base_mods"]['title'] = "Base Modifications"
+    plot_filepaths["base_mods"]['description'] = "Base modification statistics"
+
+    # Set up the HTML table with two columns and no header
+    table_str = "<table>\n<tbody>"
+
+    # Get the total number of modifications
+    total_modifications = output_data.modified_base_count
+    total_forward_modifications = output_data.modified_base_count_forward
+    total_reverse_modifications = output_data.modified_base_count_reverse
+
+    # Get the total number of CpG site modifications
+    cpg_modifications = output_data.cpg_modified_base_count
+    cpg_forward_modifications = output_data.cpg_modified_base_count_forward
+    cpg_reverse_modifications = output_data.cpg_modified_base_count_reverse
+
+    # Get the percentage of CpG site modifications
+    cpg_modification_percentage = (cpg_modifications / total_modifications) * 100
+
+    # Add the base modification statistics to the table
+    table_str += "<tr><td>Total Modified Bases</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_modifications)
+    table_str += "<tr><td>Total Forward Modified Bases</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_forward_modifications)
+    table_str += "<tr><td>Total Reverse Modified Bases</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_reverse_modifications)
+    table_str += "<tr><td>Total CpG Site Modified Bases</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_modifications)
+    table_str += "<tr><td>Total Forward CpG Site Modified Bases</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_forward_modifications)
+    table_str += "<tr><td>Total Reverse CpG Site Modified Bases</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_reverse_modifications)
+    table_str += "<tr><td>CpG Site Modification Percentage</td><td style=\"text-align:right\">{:.1f}%</td></tr>".format(cpg_modification_percentage)
+    table_str += "\n</tbody>\n</table>"
+    plot_filepaths["base_mods"]['detail'] = table_str
 
 def create_pod5_table(output_dict, plot_filepaths):
     """Create a summary table for the ONT POD5 signal data."""

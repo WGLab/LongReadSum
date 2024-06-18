@@ -236,35 +236,16 @@ def bam_module(margs):
 
         # Get the reference genome file for base modification analysis
         input_para.ref_genome = margs.ref
-
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
 
-        # Base modification analysis
-        base_modifications = bam_output.get_modifications()
-
-        # Test that the base modifications are not empty
-        logging.info("Base modifications size: %d", len(base_modifications))
-
-        # # Print keys and values
-        # max_print = 5
-        # previous_value = ('m', 'C', 0.26171875, 0, False)
-        # for key, value in base_modifications.items():
-        #     if value != previous_value:
-        #         logging.info("Key: %s, Value: %s", key, value)
-                
-        #     previous_value = value
-
-        #     max_print -= 1
-        #     if max_print == 0:
-        #         break
 
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")
             plot_filepaths = plot(bam_output, param_dict, 'BAM')
             bam_html_gen = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
+                [["basic_st", "base_mods", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
                   "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
             bam_html_gen.generate_st_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])

@@ -139,9 +139,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
     // Print the number of modified base information if available
     if (final_output.get_modifications().size() > 0){
-        std::cout << "Number of modified bases: " << final_output.modified_base_count << std::endl;
-        std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
-        std::cout << "Size of base modifications map: " << final_output.base_modifications.size() << std::endl;
 
         // Determine CpG modification rate
         // First, read the reference genome
@@ -160,6 +157,10 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                 std::string chr = it.first;
                 std::map<int32_t, Base_Modification> base_mods = it.second;
                 for (auto const &it2 : base_mods) {
+                    // Update the modified base count
+                    final_output.modified_base_count++;
+
+                    // Get the base modification information
                     int32_t ref_pos = it2.first;
                     Base_Modification mod = it2.second;
                     char mod_type = std::get<0>(mod);
@@ -167,30 +168,36 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     double likelihood = std::get<2>(mod);
                     int strand = std::get<3>(mod);
 
+                    // Update the strand-specific modified base count
+                    if (strand == 0){
+                        final_output.modified_base_count_forward++;
+                    } else if (strand == 1){
+                        final_output.modified_base_count_reverse++;
+                    }
+
                     // Get the reference base at the position
                     char ref_base = std::toupper(ref_query.getBase(chr, ref_pos));
 
-                    // Skip if the reference base is not found (N), or if it does
-                    // not match the canonical base
-                    if (ref_base == 'N' || ref_base != canonical_base){
-                        continue;
-                    } else {
-                        // Get the CpG context
+                    // Get CpG modification information for cytosines
+                    if ((ref_base == 'C') && (ref_base == canonical_base) && (mod_type == 'm')) {
                         char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
                         char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
 
                         // Check if the context is a CpG site by looking for a
                         // C->G or G->C transition
                         std::string cpg_context = std::string(1, previous_base) + std::string(1, canonical_base) + std::string(1, next_base);
-                        if (cpg_context.find("CG") == std::string::npos && cpg_context.find("GC") == std::string::npos){
-                            // Just update the modified base count
-                            final_output.modified_base_count++;
-                        } else {
-                            // Update the modified base count
-                            final_output.modified_base_count++;
+                        if (cpg_context.find("CG") != std::string::npos || cpg_context.find("GC") != std::string::npos) {
 
                             // Update the CpG modified base count
                             final_output.cpg_modified_base_count++;
+
+                            // Update the strand-specific CpG modified base
+                            // count
+                            if (strand == 0){
+                                final_output.cpg_modified_base_count_forward++;
+                            } else if (strand == 1){
+                                final_output.cpg_modified_base_count_reverse++;
+                            }
                             
                             // Update the CpG modification flag
                             std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;

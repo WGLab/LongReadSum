@@ -264,6 +264,7 @@ Output_BAM::~Output_BAM(){
 
 void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand)
 {
+    // Add the modification to the map of reference positions
     try {
         this->base_modifications.at(chr);
     } catch (const std::out_of_range& oor) {
@@ -283,6 +284,14 @@ void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_typ
 
         // If the reference position is not in the map, add the modification
         this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
+    }
+
+    // Add the modification type to the map of modification types
+    try {
+        this->modification_type_counts.at(mod_type);
+        this->modification_type_counts[mod_type] += 1;
+    } catch (const std::out_of_range& oor) {
+        this->modification_type_counts[mod_type] = 1;
     }
 }
 
