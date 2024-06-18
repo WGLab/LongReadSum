@@ -277,7 +277,7 @@ class ST_HTML_Generator:
                     self.html_writer.write(dynamic_plot)
 
                 except KeyError:
-                    logging.error("Missing dynamic plot for " + plot_key)
+                    logging.error("Missing dynamic plot for %s", plot_key)
 
             self.html_writer.write('</div>')
 

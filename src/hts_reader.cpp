@@ -98,7 +98,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
     // Loop through each alignment record in the BAM file
     // Do QC on each record and store the results in the output_data object
-    // bool nm_tag_present = false;  // Flag to determine if the NM tag is present (for mismatch counting)
     bool mod_tag_present = false;  // Flag to determine if the base modification tags (MM, ML) are present
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
@@ -126,6 +125,10 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // Get the chromosome
             std::string chr = this->header->target_name[record->core.tid];
 
+            // Get the strand from the alignment flag (hts_base_mod uses 0 for positive and 1 for negative,
+            // but it always yields 0...)
+            int strand = (record->core.flag & BAM_FREVERSE) ? 1 : 0;
+
             // Iterate over the state object to get the base modification tags
             // using bam_next_basemod
             hts_base_mod mods[10];
@@ -137,7 +140,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             std::vector<int> query_pos;
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
                 for (int i = 0; i < n; i++) {
-                    this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, mods[i].strand);
+                    this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, strand);
                     query_pos.push_back(pos);
                 }
             }
