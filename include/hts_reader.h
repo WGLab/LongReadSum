@@ -9,6 +9,7 @@
 #include <fstream>
 #include <mutex>
 #include <stdint.h>
+#include <atomic>
 
 #include "output_data.h"
 
@@ -27,6 +28,10 @@ class HTSReader {
         bam_hdr_t* header; // read the BAM header
         bam1_t* record;
         int record_count = 0;
+        
+        // Atomic flags for whether certain BAM flags are present
+        std::atomic_flag has_nm_tag = ATOMIC_FLAG_INIT;  // NM tag for number of mismatches using edit distance
+        std::atomic_flag has_mm_ml_tags = ATOMIC_FLAG_INIT;  // MM and ML tags for modified base information
 
         // Bool for whether the reading is complete
         bool reading_complete = false;

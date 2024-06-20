@@ -96,9 +96,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     // Access the base quality histogram from the output_data object
     uint64_t *base_quality_distribution = output_data.seq_quality_info.base_quality_distribution;
 
-    // Loop through each alignment record in the BAM file
     // Do QC on each record and store the results in the output_data object
-    bool mod_tag_present = false;  // Flag to determine if the base modification tags (MM, ML) are present
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
         bam1_t* record = bam_init1();
@@ -122,8 +120,14 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         if (bam_parse_basemod(record, state) >= 0) {
             mod_tag_present = true;
 
-            // Get the chromosome
-            std::string chr = this->header->target_name[record->core.tid];
+            // Get the chromosome if alignments are present
+            bool alignments_present = true;
+            std::string chr;
+            if (record->core.tid < 0) {
+                alignments_present = false;
+            } else {
+                chr = this->header->target_name[record->core.tid];
+            }
 
             // Get the strand from the alignment flag (hts_base_mod uses 0 for positive and 1 for negative,
             // but it always yields 0...)
@@ -134,19 +138,23 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             hts_base_mod mods[10];
             int n = 0;
             int pos = 0;
-            char previous_base = 'N';
-            int cpg_count = 0;
-            int previous_pos = 0;
             std::vector<int> query_pos;
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
                 for (int i = 0; i < n; i++) {
+                    // Add the modification to the query base modifications map
                     this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, strand);
                     query_pos.push_back(pos);
                 }
             }
 
-            // Get the reference positions of the query positions
-            if (query_pos.size() > 0) {
+            // Set the atomic flag and print a message if the base modification
+            // tags are present
+            if (query_pos.size() > 0 && !this->has_mm_ml_tags.test_and_set()) {
+                printMessage("Base modification data found (MM, ML tags)");
+            }
+
+            // If alignments are present, get the reference positions of the query positions
+            if (alignments_present && query_pos.size() > 0) {
                 // Get the query to reference position mapping
                 std::map<int, int> query_to_ref_map = this->getQueryToRefMap(record);
                 std::vector<int> ref_pos(query_pos.size(), -1);
@@ -167,12 +175,14 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         output_data.add_modification(chr, ref_pos[i], mod_type, canonical_base, likelihood, strand);
                     }
                 }
+
+            } else {
+                // Add the modification to the output data using the query position
+                for (auto const &mod : query_base_modifications) {
+                    output_data.add_modification(chr, mod.first, std::get<0>(mod.second), std::get<1>(mod.second), std::get<2>(mod.second), strand);
+                }
             }
-
-        } else {
-            printMessage("No base modification tags found");
         }
-
         // Deallocate the state object
         hts_base_mod_state_free(state);
 
@@ -180,7 +190,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         if (read_ids_present){
             // Get the alignment's query name (the read name)
             std::string query_name = bam_get_qname(record);
-            //std::cout << "Query name: " << query_name << std::endl;
 
             // Determine if this read should be skipped
             if (read_ids.find(query_name) == read_ids.end()){
@@ -238,7 +247,18 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 uint8_t *nmTag = bam_aux_get(record, "NM");
                 if (nmTag != NULL) {
                     num_mismatches = (uint64_t) bam_aux2i(nmTag);
-                    // nm_tag_present = true;
+
+                    // Set the atomic flag and print a message if the NM tag is
+                    // present
+                    if (!this->has_nm_tag.test_and_set()) {
+                        printMessage("NM tag found, used NM tag for mismatch count");
+                    }
+                } else {
+                    // Set the atomic flag and print a message if the NM tag is
+                    // not present
+                    if (!this->has_nm_tag.test_and_set()) {
+                        printMessage("No NM tag found, using CIGAR for mismatch count");
+                    }
                 }
                 output_data.num_mismatched_bases += num_mismatches;
             }
@@ -324,25 +344,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
         record_count++;
     }
-
-    // Print the size of the modified base map
-    printMessage("[HTS] Size of base modifications map: " + std::to_string(output_data.base_modifications.size()));
-
-    // Print if the NM tag was not present
-    // if (nm_tag_present)
-    // {
-    //     std::cout << "NM tag found, used NM tag for mismatch count" << std::endl;
-    // } else {
-    //     std::cout << "No NM tag found, used CIGAR for mismatch count" << std::endl;
-    // }
-
-    // // Print if the base modification tags were present
-    // if (mod_tag_present)
-    // {
-    //     std::cout << "Base modification tags found" << std::endl;
-    // } else {
-    //     std::cout << "[test2] No base modification tags found" << std::endl;
-    // }
 
     return exit_code;
 }

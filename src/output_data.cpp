@@ -336,7 +336,6 @@ void Output_BAM::add(Output_BAM &output_data)
     this->long_read_info.add(output_data.unmapped_long_read_info);
 
     // Update the base modification information
-    printMessage("Adding base modification information to the output data, size: " + std::to_string(output_data.base_modifications.size()));
     for (auto const &it : output_data.base_modifications) {
         std::string chr = it.first;
         for (auto const &it2 : it.second) {

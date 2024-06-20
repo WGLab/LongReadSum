@@ -368,7 +368,7 @@ class ST_HTML_Generator:
         self.html_writer.close()
 
     # Main function for generating the HTML.
-    def generate_st_html(self, signal_plots=False):
+    def generate_html(self, signal_plots=False):
         if signal_plots:
             self.generate_header()
             # Get the signal plots

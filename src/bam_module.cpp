@@ -150,9 +150,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
             // Loop through the base modifications and find the CpG
             // modifications
-            int max_print_count = 35;
-            int success_count = 0;
-            int error_count = 0;
             for (auto const &it : final_output.base_modifications) {
                 std::string chr = it.first;
                 std::map<int32_t, Base_Modification> base_mods = it.second;
@@ -165,7 +162,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     Base_Modification mod = it2.second;
                     char mod_type = std::get<0>(mod);
                     char canonical_base = std::toupper(std::get<1>(mod));
-                    double likelihood = std::get<2>(mod);
+                    // double likelihood = std::get<2>(mod);
                     int strand = std::get<3>(mod);
 
                     // Update the strand-specific modified base count
