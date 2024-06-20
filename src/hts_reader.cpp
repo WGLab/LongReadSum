@@ -118,8 +118,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         hts_base_mod_state *state = hts_base_mod_state_alloc();
         std::map<int32_t, std::tuple<char, char, double, int>> query_base_modifications;
         if (bam_parse_basemod(record, state) >= 0) {
-            mod_tag_present = true;
-
+            
             // Get the chromosome if alignments are present
             bool alignments_present = true;
             std::string chr;
