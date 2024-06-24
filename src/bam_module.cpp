@@ -150,12 +150,16 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
             // Loop through the base modifications and find the CpG
             // modifications
+            int total_modified_bases = 0;
+            int cpg_test_count = 0;
+            int cpg_test_count2 = 0;
             for (auto const &it : final_output.base_modifications) {
                 std::string chr = it.first;
                 std::map<int32_t, Base_Modification> base_mods = it.second;
                 for (auto const &it2 : base_mods) {
                     // Update the modified base count
                     final_output.modified_base_count++;
+                    total_modified_bases++;
 
                     // Get the base modification information
                     int32_t ref_pos = it2.first;
@@ -168,6 +172,8 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     // Update the strand-specific modified base count
                     if (strand == 0){
                         final_output.modified_base_count_forward++;
+
+                        // printMessage("Forward strand on chr " + chr + " at position " + std::to_string(ref_pos) + " with canonical base " + canonical_base + " and reference base " + ref_base);
                     } else if (strand == 1){
                         final_output.modified_base_count_reverse++;
                     }
@@ -199,9 +205,19 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                             // Update the CpG modification flag
                             std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
                         }
+                    } else {
+                        // Print the failed condition, with chr, ref_pos,
+                        // ref_base, canonical_base, mod_type
+                        printMessage("Failed condition: chr = " + chr + ", ref_pos = " + std::to_string(ref_pos) + ", ref_base = " + std::string(1, ref_base) + ", canonical_base = " + std::string(1, canonical_base) + ", mod_type = " + std::string(1, mod_type));
+                        // printMessage("Failed condition: ref_base = " + std::string(1, ref_base) + ", canonical_base = " + std::string(1, canonical_base) + ", mod_type = " + std::string(1, mod_type) + ", Pos: " + std::to_string(ref_pos));
                     }
                 }
             }
+
+            std::cout << "[test] Post filter: " << std::to_string(cpg_test_count) << std::endl;
+            std::cout << "[test2] Pre filter: " << std::to_string(cpg_test_count2) << std::endl;
+
+            std::cout << "[TEST2] Total number of modified bases: " << total_modified_bases << std::endl;
 
             // Print the number of CpG modifications
             std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
@@ -242,10 +258,6 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& 
 
     // Update the final output
     output_mutex.lock();
-    if (record_output.get_modifications().size() > 0)
-    {
-        printMessage("Number of modified bases to be added to the final output: " + std::to_string(record_output.get_modifications().size()));
-    }
     final_output.add(record_output);
     output_mutex.unlock();
 }

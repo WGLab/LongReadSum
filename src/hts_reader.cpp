@@ -137,14 +137,17 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             hts_base_mod mods[10];
             int n = 0;
             int pos = 0;
+            int total_mods = 0;
             std::vector<int> query_pos;
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
                 for (int i = 0; i < n; i++) {
                     // Add the modification to the query base modifications map
+                    total_mods++;
                     this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, strand);
                     query_pos.push_back(pos);
                 }
             }
+            printMessage("[TEST 1] Total number of base modifications: " + std::to_string(total_mods));
 
             // Set the atomic flag and print a message if the base modification
             // tags are present
@@ -397,8 +400,7 @@ std::map<int, int> HTSReader::getQueryToRefMap(bam1_t *record)
                 for (int j = 0; j < op_len; j++) {
                     current_ref_pos++;
                     current_query_pos++;
-                    query_to_ref_map[current_query_pos] = current_ref_pos;
-                    // printMessage("[TEST] Query position " + std::to_string(current_query_pos) + " maps to reference position " + std::to_string(current_ref_pos));
+                    query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
                 }
                 break;
             case BAM_CINS:
