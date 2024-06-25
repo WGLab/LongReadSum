@@ -151,10 +151,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             // Loop through the base modifications and find the CpG
             // modifications
             int total_modified_bases = 0;
-            int cpg_test_count = 0;
-            int cpg_test_count2 = 0;
-            int cpg_test_count3 = 0;
-            int test_count_4 = 0;
+            int test_count = 0;
             for (auto const &it : final_output.base_modifications) {
                 std::string chr = it.first;
                 std::map<int32_t, Base_Modification> base_mods = it.second;
@@ -175,7 +172,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     if (strand == 0){
                         final_output.modified_base_count_forward++;
 
-                        // printMessage("Forward strand on chr " + chr + " at position " + std::to_string(ref_pos) + " with canonical base " + canonical_base + " and reference base " + ref_base);
                     } else if (strand == 1){
                         final_output.modified_base_count_reverse++;
                     }
@@ -183,39 +179,13 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     // Get the reference base at the position
                     char ref_base = std::toupper(ref_query.getBase(chr, ref_pos));
 
-                    // Update a test count if ref base does not match canonical
-                    // base
-                    // if (ref_base == canonical_base){
-                    //     test_count_4++;
-                    // }
-
                     // Get CpG modification information for cytosines
                     if ((ref_base == 'C') && (ref_base == canonical_base) && (mod_type == 'm')) {
-                        // char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
-                        // char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
-
-                        // Print the chr, position, current_base, previous_base,
-                        // next_base
-                        // printMessage("chr = " + chr + ", position = " + std::to_string(ref_pos) + ", current_base = " + std::string(1, canonical_base) + ", previous_base = " + std::string(1, previous_base) + ", next_base = " + std::string(1, next_base));
-
-                        // Check if the context is a CpG site by looking for a
-                        // C->G or G->C transition
-                        // std::string cpg_context = std::string(1, previous_base) + std::string(1, canonical_base) + std::string(1, next_base);
-                        // if (cpg_context.find("CG") != std::string::npos ||
-                        // cpg_context.find("GC") != std::string::npos) {
-                        // std::string cpg_context = std::string(1, previous_base) + std::string(1, canonical_base) + std::string(1, next_base);
-                        // if (strand == 0 && next_base == 'G') {
-                        // If positive strand and previous or next base is G
-                        // if (strand == 0 && (next_base == 'G' || previous_base == 'G')) {
-                        if (strand == 0 && ref_query.isCpG(chr, ref_pos)) {
+                        char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
+                        char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
+                        if (strand == 0 && next_base == 'G') {
                             // Update the CpG modified base count
                             final_output.cpg_modified_base_count++;
-
-                            // if (next_base == 'G') {
-                            //     cpg_test_count3++;
-                            // } else if (previous_base == 'G') {
-                            //     printMessage("chr = " + chr + ", position = " + std::to_string(ref_pos) + ", current_base = " + std::string(1, canonical_base) + ", previous_base = " + std::string(1, previous_base) + ", next_base = " + std::string(1, next_base));
-                            // }
 
                             // Update the strand-specific CpG modified base
                             // count
@@ -223,43 +193,33 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
                             // Update the CpG modification flag
                             std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+
+                            std::cout << "[TEST] Found a forward strand" << std::endl;
                         }
-                            
-                        // } else if (strand == 1 && previous_base == 'G') {
 
-                        //     // Update the CpG modified base count
-                        //     final_output.cpg_modified_base_count++;
+                    } else if ((canonical_base == 'C') && (ref_base == 'G') && (mod_type == 'm')) {
+                        char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
+                        char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
 
-                        //     // Update the strand-specific CpG modified base
-                        //     // count
-                        //     final_output.cpg_modified_base_count_reverse++;
-                            
-                        //     // Update the CpG modification flag
-                        //     std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
-                        // }
-                    } else {
-                        // Print the failed condition, with chr, ref_pos,
-                        // ref_base, canonical_base, mod_type
-                        // printMessage("Failed condition: chr = " + chr + ", ref_pos = " + std::to_string(ref_pos) + ", ref_base = " + std::string(1, ref_base) + ", canonical_base = " + std::string(1, canonical_base) + ", mod_type = " + std::string(1, mod_type));
-                        // printMessage("Failed condition: ref_base = " + std::string(1, ref_base) + ", canonical_base = " + std::string(1, canonical_base) + ", mod_type = " + std::string(1, mod_type) + ", Pos: " + std::to_string(ref_pos));
+                        test_count++;
+
+                        if (strand == 1 && previous_base == 'C')
+                        {
+                            // Update the CpG modified base count
+                            final_output.cpg_modified_base_count++;
+
+                            // Update the strand-specific CpG modified base
+                            // count
+                            final_output.cpg_modified_base_count_reverse++;
+
+                            // Update the CpG modification flag
+                            std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+                        }
                     }
                 }
             }
-
-            std::cout << "[test] Post filter: " << std::to_string(cpg_test_count) << std::endl;
-            std::cout << "[test2] Pre filter: " << std::to_string(cpg_test_count2) << std::endl;
-
-            std::cout << "[TEST2] Total number of modified bases: " << total_modified_bases << std::endl;
-
-            // Print the number of CpG modifications
             std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
-
-            std::cout << "[test3] Number of CpG modified bases: " << cpg_test_count3 << std::endl;
-
-            // Print the total number of modified bases
             std::cout << "Total number of modified bases: " << final_output.modified_base_count << std::endl;
-
-            std::cout << "Test count 4: " << test_count_4 << std::endl;
         }
     }
 

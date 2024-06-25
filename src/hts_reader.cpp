@@ -182,9 +182,11 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 // Loop through the query and reference positions and add the
                 // reference positions to the output data if != -1
                 int test_count = 0;
+                int test_count2 = 0;
                 for (size_t i = 0; i < query_pos.size(); i++) {
                     // Get the reference position from the query to reference
                     // map
+                    test_count2++;
                     if (query_to_ref_map.find(query_pos[i]) != query_to_ref_map.end()) {
                         test_count++;
                         ref_pos[i] = query_to_ref_map[query_pos[i]];
@@ -195,14 +197,16 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         double likelihood = std::get<2>(query_base_modifications[query_pos[i]]);
                         int strand = std::get<3>(query_base_modifications[query_pos[i]]);
                         output_data.add_modification(chr, ref_pos[i], mod_type, canonical_base, likelihood, strand);
-                    } else {
-                        // Print the failed query position
-                        printMessage("[TEST] Failed query position " + std::to_string(query_pos[i]) + " not found in query to reference map");
                     }
+                    // } else {
+                    //     // Print the failed query position
+                    //     printMessage("[TEST] Failed query position " + std::to_string(query_pos[i]) + " not found in query to reference map");
+                    // }
                 }
 
                 // Print the test count
                 printMessage("[TEST] Query loop count: " + std::to_string(test_count));
+                printMessage("[TEST] Query loop count 2: " + std::to_string(test_count2));
 
             } else {
                 // Add the modification to the output data using the query position
