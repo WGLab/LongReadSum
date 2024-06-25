@@ -635,6 +635,10 @@ bam_parser = subparsers.add_parser('bam',
 bam_parser.add_argument("--ref", type=str, default="",
                         help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
 
+# Add argument for base modification filtering threshold
+bam_parser.add_argument("--base_mod_threshold", type=float, default=0.5,
+                        help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
+
 bam_parser.set_defaults(func=bam_module)
 
 # RRMS BAM file input (Splits accepted and rejected reads)

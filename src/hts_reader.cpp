@@ -139,12 +139,23 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             int pos = 0;
             int total_mods = 0;
             std::vector<int> query_pos;
+            printMessage("[TEST] Query positions from HTSLib:");
             while ((n=bam_next_basemod(record, state, mods, 10, &pos)) > 0) {
                 for (int i = 0; i < n; i++) {
+                    // Note: The modified base value can be a positive char (e.g. 'm',
+                    // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
+                    // https://github.com/samtools/hts-specs/issues/741
+                    // DNA Mods: https://dnamod.hoffmanlab.org/
+                    // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
+                    // Header line: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
+
                     // Add the modification to the query base modifications map
                     total_mods++;
                     this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, mods[i].qual / 256.0, strand);
                     query_pos.push_back(pos);
+
+                    // Print the query position
+                    printMessage(std::to_string(pos));
                 }
             }
             printMessage("[TEST 1] Total number of base modifications: " + std::to_string(total_mods));
@@ -161,12 +172,21 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 std::map<int, int> query_to_ref_map = this->getQueryToRefMap(record);
                 std::vector<int> ref_pos(query_pos.size(), -1);
 
+                // Print out the entire query to reference map
+                printMessage("[TEST] Query to reference map:");
+                for (auto const &it : query_to_ref_map) {
+                    printMessage(std::to_string(it.first) + " -> " + std::to_string(it.second));
+                }
+                printMessage("[TEST] Complete.");
+
                 // Loop through the query and reference positions and add the
                 // reference positions to the output data if != -1
+                int test_count = 0;
                 for (size_t i = 0; i < query_pos.size(); i++) {
                     // Get the reference position from the query to reference
                     // map
                     if (query_to_ref_map.find(query_pos[i]) != query_to_ref_map.end()) {
+                        test_count++;
                         ref_pos[i] = query_to_ref_map[query_pos[i]];
                         
                         // Add the modification to the output data
@@ -175,14 +195,20 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                         double likelihood = std::get<2>(query_base_modifications[query_pos[i]]);
                         int strand = std::get<3>(query_base_modifications[query_pos[i]]);
                         output_data.add_modification(chr, ref_pos[i], mod_type, canonical_base, likelihood, strand);
+                    } else {
+                        // Print the failed query position
+                        printMessage("[TEST] Failed query position " + std::to_string(query_pos[i]) + " not found in query to reference map");
                     }
                 }
 
+                // Print the test count
+                printMessage("[TEST] Query loop count: " + std::to_string(test_count));
+
             } else {
                 // Add the modification to the output data using the query position
-                for (auto const &mod : query_base_modifications) {
-                    output_data.add_modification(chr, mod.first, std::get<0>(mod.second), std::get<1>(mod.second), std::get<2>(mod.second), strand);
-                }
+                // for (auto const &mod : query_base_modifications) {
+                //     output_data.add_modification(chr, mod.first, std::get<0>(mod.second), std::get<1>(mod.second), std::get<2>(mod.second), strand);
+                // }
             }
         }
         // Deallocate the state object
@@ -398,9 +424,10 @@ std::map<int, int> HTSReader::getQueryToRefMap(bam1_t *record)
             case BAM_CEQUAL:
                 // printMessage("[TEST] Processing CIGAR operation CEQUAL with length " + std::to_string(op_len));
                 for (int j = 0; j < op_len; j++) {
+                    query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
                     current_ref_pos++;
                     current_query_pos++;
-                    query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
+                    // query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
                 }
                 break;
             case BAM_CINS:
