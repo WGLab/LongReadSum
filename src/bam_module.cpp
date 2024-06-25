@@ -165,7 +165,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     Base_Modification mod = it2.second;
                     char mod_type = std::get<0>(mod);
                     char canonical_base = std::toupper(std::get<1>(mod));
-                    // double likelihood = std::get<2>(mod);
+                    double likelihood = std::get<2>(mod);
                     int strand = std::get<3>(mod);
 
                     // Update the strand-specific modified base count
@@ -180,46 +180,47 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     char ref_base = std::toupper(ref_query.getBase(chr, ref_pos));
 
                     // Get CpG modification information for cytosines
-                    if ((ref_base == 'C') && (ref_base == canonical_base) && (mod_type == 'm')) {
-                        char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
-                        char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
-                        if (strand == 0 && next_base == 'G') {
-                            // Update the CpG modified base count
-                            final_output.cpg_modified_base_count++;
+                    if (canonical_base == 'C')
+                    {
+                        if ((ref_base == 'C') && (mod_type == 'm')) {
+                            char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
+                            char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
+                            if (strand == 0 && next_base == 'G') {
+                                // Update the CpG modified base count
+                                final_output.cpg_modified_base_count++;
 
-                            // Update the strand-specific CpG modified base
-                            // count
-                            final_output.cpg_modified_base_count_forward++;
+                                // Update the strand-specific CpG modified base
+                                // count
+                                final_output.cpg_modified_base_count_forward++;
 
-                            // Update the CpG modification flag
-                            std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+                                // Update the CpG modification flag
+                                std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+                            }
 
-                            std::cout << "[TEST] Found a forward strand" << std::endl;
-                        }
+                        } else if ((ref_base == 'G') && (mod_type == 'm')) {
+                            char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
+                            char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
+                            test_count++;
 
-                    } else if ((canonical_base == 'C') && (ref_base == 'G') && (mod_type == 'm')) {
-                        char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
-                        char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
+                            if (strand == 1 && previous_base == 'C')
+                            {
+                                // Update the CpG modified base count
+                                final_output.cpg_modified_base_count++;
 
-                        test_count++;
+                                // Update the strand-specific CpG modified base
+                                // count
+                                final_output.cpg_modified_base_count_reverse++;
 
-                        if (strand == 1 && previous_base == 'C')
-                        {
-                            // Update the CpG modified base count
-                            final_output.cpg_modified_base_count++;
-
-                            // Update the strand-specific CpG modified base
-                            // count
-                            final_output.cpg_modified_base_count_reverse++;
-
-                            // Update the CpG modification flag
-                            std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+                                // Update the CpG modification flag
+                                std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+                            }
                         }
                     }
                 }
             }
             std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
             std::cout << "Total number of modified bases: " << final_output.modified_base_count << std::endl;
+            std::cout << "test count: " << test_count << std::endl;
         }
     }
 
