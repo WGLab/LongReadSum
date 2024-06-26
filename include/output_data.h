@@ -110,58 +110,77 @@ public:
 };
 
 
+// Define the base modification data structure (modification type, canonical
+// base, likelihood, strand: 0 for forward, 1 for reverse, and CpG flag: T/F)
+using Base_Modification = std::tuple<char, char, double, int, bool>;
+
 // BAM output
 class Output_BAM : public Output_FQ
 {
 public:
-    uint64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
-    uint64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
-    uint64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
-    uint64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
-    uint64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
-    uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
-    uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
-    uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
-    int reads_with_mods = ZeroDefault; // Total number of reads with modification tags
-    int reads_with_mods_pos_strand = ZeroDefault; // Total number of reads with modification tags on the positive strand
-    int reads_with_mods_neg_strand = ZeroDefault; // Total number of reads with modification tags on the negative strand
+   uint64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
+   uint64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
+   uint64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
+   uint64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
+   uint64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
+   uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+   uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
+   uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
+   std::map<std::string, bool> reads_with_supplementary;  // Map of reads with supplementary alignments
+   std::map<std::string, bool> reads_with_secondary;  // Map of reads with secondary alignments
 
-    // Map of reads with supplementary alignments
-    std::map<std::string, bool> reads_with_supplementary;
+   // Similar to Output_FA: below are for mapped.
+   uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
+   uint64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
+   uint64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
+   uint64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
+   uint64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
-    // Map of reads with secondary alignments
-    std::map<std::string, bool> reads_with_secondary;
+   // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
+   int num_columns = ZeroDefault; // the number of columns
+   double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
+   std::vector<int> accuracy_per_read;
 
-    // Similar to Output_FA: below are for mapped.
-    uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
-    uint64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
-    uint64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
-    uint64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
-    uint64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
+    // Number of modified bases by position in the reference:
+    // chr -> reference position -> (modification type, canonical base, maximum
+    // likelihood, strand)
+   std::map<std::string, std::map<int32_t, Base_Modification>> base_modifications;
+   uint64_t modified_prediction_count = ZeroDefault;  // Total number of modified base predictions
+   uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases mapped to the reference genome
+   uint64_t modified_base_count_forward = ZeroDefault;  // Total number of modified bases in the genome on the forward strand
+   uint64_t modified_base_count_reverse = ZeroDefault;  // Total number of modified bases in the genome on the reverse strand
+   uint64_t c_modified_base_count = ZeroDefault;  // Total C modified bases
+   uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites
+   uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
+   uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
 
-    // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
-    int num_columns = ZeroDefault; // the number of columns
-    double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
+   // Counts for each type of modification:
+   // Modification type -> count
+   std::map<char, int> modification_type_counts;
 
-    std::vector<int> accuracy_per_read;
+   Basic_Seq_Statistics mapped_long_read_info;
+   Basic_Seq_Statistics unmapped_long_read_info;
 
-    Basic_Seq_Statistics mapped_long_read_info;
-    Basic_Seq_Statistics unmapped_long_read_info;
+   Basic_Seq_Quality_Statistics mapped_seq_quality_info;
+   Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
 
-    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
-    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+   // Add modified base data
+   void add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand);
 
-    // Add a batch of records to the output
-    void add(Output_BAM &t_output_bam);
+   // Return the modification information
+   std::map<std::string, std::map<int32_t, Base_Modification>> get_modifications();
 
-    // Calculate QC across all records
-    void global_sum();
+   // Add a batch of records to the output
+   void add(Output_BAM &t_output_bam);
 
-    // Save the output to a summary text file
-    void save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data);
+   // Calculate QC across all records
+   void global_sum();
 
-    Output_BAM();
-    ~Output_BAM();
+   // Save the output to a summary text file
+   void save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data);
+
+   Output_BAM();
+   ~Output_BAM();
 };
 
 

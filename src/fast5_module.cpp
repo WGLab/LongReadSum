@@ -517,11 +517,8 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
                 }
                 // std::cout << "Read: " << read_name << std::endl;
 
-                // Get the basecall signals
-                // std::cout << "Getting basecall signals" << std::endl;
+                // Append the basecall signals to the output structure
                 Base_Signals basecall_obj = getReadBaseSignalData(f5, read_name, false);
-
-                //std::cout << "Adding basecall signals" << std::endl;
                 output_data.addReadBaseSignals(basecall_obj);
             }
         }

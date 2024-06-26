@@ -36,6 +36,70 @@ lrst.i: SWIG module defining the Python wrapper for our C++ modules
     $result = list;
 }
 
+// Map std::map<int32_t, std::map<char, std::tuple<char, double>>> to Python
+// dictionary
+// %typemap(out) std::map<int32_t, std::map<char, std::tuple<char, double>>> {
+//     PyObject *dict = PyDict_New();
+//     for (auto const &it : $1) {
+//         PyObject *inner_dict = PyDict_New();
+//         for (auto const &inner_it : it.second) {
+//             PyObject *tuple = PyTuple_Pack(2, 
+//                                            PyUnicode_FromStringAndSize(&std::get<0>(inner_it.second), 1), 
+//                                            PyFloat_FromDouble(std::get<1>(inner_it.second)));
+//             PyDict_SetItem(inner_dict, 
+//                            PyUnicode_FromStringAndSize(&inner_it.first, 1), 
+//                            tuple);
+//         }
+//         PyDict_SetItem(dict, PyLong_FromLong(it.first), inner_dict);
+//     }
+//     $result = dict;
+// }
+
+// Map std::map<int32_t, std::tuple<char, char, double, int, bool>> to Python
+// dictionary
+// %typemap(out) std::map<int32_t, std::tuple<char, char, double, int, bool>> {
+//     PyObject *dict = PyDict_New();
+//     for (auto const &it : $1) {
+//         PyObject *tuple = PyTuple_Pack(5, 
+//                                        PyUnicode_FromStringAndSize(&std::get<0>(it.second), 1), 
+//                                        PyUnicode_FromStringAndSize(&std::get<1>(it.second), 1), 
+//                                        PyFloat_FromDouble(std::get<2>(it.second)),
+//                                        PyLong_FromLong(std::get<3>(it.second)),
+//                                        PyBool_FromLong(std::get<4>(it.second)));
+//         PyDict_SetItem(dict, PyLong_FromLong(it.first), tuple);
+//     }
+//     $result = dict;
+// }
+
+// Map std::map<std::string, std::map<int32_t, std::tuple<char, char, double,
+// int, bool>>> to Python dictionary
+%typemap(out) std::map<std::string, std::map<int32_t, std::tuple<char, char, double, int, bool>>> {
+    PyObject *dict = PyDict_New();
+    for (auto const &it : $1) {
+        PyObject *inner_dict = PyDict_New();
+        for (auto const &inner_it : it.second) {
+            PyObject *tuple = PyTuple_Pack(5, 
+                                           PyUnicode_FromStringAndSize(&std::get<0>(inner_it.second), 1), 
+                                           PyUnicode_FromStringAndSize(&std::get<1>(inner_it.second), 1), 
+                                           PyFloat_FromDouble(std::get<2>(inner_it.second)),
+                                           PyLong_FromLong(std::get<3>(inner_it.second)),
+                                           PyBool_FromLong(std::get<4>(inner_it.second)));
+            PyDict_SetItem(inner_dict, PyLong_FromLong(inner_it.first), tuple);
+        }
+        PyDict_SetItem(dict, PyUnicode_FromString(it.first.c_str()), inner_dict);
+    }
+    $result = dict;
+}
+
+// Map std::map<char, int> to Python dictionary
+%typemap(out) std::map<char, int> {
+    PyObject *dict = PyDict_New();
+    for (auto const &it : $1) {
+        PyDict_SetItem(dict, PyUnicode_FromStringAndSize(&it.first, 1), PyLong_FromLong(it.second));
+    }
+    $result = dict;
+}
+
 %include <std_string.i>
 %include <stdint.i>
 %include <std_vector.i>
