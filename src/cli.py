@@ -215,6 +215,7 @@ def fa_module(margs):
             logging.error("QC did not generate.")
 
 def bam_module(margs):
+    """BAM file input module."""
     # Get the filetype-specific parameters
     param_dict = get_common_param(margs)
     if param_dict == {}:
@@ -231,15 +232,17 @@ def bam_module(margs):
         input_para.other_flags = (1 if param_dict["detail"] > 0 else 0);
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
-        for _ipf in param_dict["input_files"]:
-            input_para.add_input_file(str(_ipf))
 
-        # Get the reference genome file for base modification analysis
+        # Set the reference genome file and base modification threshold
+        param_dict["ref"] = margs.ref
+        param_dict["modprob"] = margs.modprob
         input_para.ref_genome = margs.ref
+        input_para.base_mod_threshold = margs.modprob
+        for input_file in param_dict["input_files"]:
+            input_para.add_input_file(str(input_file))
+
         bam_output = lrst.Output_BAM()
         exit_code = lrst.callBAMModule(input_para, bam_output)
-
-
         if exit_code == 0:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")
@@ -636,7 +639,7 @@ bam_parser.add_argument("--ref", type=str, default="",
                         help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
 
 # Add argument for base modification filtering threshold
-bam_parser.add_argument("--base_mod_threshold", type=float, default=0.5,
+bam_parser.add_argument("--modprob", type=float, default=0.5,
                         help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
 
 bam_parser.set_defaults(func=bam_module)

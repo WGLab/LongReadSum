@@ -490,6 +490,7 @@ def forward_base_mod_output():
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
     default_parameters.out_prefix = str("bam_")
+    default_parameters.base_mod_threshold = -1.0
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
@@ -566,6 +567,7 @@ def reverse_base_mod_output():
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
     default_parameters.out_prefix = str("bam_")
+    default_parameters.base_mod_threshold = -1.0
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')

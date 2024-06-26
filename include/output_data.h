@@ -145,12 +145,14 @@ public:
     // chr -> reference position -> (modification type, canonical base, maximum
     // likelihood, strand)
    std::map<std::string, std::map<int32_t, Base_Modification>> base_modifications;
-   uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases in the genome
+   uint64_t modified_prediction_count = ZeroDefault;  // Total number of modified base predictions
+   uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases mapped to the reference genome
    uint64_t modified_base_count_forward = ZeroDefault;  // Total number of modified bases in the genome on the forward strand
    uint64_t modified_base_count_reverse = ZeroDefault;  // Total number of modified bases in the genome on the reverse strand
-   uint64_t cpg_modified_base_count = ZeroDefault;  // Total number of CpG modified bases in the genome
-   uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total number of CpG modified bases in the genome on the forward strand
-   uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total number of CpG modified bases in the genome on the reverse strand
+   uint64_t c_modified_base_count = ZeroDefault;  // Total C modified bases
+   uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites
+   uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
+   uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
 
    // Counts for each type of modification:
    // Modification type -> count
