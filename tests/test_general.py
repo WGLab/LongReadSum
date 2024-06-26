@@ -417,9 +417,7 @@ class TestBAM:
 
 @pytest.fixture(scope='class')
 def unmapped_bam_output():
-    """
-    Run the BAM module on unmapped inputs.
-    """
+    """Run the BAM module on unmapped inputs."""
     # Set parameters
     default_parameters = lrst.Input_Para()
     output_folder = os.path.abspath(str("output/"))
@@ -436,7 +434,7 @@ def unmapped_bam_output():
     # Add input files
     default_parameters.add_input_file(input_file)
 
-    # Run the FASTA statistics module
+    # Run the BAM statistics module
     output = lrst.Output_BAM()
     exit_code = lrst.callBAMModule(default_parameters, output)
 
@@ -444,9 +442,7 @@ def unmapped_bam_output():
 
 
 class TestUnmappedBAM:
-    """
-    Tests for unmapped BAM inputs.
-    """
+    """Tests for unmapped BAM inputs."""
 
     # Ensure the module ran successfully
     @pytest.mark.dependency()
@@ -484,6 +480,157 @@ class TestUnmappedBAM:
         output_statistics = unmapped_bam_output[1]
         n50_read_length = output_statistics.long_read_info.n50_read_length
         assert n50_read_length == 22029
+
+
+@pytest.fixture(scope='class')
+def forward_base_mod_output():
+    """Run the BAM module on a read aligned to the forward strand with base modifications."""
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("bam_")
+
+    # Check if running remotely
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        input_file = os.path.join(local_dir, "SampleData/forward_mod.bam")  # Local path
+        ref_file = os.path.join(local_dir, "SampleData/chr11.fa")
+    else:
+        input_file = os.path.abspath(str("SampleData/forward_mod.bam"))  # Remote path
+        ref_file = os.path.abspath(str("SampleData/chr11.fa"))
+
+    # Add input files
+    default_parameters.add_input_file(input_file)
+    default_parameters.ref_genome = ref_file
+
+    # Run the BAM statistics module
+    output = lrst.Output_BAM()
+    exit_code = lrst.callBAMModule(default_parameters, output)
+
+    yield [exit_code, output]
+
+
+class TestForwardBaseModBAM:
+    """Tests for BAM inputs with base modifications on the forward strand."""
+
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, forward_base_mod_output):
+        exit_code = forward_base_mod_output[0]
+        assert exit_code == 0
+
+    # Tests
+    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
+    def test_modified_base_count(self, forward_base_mod_output):
+        output_statistics = forward_base_mod_output[1]
+        modified_base_count = output_statistics.modified_base_count
+        assert modified_base_count == 682
+
+    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
+    def test_forward_modified_base_count(self, forward_base_mod_output):
+        output_statistics = forward_base_mod_output[1]
+        forward_modified_base_count = output_statistics.modified_base_count_forward
+        assert forward_modified_base_count == 682
+
+    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
+    def test_reverse_modified_base_count(self, forward_base_mod_output):
+        output_statistics = forward_base_mod_output[1]
+        reverse_modified_base_count = output_statistics.modified_base_count_reverse
+        assert reverse_modified_base_count == 0
+
+    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
+    def test_cpg_modified_base_count(self, forward_base_mod_output):
+        output_statistics = forward_base_mod_output[1]
+        cpg_modified_base_count = output_statistics.cpg_modified_base_count
+        assert cpg_modified_base_count == 621
+
+    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
+    def test_forward_cpg_modified_base_count(self, forward_base_mod_output):
+        output_statistics = forward_base_mod_output[1]
+        forward_cpg_modified_base_count = output_statistics.cpg_modified_base_count_forward
+        assert forward_cpg_modified_base_count == 621
+
+    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
+    def test_reverse_cpg_modified_base_count(self, forward_base_mod_output):
+        output_statistics = forward_base_mod_output[1]
+        reverse_cpg_modified_base_count = output_statistics.cpg_modified_base_count_reverse
+        assert reverse_cpg_modified_base_count == 0
+
+
+@pytest.fixture(scope='class')
+def reverse_base_mod_output():
+    """Run the BAM module on a read aligned to the reverse strand with base modifications."""
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("bam_")
+
+    # Check if running remotely
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        input_file = os.path.join(local_dir, "SampleData/reverse_mod.bam")
+        ref_file = os.path.join(local_dir, "SampleData/chr11.fa")
+    else:
+        input_file = os.path.abspath(str("SampleData/reverse_mod.bam"))
+        ref_file = os.path.abspath(str("SampleData/chr11.fa"))
+
+    # Add input files
+    default_parameters.add_input_file(input_file)
+    default_parameters.ref_genome = ref_file
+
+    # Run the BAM statistics module
+    output = lrst.Output_BAM()
+    exit_code = lrst.callBAMModule(default_parameters, output)
+
+    yield [exit_code, output]
+
+class TestReverseBaseModBam:
+    """Tests for BAM inputs with base modifications on the reverse strand."""
+
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, reverse_base_mod_output):
+        exit_code = reverse_base_mod_output[0]
+        assert exit_code == 0
+
+    # Tests
+    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
+    def test_modified_base_count(self, reverse_base_mod_output):
+        output_statistics = reverse_base_mod_output[1]
+        modified_base_count = output_statistics.modified_base_count
+        assert modified_base_count == 548
+
+    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
+    def test_forward_modified_base_count(self, reverse_base_mod_output):
+        output_statistics = reverse_base_mod_output[1]
+        forward_modified_base_count = output_statistics.modified_base_count_forward
+        assert forward_modified_base_count == 0
+
+    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
+    def test_reverse_modified_base_count(self, reverse_base_mod_output):
+        output_statistics = reverse_base_mod_output[1]
+        reverse_modified_base_count = output_statistics.modified_base_count_reverse
+        assert reverse_modified_base_count == 548
+
+    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
+    def test_cpg_modified_base_count(self, reverse_base_mod_output):
+        output_statistics = reverse_base_mod_output[1]
+        cpg_modified_base_count = output_statistics.cpg_modified_base_count
+        assert cpg_modified_base_count == 525
+
+    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
+    def test_forward_cpg_modified_base_count(self, reverse_base_mod_output):
+        output_statistics = reverse_base_mod_output[1]
+        forward_cpg_modified_base_count = output_statistics.cpg_modified_base_count_forward
+        assert forward_cpg_modified_base_count == 0
+
+    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
+    def test_reverse_cpg_modified_base_count(self, reverse_base_mod_output):
+        output_statistics = reverse_base_mod_output[1]
+        reverse_cpg_modified_base_count = output_statistics.cpg_modified_base_count_reverse
+        assert reverse_cpg_modified_base_count == 525
 
 
 # sequencing_summary.txt tests
