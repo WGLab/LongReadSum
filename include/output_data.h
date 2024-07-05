@@ -153,6 +153,8 @@ public:
    uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites
    uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
    uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
+   double percent_modified_cpg_forward = ZeroDefault;  // Percentage of CpG sites with modified bases on the forward strand
+   double percent_modified_cpg_reverse = ZeroDefault;  // Percentage of CpG sites with modified bases on the reverse strand
 
    // Counts for each type of modification:
    // Modification type -> count

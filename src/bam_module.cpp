@@ -138,6 +138,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     }
 
     // Print the number of modified base information if available
+    uint32_t cpg_site_mod_count_2 = 0;
     if (final_output.get_modifications().size() > 0){
 
         // Determine CpG modification rate
@@ -154,7 +155,10 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             for (auto const &it : final_output.base_modifications) {
                 std::string chr = it.first;
                 std::map<int32_t, Base_Modification> base_mods = it.second;
+
+                // Loop through the base modifications
                 for (auto const &it2 : base_mods) {
+
                     // Get the base modification information
                     int32_t ref_pos = it2.first;
                     Base_Modification mod = it2.second;
@@ -187,7 +191,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                                 // Determine if it resides in a CpG site
                                 char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
                                 if (next_base == 'G') {
-                                    // Update the CpG modified base count
+                                    // Update the CpG modified base counts
                                     final_output.cpg_modified_base_count++;
 
                                     // Update the strand-specific CpG modified base
@@ -196,6 +200,9 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
                                     // Update the CpG modification flag
                                     std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+
+                                    // Add the CpG site modification
+                                    ref_query.addCpGSiteModification(chr, ref_pos, strand);
                                 }
 
                             } else if ((ref_base == 'G') && (mod_type == 'm') && (strand == 1)) {
@@ -206,7 +213,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                                 char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
                                 if (previous_base == 'C')
                                 {
-                                    // Update the CpG modified base count
+                                    // Update the CpG modified base counts
                                     final_output.cpg_modified_base_count++;
 
                                     // Update the strand-specific CpG modified base
@@ -215,12 +222,39 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
                                     // Update the CpG modification flag
                                     std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+
+                                    // Add the CpG site modification
+                                    ref_query.addCpGSiteModification(chr, ref_pos, strand);
                                 }
                             }
                         }
                     }
                 }
             }
+
+            // Calculate the CpG modification rate
+            if (final_output.cpg_modified_base_count > 0){
+                // Forward strand
+                std::pair<uint32_t, uint32_t> cpg_mod_counts = ref_query.getCpGModificationCounts(0);
+                double cpg_mod_rate_fwd = (double)cpg_mod_counts.first / (double)(cpg_mod_counts.first + cpg_mod_counts.second);
+                final_output.percent_modified_cpg_forward = cpg_mod_rate_fwd * 100;
+
+                // // Reverse strand
+                // std::pair<uint32_t, uint32_t> cpg_mod_counts_rev = ref_query.getCpGModificationCounts(1);
+                // double cpg_mod_rate_rev = (double)cpg_mod_counts_rev.first / (double)(cpg_mod_counts_rev.first + cpg_mod_counts_rev.second);
+                // final_output.percent_modified_cpg_reverse = cpg_mod_rate_rev * 100;
+
+                std::cout << "Total number of CpG sites: " << ref_query.getCpGSiteCount() << std::endl;
+                std::cout << "Number of CpG sites with modifications: " << cpg_site_mod_count_2 << std::endl;
+                double cpg_mod_rate = (double)final_output.cpg_modified_base_count / (double)ref_query.getCpGSiteCount();
+                std::cout << "CpG site modification rate: " << cpg_mod_rate * 100 << std::endl;
+
+                // Calculate the CpG modification rate for all modified bases
+                double cpg_mod_rate_all = (double)cpg_site_mod_count_2 / (double)ref_query.getCpGSiteCount();
+                std::cout << "Number of CpG sites with modifications (all modified bases): " << cpg_site_mod_count_2 << std::endl;
+                std::cout << "CpG site modification rate (all modified bases): " << cpg_mod_rate_all * 100 << std::endl;
+            }
+
             std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
             std::cout << "Total number of modified bases: " << final_output.modified_base_count << std::endl;
         }
