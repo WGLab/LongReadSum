@@ -642,6 +642,10 @@ bam_parser.add_argument("--ref", type=str, default="",
 bam_parser.add_argument("--modprob", type=float, default=0.5,
                         help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
 
+# Add argument for GTF file required for RNA-seq analysis (TIN, etc.)
+bam_parser.add_argument("--gtf", type=str, default="",
+                        help="GTF file required for RNA-seq analysis. Default: None.")
+
 bam_parser.set_defaults(func=bam_module)
 
 # RRMS BAM file input (Splits accepted and rejected reads)

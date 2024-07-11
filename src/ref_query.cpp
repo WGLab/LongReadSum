@@ -96,67 +96,105 @@ int RefQuery::setFilepath(std::string fasta_filepath)
 void RefQuery::generateCpGMap()
 {    
     // Iterate over each chromosome
-     std::cout << "Locating CpG sites..." << std::endl;
+    std::cout << "Locating CpG sites..." << std::endl;
+    uint32_t cpg_site_count = 0;
+
+    // There should be a CpG here: chr1:10469
+    // Test the CpG site map
+    std::string target_chr = "chr1";
+    int32_t target_pos = 10469;
+    int32_t target_pos2 = 10471;
+    int32_t target_pos3 = 10472;
+    int32_t target_pos4 = 10484;
+    int32_t target_pos5 = 10485;
+    int32_t target_pos6 = 10489;
+
     for (const std::string& chr : this->chromosomes)
     {
         // Get the sequence
         const std::string& sequence = this->chr_to_seq[chr];
 
+        int chr_cpg_site_count = 0;
+
         // Iterate over each position in the sequence
-        for (int64_t pos = 0; pos < (int64_t)sequence.size(); pos++)
+        for (int32_t pos = 0; pos < (int32_t)sequence.size(); pos++)
         {
+
+            // Run test
+            if (chr == target_chr && (pos == target_pos || pos == target_pos2 || pos == target_pos3 || pos == target_pos4 || pos == target_pos5 || pos == target_pos6))
+            {
+                // Add spacers
+                std::cout << std::endl;
+                std::cout << "=== Test CpG Site ===" << std::endl;
+                std::cout << "Test CpG site (1-based): " << chr << ":" << pos+1 << std::endl;
+                std::cout << "Previous base: " << sequence[pos - 1] << std::endl;
+                std::cout << "Base: " << sequence[pos] << std::endl;
+                std::cout << "Next base: " << sequence[pos + 1] << std::endl;
+                std::cout << std::endl;
+            }
+
             // Check if the base is a C
             if (sequence[pos] == 'C')
             {
                 // Check if the next base is a G
-                if (pos + 1 < (int64_t)sequence.size() && sequence[pos + 1] == 'G')
+                if (pos + 1 < (int32_t)sequence.size() && sequence[pos + 1] == 'G')
                 {
-                    // Add the CpG site to the map
-                    this->chr_pos_to_cpg[chr][pos] = false;  // Initialize as false since no modifications have been found
+                    // Add the CpG site to the map (1-based index)
+                    int32_t pos1 = pos + 1;
+                    this->chr_pos_to_cpg[chr][pos1] = false;  // Initialize as false since no modifications have been found
+                    // this->chr_pos_to_cpg[chr][pos] = false;  // Initialize as false since no modifications have been found
+
+                    // Also add the G position. This is necessary for the
+                    // reverse strand
+                    // this->chr_pos_to_cpg[chr][pos1 + 1] = false;  // Initialize as false since no modifications have been found
 
                     // Skip the next base
                     // pos++;
-
-                    // Update the CpG site count
-                    // this->cpg_site_count++;
+                    chr_cpg_site_count++;
+                    cpg_site_count++;
                 }
             }
-
-            // // Check if the base is a G
-            // else if (sequence[pos] == 'G')
-            // {
-            //     // Check if the previous base is a C
-            //     if (pos - 1 >= 0 && sequence[pos - 1] == 'C')
-            //     {
-            //         // Add the CpG site to the map
-            //         this->chr_pos_to_cpg_rev[chr][pos] = false;  // Initialize as false since no modifications have been found
-
-            //         // // Update the CpG site count
-            //         // this->cpg_site_count++;
-            //     }
-            // }
         }
+
+        // std::cout << "Chromosome " << chr << " CpG sites: " << chr_cpg_site_count << std::endl;
     }
     std::cout << "CpG sites located." << std::endl;
+    std::cout << "Total CpG sites: " << cpg_site_count << std::endl;
 }
 
 void RefQuery::addCpGSiteModification(std::string chr, int64_t pos, int strand)
 {
-    // Update the CpG site
-    this->chr_pos_to_cpg[chr][pos] = true;
-    // Determine the map to use based on the strand
-    // std::map<std::string, std::map<int64_t, bool>>* map;
+    // There should be a CpG here: chr1:10469
+    // Test the CpG site map
+    std::string target_chr = "chr1";
+    int64_t target_pos = 10469;
+    int64_t target_pos2 = 10471;
+    int64_t target_pos3 = 10472;
+    int64_t target_pos4 = 10484;
+    int64_t target_pos5 = 10485;
+    int64_t target_pos6 = 10489;
 
-    // // If on the forward strand, check if the position is a CpG site
-    // if (strand == 0)
-    // {
-    //     map = &this->chr_pos_to_cpg;
-    // } else {
-    //     map = &this->chr_pos_to_cpg_rev;
-    // }
+    // Update the CpG site if it exists
+    // Reverse strand (position is the G in the CpG site, so move back one
+    // position to get the C position stored in the map)
+    if (strand == 1) {
+        pos--;
+    }
+    
+    if (this->chr_pos_to_cpg[chr].find(pos) != this->chr_pos_to_cpg[chr].end())
+    {
+        this->chr_pos_to_cpg[chr][pos] = true;
+    } else {
+        std::string strand_str = (strand == 0) ? "forward" : "reverse";
 
-    // // Update the CpG site
-    // (*map)[chr][pos] = true;
+        // Test the CpG site map
+        if (chr == target_chr && (pos == target_pos || pos == target_pos2 || pos == target_pos3 || pos == target_pos4 || pos == target_pos5 || pos == target_pos6))
+        {
+            std::cout << "CpG site not found at " << chr << ":" << pos << " on the " << strand_str << " strand" << std::endl;
+        }
+        // std::cerr << "CpG site not found at " << chr << ":" << pos << " on
+        // the " << strand_str << " strand" << std::endl;
+    }
 }
 
 std::pair<uint32_t, uint32_t> RefQuery::getCpGModificationCounts(int strand)
@@ -165,25 +203,15 @@ std::pair<uint32_t, uint32_t> RefQuery::getCpGModificationCounts(int strand)
     uint32_t unmodified_count = 0;
 
     std::cout << "Calculating CpG modification counts for strand " << strand << "..." << std::endl;
-
-    // // Determine the map to use based on the strand
-    // std::map<std::string, std::map<int64_t, bool>>* map;
-    // if (strand == 0)
-    // {
-    //     map = &this->chr_pos_to_cpg;
-    // } else {
-    //     map = &this->chr_pos_to_cpg_rev;
-    // }
-    // Get the forward and reverse strand maps
-    // std::map<std::string, std::map<int64_t, bool>>* forward_map = &this->chr_pos_to_cpg;
-    // std::map<std::string, std::map<int64_t, bool>>* reverse_map =
-    // &this->chr_pos_to_cpg_rev;
     
     // Iterate over each chromosome in the CpG site map
+    uint32_t cpg_site_count = 0;
     for (const auto& chr_pos_map : this->chr_pos_to_cpg)
     {
         // Get the chromosome
         const std::string& chr = chr_pos_map.first;
+
+        uint32_t chr_cpg_site_count = 0;
 
         // Iterate over each CpG site in the chromosome
         for (const auto& pos_to_cpg : chr_pos_map.second)
@@ -201,67 +229,14 @@ std::pair<uint32_t, uint32_t> RefQuery::getCpGModificationCounts(int strand)
                 // Increment the unmodified count
                 unmodified_count++;
             }
+            cpg_site_count++;
+            chr_cpg_site_count++;
         }
+
+        // std::cout << "[TEST] Chromosome " << chr << " CpG sites: " << chr_cpg_site_count << std::endl;
     }
 
-
-    // // Iterate over each chromosome in the forward map
-    // for (const auto& chr_pos_map : *forward_map)
-    // {
-    //     // Get the chromosome
-    //     const std::string& chr = chr_pos_map.first;
-
-    //     // Iterate over each CpG site in the chromosome
-    //     for (const auto& pos_to_cpg : chr_pos_map.second)
-    //     {
-    //         // Get the position and CpG site for the forward strand
-    //         int64_t pos = pos_to_cpg.first;
-    //         bool is_cpg = pos_to_cpg.second;
-
-    //         // Get the CpG site for the reverse strand
-    //         bool is_cpg_rev = false;
-    //         if (reverse_map->find(chr) != reverse_map->end() && (*reverse_map)[chr].find(pos) != (*reverse_map)[chr].end())
-    //         {
-    //             is_cpg_rev = (*reverse_map)[chr][pos];
-    //         }
-
-    //         // Check if the CpG site is modified in either the forward or
-    //         // reverse strand
-    //         if (is_cpg || is_cpg_rev)
-    //         {
-    //             // Increment the modified count
-    //             modified_count++;
-    //         } else {
-    //             // Increment the unmodified count
-    //             unmodified_count++;
-    //         }
-    //     }
-    // }
-
-    // // Iterate over each chromosome in the map
-    // for (const auto& chr_pos_map : *map)
-    // {
-    //     // Get the chromosome
-    //     const std::string& chr = chr_pos_map.first;
-
-    //     // Iterate over each CpG site in the chromosome
-    //     for (const auto& pos_to_cpg : chr_pos_map.second)
-    //     {
-    //         // Get the position and CpG site
-    //         int64_t pos = pos_to_cpg.first;
-    //         bool is_cpg = pos_to_cpg.second;
-
-    //         // Check if the CpG site is modified
-    //         if (is_cpg)
-    //         {
-    //             // Increment the modified count
-    //             modified_count++;
-    //         } else {
-    //             // Increment the unmodified count
-    //             unmodified_count++;
-    //         }
-    //     }
-    // }
+    std::cout << "[TEST] Total CpG sites: " << cpg_site_count << std::endl;
 
     std::cout << "=== CpG Modification Counts ===" << std::endl;
     std::cout << "Modified CpG sites: " << modified_count << std::endl;
@@ -299,69 +274,6 @@ bool RefQuery::isCpG(std::string chr, int64_t pos, int strand)
 
     // Return if the position is a CpG site
     return (*map)[chr][pos];
-
-    // // Get the sequence
-    // const std::string& sequence = this->chr_to_seq[chr];
-
-    // // If on the forward strand, check if the position is a CpG site
-    // if (strand == 0)
-    // {
-    //     if (pos + 1 < (int64_t)sequence.size() && sequence[pos] == 'C' && sequence[pos + 1] == 'G')
-    //     {
-    //         return true;
-    //     }
-
-    // // If on the reverse strand, check if the position is a CpG site
-    // } else {
-    //     if (pos - 1 >= 0 && sequence[pos] == 'G' && sequence[pos - 1] == 'C')
-    //     {
-    //         return true;
-    //     }
-    // }
-
-    // return false;
-    // Check if the position is in the map
-
-    // 
-
-    // // Determine the map to use based on the strand
-    // std::map<std::string, std::map<int64_t, bool>>* map;
-    // if (strand == 0)
-    // {
-    //     map = &this->chr_pos_to_cpg;
-    // } else {
-    //     map = &this->chr_pos_to_cpg_rev;
-    // }
-
-    // // Check if the chromosome is in the map
-    // if (map->find(chr) == map->end())
-    // {
-    //     return false;
-    // }
-
-    // // Check if the position is in the map
-    // if ((*map)[chr].find(pos) == (*map)[chr].end())
-    // {
-    //     return false;
-    // }
-
-    // // Return if the position is a CpG site
-    // return (*map)[chr][pos];
-
-    // // Check if the chromosome is in the map
-    // if (this->chr_pos_to_cpg.find(chr) == this->chr_pos_to_cpg.end())
-    // {
-    //     return false;
-    // }
-
-    // // Check if the position is in the map
-    // if (this->chr_pos_to_cpg[chr].find(pos) == this->chr_pos_to_cpg[chr].end())
-    // {
-    //     return false;
-    // }
-
-    // // Return if the position is a CpG site
-    // return this->chr_pos_to_cpg[chr][pos];
 }
 
 int32_t RefQuery::getCpGSiteCount()
