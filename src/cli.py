@@ -234,9 +234,13 @@ def bam_module(margs):
         input_para.out_prefix = str(param_dict["out_prefix"])
 
         # Set the reference genome file and base modification threshold
-        param_dict["ref"] = margs.ref
+        param_dict["ref"] = margs.ref if margs.ref != "" or margs.ref is not None else ""
         param_dict["modprob"] = margs.modprob
-        input_para.ref_genome = margs.ref
+
+        logging.info("Reference genome file is " + param_dict["ref"])
+        input_para.ref_genome = param_dict["ref"]
+        logging.info("Updated ref genome file is " + input_para.ref_genome)
+
         input_para.base_mod_threshold = margs.modprob
         for input_file in param_dict["input_files"]:
             input_para.add_input_file(str(input_file))
