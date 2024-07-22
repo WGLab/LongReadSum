@@ -168,7 +168,8 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     int strand = std::get<3>(mod);
 
                     // Update the strand-specific modified base count
-                    if (probability > base_mod_threshold)
+                    // if (probability > base_mod_threshold)
+                    if (probability >= base_mod_threshold)
                     {
                         // Update the modified base count
                         final_output.modified_base_count++;
