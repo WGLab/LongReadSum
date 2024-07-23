@@ -117,7 +117,12 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
         hts_base_mod_state *state = hts_base_mod_state_alloc();
         std::map<int32_t, std::tuple<char, char, double, int>> query_base_modifications;
-        if (bam_parse_basemod(record, state) >= 0) {
+
+        // Parse the base modification tags if a primary alignment
+        read_mutex.lock();
+        int ret = bam_parse_basemod(record, state);
+        read_mutex.unlock();
+        if (ret >= 0 && !(record->core.flag & BAM_FSECONDARY) && !(record->core.flag & BAM_FSUPPLEMENTARY) && !(record->core.flag & BAM_FUNMAP)) {
             
             // Get the chromosome if alignments are present
             bool alignments_present = true;
@@ -404,7 +409,6 @@ std::map<int, int> HTSReader::getQueryToRefMap(bam1_t *record)
                 break;
             case BAM_CMATCH:
             case BAM_CEQUAL:
-                // printMessage("[TEST] Processing CIGAR operation CEQUAL with length " + std::to_string(op_len));
                 for (int j = 0; j < op_len; j++) {
                     query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
                     current_ref_pos++;

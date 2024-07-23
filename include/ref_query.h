@@ -36,9 +36,7 @@ class RefQuery {
         char getBase(std::string chr, int64_t pos);
         void generateCpGMap();
         void addCpGSiteModification(std::string chr, int64_t pos, int strand);
-        std::pair<uint32_t, uint32_t> getCpGModificationCounts(int strand);
-        bool isCpG(std::string chr, int64_t pos, int strand);
-        int32_t getCpGSiteCount();
+        std::pair<uint64_t, uint64_t> getCpGModificationCounts(int strand);
 };
 
 #endif // REF_QUERY_H

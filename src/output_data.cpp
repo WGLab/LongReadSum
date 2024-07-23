@@ -350,13 +350,6 @@ void Output_BAM::add(Output_BAM &output_data)
 
     // Update base modification counts
     this->modified_prediction_count += output_data.modified_prediction_count;
-    this->modified_base_count += output_data.modified_base_count;
-    this->modified_base_count_forward += output_data.modified_base_count_forward;
-    this->modified_base_count_reverse += output_data.modified_base_count_reverse;
-    this->c_modified_base_count += output_data.c_modified_base_count;
-    this->cpg_modified_base_count += output_data.cpg_modified_base_count;
-    this->cpg_modified_base_count_forward += output_data.cpg_modified_base_count_forward;
-    this->cpg_modified_base_count_reverse += output_data.cpg_modified_base_count_reverse;
 }
 
 void Output_BAM::global_sum(){

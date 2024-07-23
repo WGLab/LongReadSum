@@ -149,12 +149,12 @@ public:
    uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases mapped to the reference genome
    uint64_t modified_base_count_forward = ZeroDefault;  // Total number of modified bases in the genome on the forward strand
    uint64_t modified_base_count_reverse = ZeroDefault;  // Total number of modified bases in the genome on the reverse strand
-   uint64_t c_modified_base_count = ZeroDefault;  // Total C modified bases
-   uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites
+   // uint64_t c_modified_base_count = ZeroDefault;  // Total C modified bases
+   uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites (combined forward and reverse)
    uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
    uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
-   double percent_modified_cpg_forward = ZeroDefault;  // Percentage of CpG sites with modified bases on the forward strand
-   double percent_modified_cpg_reverse = ZeroDefault;  // Percentage of CpG sites with modified bases on the reverse strand
+   uint64_t cpg_genome_count = ZeroDefault;  // Total number of CpG sites in the genome
+   double percent_modified_cpg = ZeroDefault;  // Percentage of CpG sites with modified bases (forward and reverse)
 
    // Counts for each type of modification:
    // Modification type -> count

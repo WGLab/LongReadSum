@@ -756,12 +756,12 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     total_modifications = output_data.modified_base_count
     total_forward_modifications = output_data.modified_base_count_forward
     total_reverse_modifications = output_data.modified_base_count_reverse
-    total_c_modifications = output_data.c_modified_base_count
+    # total_c_modifications = output_data.c_modified_base_count
     cpg_modifications = output_data.cpg_modified_base_count
     cpg_forward_modifications = output_data.cpg_modified_base_count_forward
     cpg_reverse_modifications = output_data.cpg_modified_base_count_reverse
-    pct_modified_cpg_forward = output_data.percent_modified_cpg_forward
-    pct_modified_cpg_reverse = output_data.percent_modified_cpg_reverse
+    genome_cpg_count = output_data.cpg_genome_count
+    pct_modified_cpg = output_data.percent_modified_cpg
 
     # # Get the percentage of Cs in CpG sites
     # cpg_modification_percentage = 0
@@ -774,15 +774,18 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     table_str += "<tr><td>Total Modified Bases in the Genome</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_modifications)
     table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_forward_modifications)
     table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_reverse_modifications)
-    table_str += "<tr><td>Total Modified Cs</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_c_modifications)
-    table_str += "<tr><td>Total Modified Cs in CpG Sites</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_modifications)
+    # table_str += "<tr><td>Total Modified Cs</td><td
+    # style=\"text-align:right\">{:,d}</td></tr>".format(total_c_modifications)
+    table_str += "<tr><td>Total CpG Sites in the Genome</td><td style=\"text-align:right\">{:,d}</td></tr>".format(genome_cpg_count)
     table_str += "<tr><td>Total Modified Cs in CpG Sites (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_forward_modifications)
     table_str += "<tr><td>Total Modified Cs in CpG Sites (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_reverse_modifications)
-    
+    table_str += "<tr><td>Total Modified Cs in CpG Sites (Combined Strands)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_modifications)
+    table_str += "<tr><td>Percentage of CpG Sites with Modifications (Combined Strands)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg)
+
     # Add percentage of CpG sites with modifications (forward and reverse
     # strands)
-    table_str += "<tr><td>Percentage of CpG Sites with Modifications (Forward Strand)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg_forward)
-    table_str += "<tr><td>Percentage of CpG Sites with Modifications (Reverse Strand)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg_reverse)
+    # table_str += "<tr><td>Percentage of CpG Sites with Modifications (Forward Strand)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg_forward)
+    # table_str += "<tr><td>Percentage of CpG Sites with Modifications (Reverse Strand)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg_reverse)
     # table_str += "<tr><td>Percentage of Cs in CpG Sites</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(cpg_modification_percentage)
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["base_mods"]['detail'] = table_str
