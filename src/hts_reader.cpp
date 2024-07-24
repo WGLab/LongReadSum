@@ -181,11 +181,18 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             for (int i = 0; i < record->core.l_qseq; i++) {
                 seq_str += seq_nt16_str[bam_seqi(bam_get_seq(record), i)];
             }
+
+            // Throw an error if the query name is empty
+            if (query_name.empty()) {
+                std::cerr << "Error: Query name is empty" << std::endl;
+                exit_code = 1;
+                break;
+            }
             output_data.addReadMoveTable(query_name, seq_str, signal_index_vector);
 
             // if (first_pod5_tag) {
-            //     printMessage("Signal vector length: " \
-            //     + std::to_string(signal_index_vector.size()) + ", Sequence string length: " \
+            //     printMessage("Signal vector length: " 
+            //     + std::to_string(signal_index_vector.size()) + ", Sequence string length: " 
             //     + std::to_string(seq_str.length()));
             //     // printMessage("Base signal length: " + std::to_string(base_signal_length) + ", Sequence string length: " + std::to_string(seq_str.length()));
                 

@@ -140,15 +140,14 @@ public:
 class Base_Move_Table
 {
 public:
-    std::string read_name;
     std::string sequence_data_str;  // Sequence of bases
     std::vector<int> base_signal_index;  // 2D vector of signal indices for each base
 
     // Methods
-    std::string getReadName();
     std::string getSequenceString();
     std::vector<int> getBaseSignalIndex();
-    Base_Move_Table(std::string read_name, std::string sequence_data_str, std::vector<int> base_signal_index);
+    Base_Move_Table(std::string sequence_data_str, std::vector<int> base_signal_index);
+    Base_Move_Table();
 };
 
 
@@ -205,7 +204,9 @@ public:
     // Signal data section
     int read_count;
     int base_count;
-    std::vector<Base_Move_Table> read_move_table;
+   //  std::vector<Base_Move_Table> read_move_table;
+   std::unordered_map<std::string, Base_Move_Table> read_move_table;
+   // std::map<std::string, Base_Move_Table> read_move_table = {};
 
    // POD5 signal-level information is stored in a map of read names to a map of
    // reference positions to a tuple of (ts, ns, move table vector)
@@ -227,9 +228,8 @@ public:
    int getReadCount();
    void addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> move_table);
    // void addReadBaseSignals(Base_Signals values);
-   std::vector<int> getNthReadMoveTable(int read_index);
-   std::string getNthReadSequence(int read_index);
-   std::string getNthReadName(int read_index);
+   std::vector<int> getReadMoveTable(std::string read_id);
+   std::string getReadSequence(std::string read_id);
 
    // Add a batch of records to the output
    void add(Output_BAM &t_output_bam);

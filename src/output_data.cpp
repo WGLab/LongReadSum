@@ -297,32 +297,63 @@ void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_typ
 
 int Output_BAM::getReadCount()
 {
-    return this->read_count;
+    // return this->read_count;
+    return this->read_move_table.size();
 }
 
 void Output_BAM::addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> signal_index)
 {
-    Base_Move_Table values(read_name, sequence_data_str, signal_index);
-    this->read_move_table.push_back(values);
-    this->read_count++;
+    Base_Move_Table values(sequence_data_str, signal_index);
 
+    // Add the read name to the move table
+    this->read_move_table[read_name] = values;
+
+    // this->read_move_table[read_name] = values;
+    // try {
+    //     this->read_move_table.at(read_name);
+    // } catch (const std::out_of_range& oor) {
+    //     this->read_move_table[read_name] = values;
+    // }
+    // this->read_move_table[read_name] = values;
+    // Base_Move_Table values(read_name, sequence_data_str, signal_index);
+    // this->read_move_table.push_back(values);
+    // this->read_count++;
 }
 
-std::vector<int> Output_BAM::getNthReadMoveTable(int read_index)
+std::vector<int> Output_BAM::getReadMoveTable(std::string read_id)
 {
-    return this->read_move_table[read_index].getBaseSignalIndex();
+    try {
+        this->read_move_table.at(read_id);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read name " << read_id << " is not in the move table." << std::endl;
+    }
+    return this->read_move_table[read_id].getBaseSignalIndex();
+    // try {
+    //     this->read_move_table.at(read_index);
+    // } catch (const std::out_of_range& oor) {
+    //     std::cerr << "Error: Move table read index " << read_index << " is out of range." << std::endl;
+    // }
+    // return this->read_move_table[read_index].getBaseSignalIndex();
 }
 
 // Get the Nth read's sequence string
-std::string Output_BAM::getNthReadSequence(int read_index){
-    Base_Move_Table signal_data = this->read_move_table[read_index];
+std::string Output_BAM::getReadSequence(std::string read_id)
+{
+    try {
+        this->read_move_table.at(read_id);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read name " << read_id << " is not in the move table." << std::endl;
+    }
+
+    Base_Move_Table signal_data = this->read_move_table[read_id];
+    // try {
+    //     this->read_move_table.at(read_index);
+    // } catch (const std::out_of_range& oor) {
+    //     std::cerr << "Error: Sequence read index " << read_index << " is out of range." << std::endl;
+    // }
+    // Base_Move_Table signal_data = this->read_move_table[read_index];
     std::string sequence_str(signal_data.getSequenceString());
     return sequence_str;
-}
-
-std::string Output_BAM::getNthReadName(int read_index)
-{
-    return this->read_move_table[read_index].getReadName();
 }
 
 std::map<std::string, std::map<int32_t, Base_Modification>> Output_BAM::get_modifications()
@@ -383,10 +414,24 @@ void Output_BAM::add(Output_BAM &output_data)
 
     // Add move table data
     std::cout << "Adding move table data" << std::endl;
-    std::cout << "Output data read count: " << output_data.getReadCount() << std::endl;
-    for (int i=0; i<output_data.getReadCount(); i++){
-        this->addReadMoveTable(output_data.getNthReadName(i), output_data.getNthReadSequence(i), output_data.getNthReadMoveTable(i));
+    // Update the map
+    for ( auto it = output_data.read_move_table.begin(); it != output_data.read_move_table.end(); ++it ){
+        std::string read_id = it->first;
+        std::vector<int> signal_index = it->second.getBaseSignalIndex();
+        std::string sequence_data_str = it->second.getSequenceString();
+        this->addReadMoveTable(read_id, sequence_data_str, signal_index);
     }
+    // std::cout << "Output data read count: " << output_data.getReadCount() << std::endl;
+    // for (int i=0; i < output_data.getReadCount(); i++) {
+    //     std::cout << "Read name: " << output_data.getNthReadName(i) << std::endl;
+    //     std::cout << "Read sequence " << std::endl;
+    //     output_data.getNthReadSequence(i);
+    //     std::cout << "Read signal index " << std::endl;
+    //     output_data.getNthReadMoveTable(i);
+    //     std::cout << "Adding read move table data" << std::endl;
+    //     // this->addReadMoveTable(output_data.getNthReadName(i), output_data.getNthReadSequence(i), output_data.getNthReadMoveTable(i));
+    // }
+    std::cout << "Move table data added" << std::endl;
 }
 
 void Output_BAM::global_sum(){
@@ -725,10 +770,10 @@ std::vector<double> Output_FAST5::getNthReadKurtosis(int read_index){
     return output;
 }
 
-std::string Base_Move_Table::getReadName()
-{
-    return this->read_name;
-}
+// std::string Base_Move_Table::getReadName()
+// {
+//     return this->read_name;
+// }
 
 std::string Base_Move_Table::getSequenceString()
 {
@@ -740,9 +785,13 @@ std::vector<int> Base_Move_Table::getBaseSignalIndex()
     return this->base_signal_index;
 }
 
-Base_Move_Table::Base_Move_Table(std::string read_name, std::string sequence_data_str, std::vector<int> base_signal_index)
+Base_Move_Table::Base_Move_Table(std::string sequence_data_str, std::vector<int> base_signal_index)
 {
-    this->read_name = read_name;
+    // this->read_name = read_name;
     this->sequence_data_str = sequence_data_str;
     this->base_signal_index = base_signal_index;
+}
+
+Base_Move_Table::Base_Move_Table()
+{
 }

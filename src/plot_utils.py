@@ -468,19 +468,17 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
 
         # Get the basecall read data
         if bam_output:
-            logging.info("Getting number of basecall reads")
-            read_count = bam_output.getReadCount()
-            logging.info("Total number of reads: {}".format(read_count))
-            logging.info("Getting basecall data for read {}".format(nth_read_name))
-            bc_nth_read_sequence = bam_output.getNthReadSequence(read_index)
-            logging.info("Basecall sequence for read {}: {}".format(nth_read_name, bc_nth_read_sequence[:10]))
-            bc_nth_read_index  = bam_output.getNthReadMoveTable(read_index)
-            logging.info("Basecall index for read {}: {}".format(nth_read_name, bc_nth_read_index))
-            bc_nth_read_name  = bam_output.getNthReadName(read_index)
+            move_table = bam_output.getReadMoveTable(nth_read_name)
+            read_sequence = bam_output.getReadSequence(nth_read_name)
 
-            # Throw an error if read names don't match
-            if bc_nth_read_name != nth_read_name:
-                raise ValueError("Read names don't match between the signal and basecall data: {} vs {}".format(nth_read_name, bc_nth_read_name))
+            # Print the first couple of indices from the table.
+            # Each index in the move table represents a k-mer move. Thus, for
+            # each base, the signal is between two indices in the move table, starting
+            # from the first index.
+            logging.info("Move table for read {}: {}".format(nth_read_name, move_table[:5]))
+            logging.info("Read sequence for read {}: {}".format(nth_read_name, read_sequence[:5]))
+            logging.info("Read sequence length for read {}: {}".format(nth_read_name, len(read_sequence)))
+            logging.info("Signal data length for read {}: {}".format(nth_read_name, len(move_table)))
 
         # Set up the output CSV
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
