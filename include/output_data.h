@@ -9,6 +9,7 @@ Define the output structures for each module.
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <stdint.h>
 
 #include "input_parameters.h"
@@ -114,6 +115,43 @@ public:
 // base, likelihood, strand: 0 for forward, 1 for reverse, and CpG flag: T/F)
 using Base_Modification = std::tuple<char, char, double, int, bool>;
 
+// Define the signal-level data structure for POD5 (ts, ns, move table vector)
+using POD5_Signal_Data = std::tuple<int32_t, int32_t, std::vector<int32_t>>;
+
+// Base class for storing a read's base signal data
+class Base_Signals
+{
+public:
+    std::string read_name;
+    int base_count;
+    std::string sequence_data_str;  // Sequence of bases
+    std::vector<std::vector<int>> basecall_signals;  // 2D vector of base signals
+
+    // Methods
+    int getBaseCount();
+    std::string getReadName();
+    std::string getSequenceString();
+    std::vector<std::vector<int>> getDataVector();
+    Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals);
+};
+
+// Base class for storing a read's sequence and move table (basecalled POD5 in
+// BAM format)
+class Base_Move_Table
+{
+public:
+    std::string read_name;
+    std::string sequence_data_str;  // Sequence of bases
+    std::vector<int> base_signal_index;  // 2D vector of signal indices for each base
+
+    // Methods
+    std::string getReadName();
+    std::string getSequenceString();
+    std::vector<int> getBaseSignalIndex();
+    Base_Move_Table(std::string read_name, std::string sequence_data_str, std::vector<int> base_signal_index);
+};
+
+
 // BAM output
 class Output_BAM : public Output_FQ
 {
@@ -156,9 +194,22 @@ public:
    uint64_t cpg_genome_count = ZeroDefault;  // Total number of CpG sites in the genome
    double percent_modified_cpg = ZeroDefault;  // Percentage of CpG sites with modified bases (forward and reverse)
 
+   // Test counts
+   uint64_t test_count = ZeroDefault;  // Test count
+   uint64_t test_count2 = ZeroDefault;  // Test count 2
+
    // Counts for each type of modification:
    // Modification type -> count
    std::map<char, int> modification_type_counts;
+
+    // Signal data section
+    int read_count;
+    int base_count;
+    std::vector<Base_Move_Table> read_move_table;
+
+   // POD5 signal-level information is stored in a map of read names to a map of
+   // reference positions to a tuple of (ts, ns, move table vector)
+   std::unordered_map<std::string, POD5_Signal_Data> pod5_signal_data;
 
    Basic_Seq_Statistics mapped_long_read_info;
    Basic_Seq_Statistics unmapped_long_read_info;
@@ -171,6 +222,14 @@ public:
 
    // Return the modification information
    std::map<std::string, std::map<int32_t, Base_Modification>> get_modifications();
+
+   // POD5 signal data functions
+   int getReadCount();
+   void addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> move_table);
+   // void addReadBaseSignals(Base_Signals values);
+   std::vector<int> getNthReadMoveTable(int read_index);
+   std::string getNthReadSequence(int read_index);
+   std::string getNthReadName(int read_index);
 
    // Add a batch of records to the output
    void add(Output_BAM &t_output_bam);
@@ -212,23 +271,6 @@ public:
 
    void add(Output_SeqTxt &output_data);
    void global_sum();
-};
-
-// Base class for storing a read's base signal data
-class Base_Signals
-{
-public:
-    std::string read_name;
-    int base_count;
-    std::string sequence_data_str;  // Sequence of bases
-    std::vector<std::vector<int>> basecall_signals;  // 2D vector of base signals
-
-    // Methods
-    int getBaseCount();
-    std::string getReadName();
-    std::string getSequenceString();
-    std::vector<std::vector<int>> getDataVector();
-    Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals);
 };
 
 // FAST5 output

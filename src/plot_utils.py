@@ -421,7 +421,7 @@ def plot(output_data, para_dict, file_type):
 
     return plot_filepaths
 
-def plot_pod5(output_dict, para_dict):
+def plot_pod5(pod5_output, para_dict, bam_output=None):
     """Plot the ONT POD5 signal data for a random sample of reads."""
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
@@ -430,13 +430,13 @@ def plot_pod5(output_dict, para_dict):
     font_size = para_dict["fontsize"]
 
     # Create the summary table
-    create_pod5_table(output_dict, plot_filepaths)
+    create_pod5_table(pod5_output, plot_filepaths)
 
     # Generate the signal plots
     marker_size = para_dict["markersize"]
     read_count_max = para_dict["read_count"]
 
-    read_count = len(output_dict.keys())
+    read_count = len(pod5_output.keys())
     logging.info("Plotting signal data for {} reads".format(read_count))
 
     # Randomly sample a small set of reads if it is a large dataset
@@ -456,15 +456,31 @@ def plot_pod5(output_dict, para_dict):
         fig = go.Figure()
 
         # Get the read data
-        nth_read_name = list(output_dict.keys())[read_index]
-        nth_read_data = output_dict[nth_read_name]['signal']
+        nth_read_name = list(pod5_output.keys())[read_index]
+        nth_read_data = pod5_output[nth_read_name]['signal']
         signal_length = len(nth_read_data)
         logging.info("Signal data count for read {}: {}".format(nth_read_name, signal_length))
-        nth_read_mean = output_dict[nth_read_name]['mean']
-        nth_read_std = output_dict[nth_read_name]['std']
-        nth_read_median = output_dict[nth_read_name]['median']
-        nth_read_skewness = output_dict[nth_read_name]['skewness']
-        nth_read_kurtosis = output_dict[nth_read_name]['kurtosis']
+        nth_read_mean = pod5_output[nth_read_name]['mean']
+        nth_read_std = pod5_output[nth_read_name]['std']
+        nth_read_median = pod5_output[nth_read_name]['median']
+        nth_read_skewness = pod5_output[nth_read_name]['skewness']
+        nth_read_kurtosis = pod5_output[nth_read_name]['kurtosis']
+
+        # Get the basecall read data
+        if bam_output:
+            logging.info("Getting number of basecall reads")
+            read_count = bam_output.getReadCount()
+            logging.info("Total number of reads: {}".format(read_count))
+            logging.info("Getting basecall data for read {}".format(nth_read_name))
+            bc_nth_read_sequence = bam_output.getNthReadSequence(read_index)
+            logging.info("Basecall sequence for read {}: {}".format(nth_read_name, bc_nth_read_sequence[:10]))
+            bc_nth_read_index  = bam_output.getNthReadMoveTable(read_index)
+            logging.info("Basecall index for read {}: {}".format(nth_read_name, bc_nth_read_index))
+            bc_nth_read_name  = bam_output.getNthReadName(read_index)
+
+            # Throw an error if read names don't match
+            if bc_nth_read_name != nth_read_name:
+                raise ValueError("Read names don't match between the signal and basecall data: {} vs {}".format(nth_read_name, bc_nth_read_name))
 
         # Set up the output CSV
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')

@@ -10,6 +10,7 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include <iostream>
 #include <cmath>
 #include <unordered_set>
+#include <algorithm>
 
 #include "bam_module.h"
 
@@ -159,15 +160,15 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                 for (auto const &it2 : base_mods) {
 
                     // Get the base modification information
-                    int32_t ref_pos = it2.first;
+                    //int32_t ref_pos = it2.first;
+                    int64_t ref_pos = (int64_t) it2.first;
                     Base_Modification mod = it2.second;
                     char mod_type = std::get<0>(mod);
-                    char canonical_base = std::toupper(std::get<1>(mod));
+                    char canonical_base_char = std::toupper(std::get<1>(mod));
+                    std::string canonical_base(1, canonical_base_char);
+
                     double probability = std::get<2>(mod);
                     int strand = std::get<3>(mod);
-
-                    // Update the strand-specific modified base count
-                    // if (probability > base_mod_threshold)
                     if (probability >= base_mod_threshold)
                     {
                         // Update the modified base count
@@ -181,18 +182,15 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                         }
 
                         // Get CpG modification information for cytosines
-                        char ref_base = std::toupper(ref_query.getBase(chr, ref_pos));
-                        if (canonical_base == 'C') {
-                            if ((ref_base == 'C') && (mod_type == 'm') && (strand == 0))
+                        std::string ref_base = ref_query.getBase(chr, ref_pos);
+                        if (canonical_base == "C") {
+
+                            if ((ref_base == "C") && (mod_type == 'm') && (strand == 0))
                             {
-                                // Update the total cytosine modified base count
-                                // final_output.c_modified_base_count++;
 
                                 // Determine if it resides in a CpG site
-                                char next_base = std::toupper(ref_query.getBase(chr, ref_pos + 1));
-                                if (next_base == 'G') {
-                                    // Update the CpG modified base counts
-                                    // final_output.cpg_modified_base_count++;
+                                std::string next_base = ref_query.getBase(chr, ref_pos + 1);
+                                if (next_base == "G") {
 
                                     // Update the strand-specific CpG modified base
                                     // count
@@ -205,17 +203,13 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                                     ref_query.addCpGSiteModification(chr, ref_pos, strand);
                                 }
 
-                            } else if ((ref_base == 'G') && (mod_type == 'm') && (strand == 1)) {
-                                // Update the total cytosine modified base count
-                                // final_output.c_modified_base_count++;
+                            } else if ((ref_base == "G") && (mod_type == 'm') && (strand == 1)) {
 
                                 // Determine if it resides in a CpG site
-                                char previous_base = std::toupper(ref_query.getBase(chr, ref_pos - 1));
-                                if (previous_base == 'C')
-                                {
-                                    // Update the CpG modified base counts
-                                    // final_output.cpg_modified_base_count++;
+                                std::string previous_base = ref_query.getBase(chr, ref_pos - 1);
 
+                                if (previous_base == "C")
+                                {
                                     // Update the strand-specific CpG modified base
                                     // count
                                     final_output.cpg_modified_base_count_reverse++;

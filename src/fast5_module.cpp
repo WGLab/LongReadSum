@@ -416,7 +416,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 
                 // First remove the prefix
                 std::string read_id = read_name.substr(5);
-                std::cout << "Processing read ID: " << read_id << std::endl;
+                // std::cout << "Processing read ID: " << read_id << std::endl;
                 //std::cout << "Read: " << read_name << std::endl;
 
                 // Set up the analysis and basecall group
@@ -512,7 +512,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
                         //std::cout << "Skipping read ID: " << read_id << std::endl;
                         continue;
                     } else {
-                        std::cout << "Processing read ID: " << read_id << std::endl;
+                        // std::cout << "Processing read ID: " << read_id << std::endl;
                     }
                 }
                 // std::cout << "Read: " << read_name << std::endl;

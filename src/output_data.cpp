@@ -295,6 +295,36 @@ void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_typ
     }
 }
 
+int Output_BAM::getReadCount()
+{
+    return this->read_count;
+}
+
+void Output_BAM::addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> signal_index)
+{
+    Base_Move_Table values(read_name, sequence_data_str, signal_index);
+    this->read_move_table.push_back(values);
+    this->read_count++;
+
+}
+
+std::vector<int> Output_BAM::getNthReadMoveTable(int read_index)
+{
+    return this->read_move_table[read_index].getBaseSignalIndex();
+}
+
+// Get the Nth read's sequence string
+std::string Output_BAM::getNthReadSequence(int read_index){
+    Base_Move_Table signal_data = this->read_move_table[read_index];
+    std::string sequence_str(signal_data.getSequenceString());
+    return sequence_str;
+}
+
+std::string Output_BAM::getNthReadName(int read_index)
+{
+    return this->read_move_table[read_index].getReadName();
+}
+
 std::map<std::string, std::map<int32_t, Base_Modification>> Output_BAM::get_modifications()
 {
     return this->base_modifications;
@@ -350,6 +380,13 @@ void Output_BAM::add(Output_BAM &output_data)
 
     // Update base modification counts
     this->modified_prediction_count += output_data.modified_prediction_count;
+
+    // Add move table data
+    std::cout << "Adding move table data" << std::endl;
+    std::cout << "Output data read count: " << output_data.getReadCount() << std::endl;
+    for (int i=0; i<output_data.getReadCount(); i++){
+        this->addReadMoveTable(output_data.getNthReadName(i), output_data.getNthReadSequence(i), output_data.getNthReadMoveTable(i));
+    }
 }
 
 void Output_BAM::global_sum(){
@@ -465,10 +502,10 @@ void Output_SeqTxt::global_sum(){
 
 // Base class for storing a read's base signal data
 Base_Signals::Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals) {
-    this->read_name = read_name;  // Update the read name
-    this->sequence_data_str = sequence_data_str;  // Update the sequence string
-    this->basecall_signals = basecall_signals;  // Update values
-    this->base_count = basecall_signals.size();  // Update read length
+    this->read_name = read_name;
+    this->sequence_data_str = sequence_data_str;
+    this->basecall_signals = basecall_signals;
+    this->base_count = basecall_signals.size();
 }
 
 std::vector<std::vector<int>> Base_Signals::getDataVector() {
@@ -686,4 +723,26 @@ std::vector<double> Output_FAST5::getNthReadKurtosis(int read_index){
     std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeKurtosis );
 
     return output;
+}
+
+std::string Base_Move_Table::getReadName()
+{
+    return this->read_name;
+}
+
+std::string Base_Move_Table::getSequenceString()
+{
+    return this->sequence_data_str;
+}
+
+std::vector<int> Base_Move_Table::getBaseSignalIndex()
+{
+    return this->base_signal_index;
+}
+
+Base_Move_Table::Base_Move_Table(std::string read_name, std::string sequence_data_str, std::vector<int> base_signal_index)
+{
+    this->read_name = read_name;
+    this->sequence_data_str = sequence_data_str;
+    this->base_signal_index = base_signal_index;
 }

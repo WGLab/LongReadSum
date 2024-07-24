@@ -97,6 +97,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     uint64_t *base_quality_distribution = output_data.seq_quality_info.base_quality_distribution;
 
     // Do QC on each record and store the results in the output_data object
+    bool first_pod5_tag = false;
     while ((record_count < batch_size) && (exit_code >= 0)) {
         // Create a record object
         bam1_t* record = bam_init1();
@@ -110,6 +111,88 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             this->reading_complete = true;
             bam_destroy1(record);
             break; // error or EOF
+        }
+
+
+        // Get the read (query) name
+        std::string query_name = bam_get_qname(record);
+
+        // Determine if this read should be skipped
+        if (read_ids_present){
+
+
+            // Determine if this read should be skipped
+            if (read_ids.find(query_name) == read_ids.end()){
+                // std::cout << "Skipping read " << query_name << std::endl;
+                continue;  // Skip this read
+            }
+        }
+
+        // For POD5 files, corresponding BAM files will have tags for
+        // indexing signal data for each base (ts, ns, mv). Find the
+        // tags and store in the output data object
+        uint8_t *ts_tag = bam_aux_get(record, "ts");
+        uint8_t *ns_tag = bam_aux_get(record, "ns");
+        uint8_t *mv_tag = bam_aux_get(record, "mv");
+
+        // Get POD5 signal tag values if they exist
+        if (mv_tag != NULL && ts_tag != NULL && ns_tag != NULL) {
+            // Set the atomic flag and print a message if the POD5 tags are
+            // present
+            if (!this->has_pod5_tags.test_and_set()) {
+                printMessage("POD5 tags found (ts, ns, mv)");
+                first_pod5_tag = true;
+            }
+
+            // Get the ts and ns tags
+            int32_t ts = bam_aux2i(ts_tag);
+            int32_t ns = bam_aux2i(ns_tag);
+            // if (first_pod5_tag) {
+            //     printMessage("ts: " + std::to_string(ts) + ", ns: " + std::to_string(ns));
+            // }
+
+            // Get the move table (start at 1 to skip the tag type)
+            int max_print = 15;
+            int32_t length = bam_auxB_len(mv_tag);
+            std::vector<int32_t> move_table(length);
+            std::vector<std::vector<int>> sequence_move_table;  // Store the sequence move table with indices
+            // if (first_pod5_tag) {
+            //     printMessage("Move table length: " + std::to_string(length));
+            // }
+
+            int base_signal_length = 0;
+            
+            // Iterate over the move table values
+            int prev_value = 0;
+            int current_index = ts;
+            std::vector<int> signal_index_vector;
+            int test_count = 0;
+            int move_value = 0;
+            for (int32_t i = 1; i < length; i++) {
+                move_value = bam_auxB2i(mv_tag, i);
+                if (move_value == 1) {
+                    signal_index_vector.push_back(current_index);
+                }
+
+                current_index++;
+            }
+            // Create a tuple and add the read's signal data to the output data
+            std::string seq_str = "";
+            for (int i = 0; i < record->core.l_qseq; i++) {
+                seq_str += seq_nt16_str[bam_seqi(bam_get_seq(record), i)];
+            }
+            output_data.addReadMoveTable(query_name, seq_str, signal_index_vector);
+
+            // if (first_pod5_tag) {
+            //     printMessage("Signal vector length: " \
+            //     + std::to_string(signal_index_vector.size()) + ", Sequence string length: " \
+            //     + std::to_string(seq_str.length()));
+            //     // printMessage("Base signal length: " + std::to_string(base_signal_length) + ", Sequence string length: " + std::to_string(seq_str.length()));
+                
+            //     // printMessage("Base vector length: " + std::to_string(sequence_move_table.size()));
+            //     // printMessage("Test count: " + std::to_string(test_count));
+            //     // printMessage("Sequence string length: " + std::to_string(seq_str.length()));
+            // }
         }
 
         // Follow here to get base modification tags:
@@ -153,7 +236,10 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                     // https://github.com/samtools/hts-specs/issues/741
                     // DNA Mods: https://dnamod.hoffmanlab.org/
                     // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
-                    // Header line: https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
+                    // Header line:
+                    // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
+                    
+                    // TODO: Look into htslib error with missing strand information
 
                     // Determine the probability of the modification (-1 if
                     // unknown)
@@ -198,20 +284,9 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 }
             }
         }
+
         // Deallocate the state object
         hts_base_mod_state_free(state);
-
-        // Determine if this read should be skipped
-        if (read_ids_present){
-            // Get the alignment's query name (the read name)
-            std::string query_name = bam_get_qname(record);
-
-            // Determine if this read should be skipped
-            if (read_ids.find(query_name) == read_ids.end()){
-                // std::cout << "Skipping read " << query_name << std::endl;
-                continue;  // Skip this read
-            }
-        }
 
         // Determine if this is an unmapped read
         if (record->core.flag & BAM_FUNMAP) {

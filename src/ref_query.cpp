@@ -99,6 +99,9 @@ void RefQuery::generateCpGMap()
     std::cout << "Locating CpG sites..." << std::endl;
     for (const std::string& chr : this->chromosomes)
     {
+        this->chr_to_cpg[chr] = std::unordered_set<int64_t>();
+        this->chr_to_cpg_mod[chr] = std::unordered_set<int64_t>();
+
         // Iterate over each position in the sequence
         const std::string& sequence = this->chr_to_seq[chr];
         for (int32_t pos = 0; pos < (int32_t)sequence.size(); pos++)
@@ -111,7 +114,10 @@ void RefQuery::generateCpGMap()
                 {
                     // Add the CpG site to the map (1-based index)
                     int32_t pos1 = pos + 1;
-                    this->chr_pos_to_cpg[chr][pos1] = false;  // Initialize as false since no modifications have been found
+//                    this->chr_pos_to_cpg[chr][pos1] = false;  // Initialize as false since no modifications have been found
+                    this->cpg_total_count++;
+
+                    this->chr_to_cpg[chr].insert(pos1);
 
                     // Skip the next base
                     // pos++;
@@ -129,12 +135,31 @@ void RefQuery::addCpGSiteModification(std::string chr, int64_t pos, int strand)
     if (strand == 1) {
         pos--;
     }
-    
-    if (this->chr_pos_to_cpg[chr].find(pos) != this->chr_pos_to_cpg[chr].end())
+
+    // Find the CpG site in the map
+//    if (this->chr_pos_to_cpg[chr].find(pos) != this->chr_pos_to_cpg[chr].end())
+    if (this->chr_to_cpg[chr].find(pos) != this->chr_to_cpg[chr].end())
     {
-        this->chr_pos_to_cpg[chr][pos] = true;
-    } else {
-        std::string strand_str = (strand == 0) ? "forward" : "reverse";
+        this->test_count++;
+
+        // Update the CpG site if not already modified
+        if (this->chr_to_cpg_mod[chr].find(pos) == this->chr_to_cpg_mod[chr].end())
+        {
+            this->chr_to_cpg_mod[chr].insert(pos);
+            this->cpg_modified_count++;
+        }
+
+        // Update the modified count
+//        this->cpg_modified_count++;
+
+        // Update the CpG site if not already modified
+//        if (!this->chr_pos_to_cpg[chr][pos])
+//        {
+//            this->chr_pos_to_cpg[chr][pos] = true;
+//            this->cpg_modified_count++;
+//        }
+//        this->chr_pos_to_cpg[chr][pos] = true;
+//        this->cpg_modified_count++;
     }
 }
 
@@ -144,33 +169,39 @@ std::pair<uint64_t, uint64_t> RefQuery::getCpGModificationCounts(int strand)
     uint64_t unmodified_count = 0;
 
     std::cout << "Calculating CpG modification counts..." << std::endl;
+
+    std::cout << " [TEST] Total CpG modified count: " << this->cpg_modified_count << std::endl;
+    std::cout << " [TEST] Total CpG sites: " << this->cpg_total_count << std::endl;
+    std::cout << " [TEST] CpG test count: " << this->test_count << std::endl;
+    modified_count = this->cpg_modified_count;
+    unmodified_count = this->cpg_total_count - this->cpg_modified_count;
     
-    // Iterate over each chromosome in the CpG site map
-    // uint32_t cpg_site_count = 0;
-    for (const auto& chr_pos_map : this->chr_pos_to_cpg)
-    {
-        // uint32_t chr_cpg_site_count = 0;
-
-        // Iterate over each CpG site in the chromosome
-        for (const auto& pos_to_cpg : chr_pos_map.second)
-        {
-            // Get the position and CpG site
-            // int64_t pos = pos_to_cpg.first;
-            bool is_cpg = pos_to_cpg.second;
-
-            // Check if the CpG site is modified
-            if (is_cpg)
-            {
-                // Increment the modified count
-                modified_count++;
-            } else {
-                // Increment the unmodified count
-                unmodified_count++;
-            }
-            // cpg_site_count++;
-            // chr_cpg_site_count++;
-        }
-    }
+//    // Iterate over each chromosome in the CpG site map
+//    // uint32_t cpg_site_count = 0;
+//    for (const auto& chr_pos_map : this->chr_pos_to_cpg)
+//    {
+//        // uint32_t chr_cpg_site_count = 0;
+//
+//        // Iterate over each CpG site in the chromosome
+//        for (const auto& pos_to_cpg : chr_pos_map.second)
+//        {
+//            // Get the position and CpG site
+//            // int64_t pos = pos_to_cpg.first;
+//            bool is_cpg = pos_to_cpg.second;
+//
+//            // Check if the CpG site is modified
+//            if (is_cpg)
+//            {
+//                // Increment the modified count
+//                modified_count++;
+//            } else {
+//                // Increment the unmodified count
+//                unmodified_count++;
+//            }
+//            // cpg_site_count++;
+//            // chr_cpg_site_count++;
+//        }
+//    }
     std::cout << "Modified CpG sites: " << modified_count << std::endl;
     std::cout << "Unmodified CpG sites: " << unmodified_count << std::endl;
     std::cout << "Total CpG sites: " << modified_count + unmodified_count << std::endl;
@@ -184,7 +215,7 @@ std::string RefQuery::getFilepath()
 }
 
 // Function to get the reference sequence at a given position range
-char RefQuery::getBase(std::string chr, int64_t pos)
+std::string RefQuery::getBase(std::string chr, int64_t pos)
 {
     // Convert positions from 1-indexed (reference) to 0-indexed (string indexing)
     pos--;
@@ -192,20 +223,33 @@ char RefQuery::getBase(std::string chr, int64_t pos)
     // Ensure that the position is not negative
     if (pos < 0)
     {
-        return 'N';
+        return "N";
     }
 
     // Get the sequence
     const std::string& sequence = this->chr_to_seq[chr];
 
+    // Check if the position is out of range
+    if (static_cast<std::size_t>(pos) >= sequence.size()) {
+        throw std::out_of_range("Index out of range");
+    }
+
     // Get the base
-    char base = sequence[pos];
+    std::string base = sequence.substr(static_cast<std::size_t>(pos), 1);
+//    return str[static_cast<std::size_t>(index)];
+
+    // Get the base
+//    char base = sequence[pos];
 
     // If the base is empty, return empty string
-    if (base == '\0')
+    if (base == "")
     {
-        return 'N';
+        return "N";
     }
+//    if (base == '\0')
+//    {
+//        return 'N';
+//    }
 
     return base;
 }

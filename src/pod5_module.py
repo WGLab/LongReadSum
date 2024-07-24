@@ -36,7 +36,7 @@ def generate_pod5_qc(input_data: dict) -> dict:
                 if read_id_list and read_id not in read_id_list:
                     logging.info("Skipping read ID: %s", read_id)
                     continue
-                logging.info("Processing read ID: %s", read_id)
+                # logging.info("Processing read ID: %s", read_id)
 
                 # Get the basecall signals
                 read_signal = read.signal

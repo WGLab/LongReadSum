@@ -482,11 +482,35 @@ def pod5_module(margs):
         else:
             input_para['read_ids'] = ""
 
+        # Get the basecalled BAM file if specified, and run the BAM module
+        basecall_data = False
+        bam_output = None
+        basecalls = margs.basecalls
+        if basecalls != "" and basecalls is not None:
+            basecalls_input = lrst.Input_Para()
+            basecalls_input.threads = param_dict["threads"]
+            basecalls_input.rdm_seed = param_dict["random_seed"]
+            basecalls_input.downsample_percentage = param_dict["downsample_percentage"]
+            basecalls_input.other_flags = (1 if param_dict["detail"] > 0 else 0)
+            basecalls_input.output_folder = str(param_dict["output_folder"])
+            basecalls_input.out_prefix = str(param_dict["out_prefix"])
+            basecalls_input.add_input_file(basecalls)
+            bam_output = lrst.Output_BAM()
+            exit_code = lrst.callBAMModule(basecalls_input, bam_output)
+            if exit_code == 0:
+                basecall_data = True
+                logging.info("Basecalled BAM QC generated.")
+
         read_signal_dict = generate_pod5_qc(input_para)
         if read_signal_dict is not None:
             logging.info("QC generated.")
             logging.info("Generating HTML report...")
-            plot_filepaths = plot_pod5(read_signal_dict, param_dict)
+
+            if basecall_data:
+                plot_filepaths = plot_pod5(read_signal_dict, param_dict, bam_output)
+            else:
+                plot_filepaths = plot(read_signal_dict, param_dict, None)
+                
             # plot_filepaths = plot(read_signal_dict, param_dict, 'POD5')
             webpage_title = "POD5 QC"
             fast5_html_obj = generate_html.ST_HTML_Generator(
@@ -616,6 +640,10 @@ pod5_parser.set_defaults(func=pod5_module)
 # Add an argument for specifying the read names to extract
 pod5_parser.add_argument("-r", "--read_ids", type=str, default=None,
                             help="A comma-separated list of read IDs to extract from the file.")
+                            
+# Add an argument for specifying the basecalled BAM file
+pod5_parser.add_argument("-b", "--basecalls", type=str, default=None,
+                            help="The basecalled BAM file to use for signal extraction.")
 
 # Sequencing summary text file input
 seqtxt_parser = subparsers.add_parser('seqtxt',

@@ -32,6 +32,7 @@ class HTSReader {
         // Atomic flags for whether certain BAM flags are present
         std::atomic_flag has_nm_tag = ATOMIC_FLAG_INIT;  // NM tag for number of mismatches using edit distance
         std::atomic_flag has_mm_ml_tags = ATOMIC_FLAG_INIT;  // MM and ML tags for modified base information
+        std::atomic_flag has_pod5_tags = ATOMIC_FLAG_INIT;  // POD5 tags for signal-level information (ts, ns)
 
         // Bool for whether the reading is complete
         bool reading_complete = false;
