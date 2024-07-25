@@ -10,8 +10,12 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include <iostream>
 #include <cmath>
 #include <unordered_set>
+#include <algorithm>
 
 #include "bam_module.h"
+
+#include "utils.h"
+#include "ref_query.h"  // For reference genome analysis
 
 // Run the BAM module
 int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
@@ -65,7 +69,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         // Create a BAM reader
         std::string filepath(input_params.input_files[this->file_index]);
         HTSReader reader(filepath);
-        std::cout<<"Processing file: "<< filepath << std::endl;
+        std::cout << "Processing file: "<< filepath << std::endl;
 
         // Get the number of threads (Set to 1 if the number of threads is not specified/invalid)
         int thread_count = input_params.threads;
@@ -112,9 +116,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
-                //cout_mutex.lock();
-                //::cout<<"Generated thread "<< thread_index+1 <<std::endl;
-                //cout_mutex.unlock();
 
                 // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
@@ -134,6 +135,112 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                 thread_index++;
             }
             std::cout << "All threads joined." << std::endl;
+        }
+    }
+
+    // Summarize the base modifications
+    if (final_output.get_modifications().size() > 0){
+
+        // Determine CpG modification rate
+        // First, read the reference genome
+        if (input_params.ref_genome != ""){
+            std::cout << "Reading reference genome for CpG modification rate calculation..." << std::endl;
+            RefQuery ref_query;
+            ref_query.setFilepath(input_params.ref_genome);
+            std::cout << "Reference genome read." << std::endl;
+
+            // Loop through the base modifications and find the CpG
+            // modifications
+            double base_mod_threshold = input_params.base_mod_threshold;
+            for (auto const &it : final_output.base_modifications) {
+                std::string chr = it.first;
+                std::map<int32_t, Base_Modification> base_mods = it.second;
+
+                // Loop through the base modifications
+                for (auto const &it2 : base_mods) {
+
+                    // Get the base modification information
+                    //int32_t ref_pos = it2.first;
+                    int64_t ref_pos = (int64_t) it2.first;
+                    Base_Modification mod = it2.second;
+                    char mod_type = std::get<0>(mod);
+                    char canonical_base_char = std::toupper(std::get<1>(mod));
+                    std::string canonical_base(1, canonical_base_char);
+
+                    double probability = std::get<2>(mod);
+                    int strand = std::get<3>(mod);
+                    if (probability >= base_mod_threshold)
+                    {
+                        // Update the modified base count
+                        final_output.modified_base_count++;
+
+                        // Update the strand-specific modified base counts
+                        if (strand == 0) {
+                            final_output.modified_base_count_forward++;
+                        } else if (strand == 1) {
+                            final_output.modified_base_count_reverse++;
+                        }
+
+                        // Get CpG modification information for cytosines
+                        std::string ref_base = ref_query.getBase(chr, ref_pos);
+                        if (canonical_base == "C") {
+
+                            if ((ref_base == "C") && (mod_type == 'm') && (strand == 0))
+                            {
+
+                                // Determine if it resides in a CpG site
+                                std::string next_base = ref_query.getBase(chr, ref_pos + 1);
+                                if (next_base == "G") {
+
+                                    // Update the strand-specific CpG modified base
+                                    // count
+                                    final_output.cpg_modified_base_count_forward++;
+
+                                    // Update the CpG modification flag
+                                    std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+
+                                    // Add the CpG site modification
+                                    ref_query.addCpGSiteModification(chr, ref_pos, strand);
+                                }
+
+                            } else if ((ref_base == "G") && (mod_type == 'm') && (strand == 1)) {
+
+                                // Determine if it resides in a CpG site
+                                std::string previous_base = ref_query.getBase(chr, ref_pos - 1);
+
+                                if (previous_base == "C")
+                                {
+                                    // Update the strand-specific CpG modified base
+                                    // count
+                                    final_output.cpg_modified_base_count_reverse++;
+
+                                    // Update the CpG modification flag
+                                    std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
+
+                                    // Add the CpG site modification
+                                    ref_query.addCpGSiteModification(chr, ref_pos, strand);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Calculate CpG site statistics
+            if (final_output.cpg_modified_base_count_forward > 0 || final_output.cpg_modified_base_count_reverse > 0)
+            {
+                // Calculate the number of CpG sites with modifications
+                std::pair<uint64_t, uint64_t> cpg_mod_counts = ref_query.getCpGModificationCounts(0);
+                final_output.cpg_modified_base_count = cpg_mod_counts.first;
+                final_output.cpg_genome_count = cpg_mod_counts.first + cpg_mod_counts.second;
+
+                // Calculate the CpG modification rate
+                double cpg_mod_rate = (double)cpg_mod_counts.first / (double)(cpg_mod_counts.first + cpg_mod_counts.second);
+                final_output.percent_modified_cpg = cpg_mod_rate * 100;
+            }
+
+            std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
+            std::cout << "Total number of modified bases: " << final_output.modified_base_count << std::endl;
         }
     }
 
@@ -236,15 +343,8 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         }
     }
     
-
     // Close the file
     rrms_file.close();
-
-    // // Print the first 10 read IDs
-    // std::cout << "First 10 read IDs:" << std::endl;
-    // for (int i=0; i<10; i++){
-    //     std::cout << rrms_read_ids[i] << std::endl;
-    // }
 
     return rrms_read_ids;
 }

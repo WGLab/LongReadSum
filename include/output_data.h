@@ -9,6 +9,7 @@ Define the output structures for each module.
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <stdint.h>
 
 #include "input_parameters.h"
@@ -110,58 +111,142 @@ public:
 };
 
 
+// Define the base modification data structure (modification type, canonical
+// base, likelihood, strand: 0 for forward, 1 for reverse, and CpG flag: T/F)
+using Base_Modification = std::tuple<char, char, double, int, bool>;
+
+// Define the signal-level data structure for POD5 (ts, ns, move table vector)
+using POD5_Signal_Data = std::tuple<int32_t, int32_t, std::vector<int32_t>>;
+
+// Base class for storing a read's base signal data
+class Base_Signals
+{
+public:
+    std::string read_name;
+    int base_count;
+    std::string sequence_data_str;  // Sequence of bases
+    std::vector<std::vector<int>> basecall_signals;  // 2D vector of base signals
+
+    // Methods
+    int getBaseCount();
+    std::string getReadName();
+    std::string getSequenceString();
+    std::vector<std::vector<int>> getDataVector();
+    Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals);
+};
+
+// Base class for storing a read's sequence and move table (basecalled POD5 in
+// BAM format)
+class Base_Move_Table
+{
+public:
+   std::string sequence_data_str;  // Sequence of bases
+   std::vector<int> base_signal_index;  // 2D vector of signal indices for each base
+   int sequence_start;  // Signal index of the first base (ts)
+   int sequence_end;  // Signal index of the last base (ns)
+
+   // Methods
+   std::string getSequenceString();
+   std::vector<int> getBaseSignalIndex();
+   int getSequenceStart();
+   int getSequenceEnd();
+   Base_Move_Table(std::string sequence_data_str, std::vector<int> base_signal_index, int start, int end);
+   Base_Move_Table();
+};
+
+
 // BAM output
 class Output_BAM : public Output_FQ
 {
 public:
-    uint64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
-    uint64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
-    uint64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
-    uint64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
-    uint64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
-    uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
-    uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
-    uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
-    int reads_with_mods = ZeroDefault; // Total number of reads with modification tags
-    int reads_with_mods_pos_strand = ZeroDefault; // Total number of reads with modification tags on the positive strand
-    int reads_with_mods_neg_strand = ZeroDefault; // Total number of reads with modification tags on the negative strand
+   uint64_t num_primary_alignment = ZeroDefault;                                 // the number of primary alignment/
+   uint64_t num_secondary_alignment = ZeroDefault;                               // the number of secondary alignment
+   uint64_t num_reads_with_secondary_alignment = ZeroDefault;                    // the number of long reads with the secondary alignment: one read might have multiple seconard alignment
+   uint64_t num_supplementary_alignment = ZeroDefault;                           // the number of supplementary alignment
+   uint64_t num_reads_with_supplementary_alignment = ZeroDefault;                // the number of long reads with secondary alignment;
+   uint64_t num_reads_with_both_secondary_supplementary_alignment = ZeroDefault; // the number of long reads with both secondary and supplementary alignment.
+   uint64_t forward_alignment = ZeroDefault;  // Total number of forward alignments
+   uint64_t reverse_alignment = ZeroDefault;  // Total number of reverse alignments
+   std::map<std::string, bool> reads_with_supplementary;  // Map of reads with supplementary alignments
+   std::map<std::string, bool> reads_with_secondary;  // Map of reads with secondary alignments
 
-    // Map of reads with supplementary alignments
-    std::map<std::string, bool> reads_with_supplementary;
+   // Similar to Output_FA: below are for mapped.
+   uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
+   uint64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
+   uint64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
+   uint64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
+   uint64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
 
-    // Map of reads with secondary alignments
-    std::map<std::string, bool> reads_with_secondary;
+   // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
+   int num_columns = ZeroDefault; // the number of columns
+   double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
+   std::vector<int> accuracy_per_read;
 
-    // Similar to Output_FA: below are for mapped.
-    uint64_t num_matched_bases = ZeroDefault;    // the number of matched bases with =
-    uint64_t num_mismatched_bases = ZeroDefault; // the number of mismatched bases X
-    uint64_t num_ins_bases = ZeroDefault;        // the number of inserted bases;
-    uint64_t num_del_bases = ZeroDefault;        // the number of deleted bases;
-    uint64_t num_clip_bases = ZeroDefault;       // the number of soft-clipped bases;
+    // Number of modified bases by position in the reference:
+    // chr -> reference position -> (modification type, canonical base, maximum
+    // likelihood, strand)
+   std::map<std::string, std::map<int32_t, Base_Modification>> base_modifications;
+   uint64_t modified_prediction_count = ZeroDefault;  // Total number of modified base predictions
+   uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases mapped to the reference genome
+   uint64_t modified_base_count_forward = ZeroDefault;  // Total number of modified bases in the genome on the forward strand
+   uint64_t modified_base_count_reverse = ZeroDefault;  // Total number of modified bases in the genome on the reverse strand
+   // uint64_t c_modified_base_count = ZeroDefault;  // Total C modified bases
+   uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites (combined forward and reverse)
+   uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
+   uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
+   uint64_t cpg_genome_count = ZeroDefault;  // Total number of CpG sites in the genome
+   double percent_modified_cpg = ZeroDefault;  // Percentage of CpG sites with modified bases (forward and reverse)
 
-    // The number of columns can be calculated by summing over the lengths of M/I/D CIGAR operators
-    int num_columns = ZeroDefault; // the number of columns
-    double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
+   // Test counts
+   uint64_t test_count = ZeroDefault;  // Test count
+   uint64_t test_count2 = ZeroDefault;  // Test count 2
 
-    std::vector<int> accuracy_per_read;
+   // Counts for each type of modification:
+   // Modification type -> count
+   std::map<char, int> modification_type_counts;
 
-    Basic_Seq_Statistics mapped_long_read_info;
-    Basic_Seq_Statistics unmapped_long_read_info;
+    // Signal data section
+   int read_count = ZeroDefault;
+   int base_count = ZeroDefault;
+   //  std::vector<Base_Move_Table> read_move_table;
+   std::unordered_map<std::string, Base_Move_Table> read_move_table;
+   // std::map<std::string, Base_Move_Table> read_move_table = {};
 
-    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
-    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+   // POD5 signal-level information is stored in a map of read names to a map of
+   // reference positions to a tuple of (ts, ns, move table vector)
+   std::unordered_map<std::string, POD5_Signal_Data> pod5_signal_data;
 
-    // Add a batch of records to the output
-    void add(Output_BAM &t_output_bam);
+   Basic_Seq_Statistics mapped_long_read_info;
+   Basic_Seq_Statistics unmapped_long_read_info;
 
-    // Calculate QC across all records
-    void global_sum();
+   Basic_Seq_Quality_Statistics mapped_seq_quality_info;
+   Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
 
-    // Save the output to a summary text file
-    void save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data);
+   // Add modified base data
+   void add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand);
 
-    Output_BAM();
-    ~Output_BAM();
+   // Return the modification information
+   std::map<std::string, std::map<int32_t, Base_Modification>> get_modifications();
+
+   // POD5 signal data functions
+   int getReadCount();
+   void addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> move_table, int start, int end);
+   std::vector<int> getReadMoveTable(std::string read_id);
+   std::string getReadSequence(std::string read_id);
+   int getReadSequenceStart(std::string read_id);
+   int getReadSequenceEnd(std::string read_id);
+
+   // Add a batch of records to the output
+   void add(Output_BAM &t_output_bam);
+
+   // Calculate QC across all records
+   void global_sum();
+
+   // Save the output to a summary text file
+   void save_summary(std::string &output_file, Input_Para &params, Output_BAM &output_data);
+
+   Output_BAM();
+   ~Output_BAM();
 };
 
 
@@ -191,23 +276,6 @@ public:
 
    void add(Output_SeqTxt &output_data);
    void global_sum();
-};
-
-// Base class for storing a read's base signal data
-class Base_Signals
-{
-public:
-    std::string read_name;
-    int base_count;
-    std::string sequence_data_str;  // Sequence of bases
-    std::vector<std::vector<int>> basecall_signals;  // 2D vector of base signals
-
-    // Methods
-    int getBaseCount();
-    std::string getReadName();
-    std::string getSequenceString();
-    std::vector<std::vector<int>> getDataVector();
-    Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals);
 };
 
 // FAST5 output

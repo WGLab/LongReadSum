@@ -13,6 +13,7 @@ class ST_HTML_Generator:
         self.static = static  # Static vs. dynamic webpage boolean
         self.plot_filepaths = plot_filepaths
         self.prg_name = self.input_para["prg_name"]  # Program name
+        self.html_writer = None
 
         if len(self.input_para["input_files"]) > 1:
             self.more_input_files = True
@@ -20,8 +21,9 @@ class ST_HTML_Generator:
             self.more_input_files = False
 
     def generate_header(self):
+        """Format the header of the HTML file with the title and CSS."""
         html_filepath = self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + ".html"
-        self.html_writer = open(html_filepath, 'w')
+        self.html_writer = open(html_filepath, 'w', encoding='utf-8')
         self.html_writer.write("<html>")
         self.html_writer.write("<head>")
         self.html_writer.write("<title>")
@@ -225,18 +227,17 @@ class ST_HTML_Generator:
          <div id="header_filename">
              <script> document.write(new Date().toLocaleDateString()); </script>
       '''.format(self.prg_name))
-        # for _af in self.input_para["input_files"]:
-        #   self.html_writer.write( "<br/>"+_af);
-        # self.html_writer.write( "<br/>"+ self.input_para["input_files"][0] )
-        self.html_writer.write('''       
-         </div>
-      </div>''')
+        self.html_writer.write('''</div></div>''')
 
     def generate_left(self):
+        """Generate the left section of the HTML file with the links to the
+        right section."""
+        # Add the summary section of links
         self.html_writer.write('<div class="summary">');
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
+        # Add links to the right sections
         key_index = 0
         for plot_key in self.image_key_list:
             self.html_writer.write('<li>')
@@ -246,15 +247,17 @@ class ST_HTML_Generator:
             key_index += 1
             self.html_writer.write('</li>')
 
+        # Add the input files section link
         self.html_writer.write('<li>')
         self.html_writer.write('<a href="#lrst' + str(key_index) + '">Input File List</a>')
         key_index += 1
         self.html_writer.write('</li>')
-
+        
         self.html_writer.write("</ul>")
         self.html_writer.write('</div>')
 
     def generate_right(self):
+        """Generate the right section of the HTML file with the plots and tables."""
         self.html_writer.write('<div class="main">')
         key_index = 0
         for plot_key in self.image_key_list:
@@ -262,16 +265,19 @@ class ST_HTML_Generator:
             self.html_writer.write(
                 '<h2 id="lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['description'] + '</h2><p>')
 
-            # Add the plot or the HTML summary table
-            if plot_key == "basic_st":
-                self.html_writer.write(self.plot_filepaths["basic_st"]['detail'])
+            # Add the figures
+            if plot_key == "basic_st" or plot_key == "base_mods":
+                # Add the HTML tables
+                self.html_writer.write(self.plot_filepaths[plot_key]['detail'])
+
             else:
+                # Add the dynamic plots
                 try:
                     dynamic_plot = self.plot_filepaths[plot_key]['dynamic']
                     self.html_writer.write(dynamic_plot)
 
                 except KeyError:
-                    logging.error("Missing dynamic plot for " + plot_key)
+                    logging.error("Missing dynamic plot for %s", plot_key)
 
             self.html_writer.write('</div>')
 
@@ -287,12 +293,11 @@ class ST_HTML_Generator:
 
         self.html_writer.write('</div>')
     
-    # Generate links in the left panel
     def generate_left_signal_data(self, read_names):
+        """Generate the left section of the HTML file with the links to the right section."""
         self.html_writer.write('<div class="summary">');
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
-
 
         # Add the summary table section link
         url_index = 0
@@ -363,7 +368,7 @@ class ST_HTML_Generator:
         self.html_writer.close()
 
     # Main function for generating the HTML.
-    def generate_st_html(self, signal_plots=False):
+    def generate_html(self, signal_plots=False):
         if signal_plots:
             self.generate_header()
             # Get the signal plots

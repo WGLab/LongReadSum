@@ -333,9 +333,37 @@ def read_avg_base_quality(data, font_size):
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
+
+def plot_base_modifications(base_modifications):
+    """Plot the base modifications per location."""
+    # Get the modification types
+    modification_types = list(base_modifications.keys())
+
+    # Create the figure
+    fig = go.Figure()
+
+    # Add a trace for each modification type
+    for mod_type in modification_types:
+        # Get the modification data
+        mod_data = base_modifications[mod_type]
+
+        # Create the trace
+        trace = go.Scatter(x=mod_data['positions'], y=mod_data['counts'], mode='markers', name=mod_type)
+
+        # Add the trace to the figure
+        fig.add_trace(trace)
+
+    # Update the layout
+    fig.update_layout(title='Base Modifications', xaxis_title='Position', yaxis_title='Counts', showlegend=True, font=dict(size=PLOT_FONT_SIZE))
+
+    # Generate the HTML
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    return html_obj
+
+
 # Main plot function
 def plot(output_data, para_dict, file_type):
-    out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
 
     # Get the font size for plotly plots
@@ -343,6 +371,17 @@ def plot(output_data, para_dict, file_type):
 
     # Create the summary table
     create_summary_table(output_data, plot_filepaths, file_type)
+
+    # Create the modified base table if available
+    if file_type == 'BAM' and output_data.modified_base_count > 0:
+        base_modification_threshold = para_dict["modprob"]
+        create_modified_base_table(output_data, plot_filepaths, base_modification_threshold)
+
+        # Check if the modified base table is available
+        if 'base_mods' in plot_filepaths:
+            logging.info("SUCCESS: Modified base table created")
+        else:
+            logging.warning("WARNING: Modified base table not created")
 
     # Generate plots
     plot_filepaths['base_counts']['dynamic'] = plot_base_counts(output_data, file_type)
@@ -373,6 +412,7 @@ def plot(output_data, para_dict, file_type):
         plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
 
     if file_type == 'BAM':
+        # Plot read alignment QC
         plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data)
         plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data)
         
@@ -381,22 +421,21 @@ def plot(output_data, para_dict, file_type):
 
     return plot_filepaths
 
-def plot_pod5(output_dict, para_dict):
+def plot_pod5(pod5_output, para_dict, bam_output=None):
     """Plot the ONT POD5 signal data for a random sample of reads."""
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
 
-    # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
 
     # Create the summary table
-    create_pod5_table(output_dict, plot_filepaths)
+    create_pod5_table(pod5_output, plot_filepaths)
 
     # Generate the signal plots
     marker_size = para_dict["markersize"]
     read_count_max = para_dict["read_count"]
 
-    read_count = len(output_dict.keys())
+    read_count = len(pod5_output.keys())
     logging.info("Plotting signal data for {} reads".format(read_count))
 
     # Randomly sample a small set of reads if it is a large dataset
@@ -409,6 +448,7 @@ def plot_pod5(output_dict, para_dict):
     else:
         logging.info("Plotting signal data for all {} reads".format(read_count))
 
+
     # Plot the reads
     output_html_plots = {}
     for read_index in read_indices:
@@ -416,15 +456,15 @@ def plot_pod5(output_dict, para_dict):
         fig = go.Figure()
 
         # Get the read data
-        nth_read_name = list(output_dict.keys())[read_index]
-        nth_read_data = output_dict[nth_read_name]['signal']
+        nth_read_name = list(pod5_output.keys())[read_index]
+        nth_read_data = pod5_output[nth_read_name]['signal']
         signal_length = len(nth_read_data)
         logging.info("Signal data count for read {}: {}".format(nth_read_name, signal_length))
-        nth_read_mean = output_dict[nth_read_name]['mean']
-        nth_read_std = output_dict[nth_read_name]['std']
-        nth_read_median = output_dict[nth_read_name]['median']
-        nth_read_skewness = output_dict[nth_read_name]['skewness']
-        nth_read_kurtosis = output_dict[nth_read_name]['kurtosis']
+        nth_read_mean = pod5_output[nth_read_name]['mean']
+        nth_read_std = pod5_output[nth_read_name]['std']
+        nth_read_median = pod5_output[nth_read_name]['median']
+        nth_read_skewness = pod5_output[nth_read_name]['skewness']
+        nth_read_kurtosis = pod5_output[nth_read_name]['kurtosis']
 
         # Set up the output CSV
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
@@ -432,7 +472,54 @@ def plot_pod5(output_dict, para_dict):
         qc_writer = csv.writer(qc_file)
         qc_writer.writerow(["Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
         
-        # Loop through the data
+        # Update CSV
+        raw_row = [nth_read_data, signal_length, nth_read_mean, nth_read_median, nth_read_std, nth_read_skewness, nth_read_kurtosis]
+        qc_writer.writerow(raw_row)
+
+        # Close CSV
+        qc_file.close()
+
+        # Plot the base sequence if available
+        if bam_output:
+            move_table = bam_output.getReadMoveTable(nth_read_name)
+            read_sequence = bam_output.getReadSequence(nth_read_name)
+            start_index = bam_output.getReadSequenceStart(nth_read_name)
+            end_index = bam_output.getReadSequenceEnd(nth_read_name)
+
+            # Print the first couple of indices from the table.
+            # Each index in the move table represents a k-mer move. Thus, for
+            # each base, the signal is between two indices in the move table, starting
+            # from the first index.
+            logging.info("Move table for read {}: {}".format(nth_read_name, move_table[:5]))
+            logging.info("Move table range: {}-{}".format(min(move_table), max(move_table)))
+            logging.info("Read sequence for read {}: {}".format(nth_read_name, read_sequence[:5]))
+            logging.info("Read sequence length for read {}: {}".format(nth_read_name, len(read_sequence)))
+            logging.info("Signal data length for read {}: {}".format(nth_read_name, len(move_table)))
+            logging.info("Signal interval for read {}: {}-{}".format(nth_read_name, start_index, end_index))
+
+            # Filter the signal data. Use the last index of the move table + 20
+            # as the end index, since the signal data can be much longer than the
+            # read sequence.
+            end_index = max(move_table) + 20
+            nth_read_data = nth_read_data[start_index:end_index]
+            signal_length = len(nth_read_data)
+
+            # Set up the X tick values
+            base_tick_values = move_table
+
+            # Set up the X tick labels
+            x_tick_labels = list(read_sequence)
+
+            # Update the plot style
+            fig.update_xaxes(title="Base",
+                                tickangle=0,
+                                tickmode='array',
+                                tickvals=base_tick_values,
+                                ticktext=x_tick_labels)
+        else:
+            fig.update_xaxes(title="Index")
+
+        # Plot the signal data
         x = np.arange(signal_length)
         fig.add_trace(go.Scatter(
             x=x, y=nth_read_data,
@@ -441,13 +528,6 @@ def plot_pod5(output_dict, para_dict):
                         size=5,
                         line=dict(color='MediumPurple', width=2)),
             opacity=0.5))
-        
-        # Update CSV
-        raw_row = [nth_read_data, signal_length, nth_read_mean, nth_read_median, nth_read_std, nth_read_skewness, nth_read_kurtosis]
-        qc_writer.writerow(raw_row)
-
-        # Close CSV
-        qc_file.close()
 
         # Update the plot style
         fig.update_layout(
@@ -457,7 +537,7 @@ def plot_pod5(output_dict, para_dict):
             font=dict(size=PLOT_FONT_SIZE)
         )
         fig.update_traces(marker={'size': marker_size})
-        fig.update_xaxes(title="Index")
+        # fig.update_xaxes(title="Index")
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)
@@ -587,8 +667,8 @@ def plot_signal(output_data, para_dict):
 
     return output_html_plots
 
-# Create a summary table for the basic statistics from the C++ output data
 def create_summary_table(output_data, plot_filepaths, file_type):
+    """Create the summary table for the basic statistics."""
     plot_filepaths["basic_st"] = {}
     plot_filepaths["basic_st"]['file'] = ""
     plot_filepaths["basic_st"]['title'] = "Summary Table"
@@ -597,10 +677,10 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     file_type_label = file_type
     if file_type == 'FAST5s':
         file_type_label = 'FAST5'
-
     plot_filepaths["basic_st"]['description'] = "{} Basic Statistics".format(file_type_label)
 
     if file_type == 'BAM':
+        # Add alignment statistics to the summary table
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n" \
                     "</thead> "
         table_str += "\n<tbody>"
@@ -700,6 +780,55 @@ def create_summary_table(output_data, plot_filepaths, file_type):
         
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["basic_st"]['detail'] = table_str
+
+def create_modified_base_table(output_data, plot_filepaths, base_modification_threshold):
+    """Create a summary table for the base modifications."""
+    plot_filepaths["base_mods"] = {}
+    plot_filepaths["base_mods"]['file'] = ""
+    plot_filepaths["base_mods"]['title'] = "Base Modifications"
+    plot_filepaths["base_mods"]['description'] = "Base modification statistics"
+
+    # Set up the HTML table with two columns and no header
+    table_str = "<table>\n<tbody>"
+
+    # Get the base modification statistics
+    total_predictions = output_data.modified_prediction_count
+    total_modifications = output_data.modified_base_count
+    total_forward_modifications = output_data.modified_base_count_forward
+    total_reverse_modifications = output_data.modified_base_count_reverse
+    # total_c_modifications = output_data.c_modified_base_count
+    cpg_modifications = output_data.cpg_modified_base_count
+    cpg_forward_modifications = output_data.cpg_modified_base_count_forward
+    cpg_reverse_modifications = output_data.cpg_modified_base_count_reverse
+    genome_cpg_count = output_data.cpg_genome_count
+    pct_modified_cpg = output_data.percent_modified_cpg
+
+    # # Get the percentage of Cs in CpG sites
+    # cpg_modification_percentage = 0
+    # if total_c_modifications > 0:
+    #     cpg_modification_percentage = (cpg_modifications / total_c_modifications) * 100
+
+    # Add the base modification statistics to the table
+    table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_predictions)
+    table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
+    table_str += "<tr><td>Total Modified Bases in the Genome</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_modifications)
+    table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_forward_modifications)
+    table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_reverse_modifications)
+    # table_str += "<tr><td>Total Modified Cs</td><td
+    # style=\"text-align:right\">{:,d}</td></tr>".format(total_c_modifications)
+    table_str += "<tr><td>Total CpG Sites in the Genome</td><td style=\"text-align:right\">{:,d}</td></tr>".format(genome_cpg_count)
+    table_str += "<tr><td>Total Modified Cs in CpG Sites (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_forward_modifications)
+    table_str += "<tr><td>Total Modified Cs in CpG Sites (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_reverse_modifications)
+    table_str += "<tr><td>Total Modified Cs in CpG Sites (Combined Strands)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_modifications)
+    table_str += "<tr><td>Percentage of CpG Sites with Modifications (Combined Strands)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg)
+
+    # Add percentage of CpG sites with modifications (forward and reverse
+    # strands)
+    # table_str += "<tr><td>Percentage of CpG Sites with Modifications (Forward Strand)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg_forward)
+    # table_str += "<tr><td>Percentage of CpG Sites with Modifications (Reverse Strand)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg_reverse)
+    # table_str += "<tr><td>Percentage of Cs in CpG Sites</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(cpg_modification_percentage)
+    table_str += "\n</tbody>\n</table>"
+    plot_filepaths["base_mods"]['detail'] = table_str
 
 def create_pod5_table(output_dict, plot_filepaths):
     """Create a summary table for the ONT POD5 signal data."""

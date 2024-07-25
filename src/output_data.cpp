@@ -5,6 +5,7 @@
 #include <sstream>
 
 #include "output_data.h"
+#include "utils.h"
 #include "basic_statistics.h"
 
 // Base class for storing error output.
@@ -261,7 +262,91 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::add(Output_BAM& output_data){
+void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand)
+{
+    // Add the modification to the map of reference positions
+    try {
+        this->base_modifications.at(chr);
+    } catch (const std::out_of_range& oor) {
+        this->base_modifications[chr] = std::map<int32_t, Base_Modification>();
+    }
+
+    try {
+        this->base_modifications[chr].at(ref_pos);
+
+        // If the reference position is already in the map, use the modification
+        // type with the highest likelihood
+        double previous_likelihood = std::get<2>(this->base_modifications[chr][ref_pos]);
+        if (likelihood > previous_likelihood){
+            this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
+        }
+    } catch (const std::out_of_range& oor) {
+
+        // If the reference position is not in the map, add the modification
+        this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
+    }
+
+    // Add the modification type to the map of modification types
+    try {
+        this->modification_type_counts.at(mod_type);
+        this->modification_type_counts[mod_type] += 1;
+    } catch (const std::out_of_range& oor) {
+        this->modification_type_counts[mod_type] = 1;
+    }
+}
+
+int Output_BAM::getReadCount()
+{
+    return this->read_move_table.size();
+}
+
+void Output_BAM::addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> signal_index, int start, int end)
+{
+    Base_Move_Table values(sequence_data_str, signal_index, start, end);
+    this->read_move_table[read_name] = values;
+}
+
+std::vector<int> Output_BAM::getReadMoveTable(std::string read_id)
+{
+    try {
+        this->read_move_table.at(read_id);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read name " << read_id << " is not in the move table." << std::endl;
+    }
+    return this->read_move_table[read_id].getBaseSignalIndex();
+}
+
+// Get the read's sequence string
+std::string Output_BAM::getReadSequence(std::string read_id)
+{
+    try {
+        this->read_move_table.at(read_id);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read name " << read_id << " is not in the move table." << std::endl;
+    }
+
+    Base_Move_Table signal_data = this->read_move_table[read_id];
+    std::string sequence_str(signal_data.getSequenceString());
+    return sequence_str;
+}
+
+int Output_BAM::getReadSequenceStart(std::string read_id)
+{
+    return this->read_move_table[read_id].getSequenceStart();
+}
+
+int Output_BAM::getReadSequenceEnd(std::string read_id)
+{
+    return this->read_move_table[read_id].getSequenceEnd();
+}
+
+std::map<std::string, std::map<int32_t, Base_Modification>> Output_BAM::get_modifications()
+{
+    return this->base_modifications;
+}
+
+void Output_BAM::add(Output_BAM &output_data)
+{
     this->num_primary_alignment += output_data.num_primary_alignment;
     this->num_secondary_alignment += output_data.num_secondary_alignment;
     this->num_supplementary_alignment += output_data.num_supplementary_alignment;
@@ -278,13 +363,7 @@ void Output_BAM::add(Output_BAM& output_data){
     this->forward_alignment += output_data.forward_alignment;
     this->reverse_alignment += output_data.reverse_alignment;
 
-//    // Resize the base quality vector if it is empty
-//    if ( this->seq_quality_info.base_quality_distribution.empty() ){
-//        this->seq_quality_info.base_quality_distribution.resize( MAX_READ_QUALITY );
-//    }
-
     // Update the base quality vector if it is not empty
-//    if ( !output_data.seq_quality_info.base_quality_distribution.empty() ){
     for (int i=0; i<MAX_READ_QUALITY; i++){
         this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
     }
@@ -300,14 +379,40 @@ void Output_BAM::add(Output_BAM& output_data){
 
     this->long_read_info.add(output_data.mapped_long_read_info);
     this->long_read_info.add(output_data.unmapped_long_read_info);
+
+    // Update the base modification information
+    for (auto const &it : output_data.base_modifications) {
+        std::string chr = it.first;
+        for (auto const &it2 : it.second) {
+            int32_t ref_pos = it2.first;
+            char mod_type = std::get<0>(it2.second);
+            char canonical_base = std::get<1>(it2.second);
+            double likelihood = std::get<2>(it2.second);
+            int strand = std::get<3>(it2.second);
+            this->add_modification(chr, ref_pos, mod_type, canonical_base, likelihood, strand);
+        }
+    }
+
+    // Update base modification counts
+    this->modified_prediction_count += output_data.modified_prediction_count;
+
+    // Update the map
+    for ( auto it = output_data.read_move_table.begin(); it != output_data.read_move_table.end(); ++it ){
+        std::string read_id = it->first;
+        std::vector<int> signal_index = it->second.getBaseSignalIndex();
+        std::string sequence_data_str = it->second.getSequenceString();
+        int start = it->second.getSequenceStart();
+        int end = it->second.getSequenceEnd();
+        this->addReadMoveTable(read_id, sequence_data_str, signal_index, start, end);
+    }
 }
 
 void Output_BAM::global_sum(){
+    // Calculate the global sums for the basic statistics
     mapped_long_read_info.global_sum();
     unmapped_long_read_info.global_sum();
     mapped_seq_quality_info.global_sum();
     unmapped_seq_quality_info.global_sum();
-
     long_read_info.global_sum();
     seq_quality_info.global_sum();
 
@@ -415,10 +520,10 @@ void Output_SeqTxt::global_sum(){
 
 // Base class for storing a read's base signal data
 Base_Signals::Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals) {
-    this->read_name = read_name;  // Update the read name
-    this->sequence_data_str = sequence_data_str;  // Update the sequence string
-    this->basecall_signals = basecall_signals;  // Update values
-    this->base_count = basecall_signals.size();  // Update read length
+    this->read_name = read_name;
+    this->sequence_data_str = sequence_data_str;
+    this->basecall_signals = basecall_signals;
+    this->base_count = basecall_signals.size();
 }
 
 std::vector<std::vector<int>> Base_Signals::getDataVector() {
@@ -636,4 +741,36 @@ std::vector<double> Output_FAST5::getNthReadKurtosis(int read_index){
     std::transform( data_vector.begin(), data_vector.end(), output.begin(), computeKurtosis );
 
     return output;
+}
+
+std::string Base_Move_Table::getSequenceString()
+{
+    return this->sequence_data_str;
+}
+
+std::vector<int> Base_Move_Table::getBaseSignalIndex()
+{
+    return this->base_signal_index;
+}
+
+int Base_Move_Table::getSequenceStart()
+{
+    return this->sequence_start;
+}
+
+int Base_Move_Table::getSequenceEnd()
+{
+    return this->sequence_end;
+}
+
+Base_Move_Table::Base_Move_Table(std::string sequence_data_str, std::vector<int> base_signal_index, int start, int end)
+{
+    this->sequence_data_str = sequence_data_str;
+    this->base_signal_index = base_signal_index;
+    this->sequence_start = start;
+    this->sequence_end = end;
+}
+
+Base_Move_Table::Base_Move_Table()
+{
 }
