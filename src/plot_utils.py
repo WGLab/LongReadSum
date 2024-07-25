@@ -426,7 +426,6 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
 
-    # Get the font size for plotly plots
     font_size = para_dict["fontsize"]
 
     # Create the summary table
@@ -449,6 +448,7 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
     else:
         logging.info("Plotting signal data for all {} reads".format(read_count))
 
+
     # Plot the reads
     output_html_plots = {}
     for read_index in read_indices:
@@ -466,27 +466,60 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
         nth_read_skewness = pod5_output[nth_read_name]['skewness']
         nth_read_kurtosis = pod5_output[nth_read_name]['kurtosis']
 
-        # Get the basecall read data
-        if bam_output:
-            move_table = bam_output.getReadMoveTable(nth_read_name)
-            read_sequence = bam_output.getReadSequence(nth_read_name)
-
-            # Print the first couple of indices from the table.
-            # Each index in the move table represents a k-mer move. Thus, for
-            # each base, the signal is between two indices in the move table, starting
-            # from the first index.
-            logging.info("Move table for read {}: {}".format(nth_read_name, move_table[:5]))
-            logging.info("Read sequence for read {}: {}".format(nth_read_name, read_sequence[:5]))
-            logging.info("Read sequence length for read {}: {}".format(nth_read_name, len(read_sequence)))
-            logging.info("Signal data length for read {}: {}".format(nth_read_name, len(move_table)))
-
         # Set up the output CSV
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
         qc_file = open(csv_qc_filepath, 'w')
         qc_writer = csv.writer(qc_file)
         qc_writer.writerow(["Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
         
-        # Loop through the data
+        # Update CSV
+        raw_row = [nth_read_data, signal_length, nth_read_mean, nth_read_median, nth_read_std, nth_read_skewness, nth_read_kurtosis]
+        qc_writer.writerow(raw_row)
+
+        # Close CSV
+        qc_file.close()
+
+        # Plot the base sequence if available
+        if bam_output:
+            move_table = bam_output.getReadMoveTable(nth_read_name)
+            read_sequence = bam_output.getReadSequence(nth_read_name)
+            start_index = bam_output.getReadSequenceStart(nth_read_name)
+            end_index = bam_output.getReadSequenceEnd(nth_read_name)
+
+            # Print the first couple of indices from the table.
+            # Each index in the move table represents a k-mer move. Thus, for
+            # each base, the signal is between two indices in the move table, starting
+            # from the first index.
+            logging.info("Move table for read {}: {}".format(nth_read_name, move_table[:5]))
+            logging.info("Move table range: {}-{}".format(min(move_table), max(move_table)))
+            logging.info("Read sequence for read {}: {}".format(nth_read_name, read_sequence[:5]))
+            logging.info("Read sequence length for read {}: {}".format(nth_read_name, len(read_sequence)))
+            logging.info("Signal data length for read {}: {}".format(nth_read_name, len(move_table)))
+            logging.info("Signal interval for read {}: {}-{}".format(nth_read_name, start_index, end_index))
+
+            # Filter the signal data. Use the last index of the move table + 20
+            # as the end index, since the signal data can be much longer than the
+            # read sequence.
+            end_index = max(move_table) + 20
+            nth_read_data = nth_read_data[start_index:end_index]
+            signal_length = len(nth_read_data)
+
+            # Set up the X tick values
+            base_tick_values = move_table
+
+            # Set up the X tick labels
+            x_tick_labels = list(read_sequence)
+
+            # Update the plot style
+            fig.update_xaxes(title="Base",
+                                tickangle=0,
+                                tickmode='array',
+                                tickvals=base_tick_values,
+                                ticktext=x_tick_labels)
+        else:
+            fig.update_xaxes(title="Index")
+
+        # Plot the signal data
         x = np.arange(signal_length)
         fig.add_trace(go.Scatter(
             x=x, y=nth_read_data,
@@ -495,13 +528,6 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
                         size=5,
                         line=dict(color='MediumPurple', width=2)),
             opacity=0.5))
-        
-        # Update CSV
-        raw_row = [nth_read_data, signal_length, nth_read_mean, nth_read_median, nth_read_std, nth_read_skewness, nth_read_kurtosis]
-        qc_writer.writerow(raw_row)
-
-        # Close CSV
-        qc_file.close()
 
         # Update the plot style
         fig.update_layout(
@@ -511,7 +537,7 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
             font=dict(size=PLOT_FONT_SIZE)
         )
         fig.update_traces(marker={'size': marker_size})
-        fig.update_xaxes(title="Index")
+        # fig.update_xaxes(title="Index")
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)

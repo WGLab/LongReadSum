@@ -140,14 +140,18 @@ public:
 class Base_Move_Table
 {
 public:
-    std::string sequence_data_str;  // Sequence of bases
-    std::vector<int> base_signal_index;  // 2D vector of signal indices for each base
+   std::string sequence_data_str;  // Sequence of bases
+   std::vector<int> base_signal_index;  // 2D vector of signal indices for each base
+   int sequence_start;  // Signal index of the first base (ts)
+   int sequence_end;  // Signal index of the last base (ns)
 
-    // Methods
-    std::string getSequenceString();
-    std::vector<int> getBaseSignalIndex();
-    Base_Move_Table(std::string sequence_data_str, std::vector<int> base_signal_index);
-    Base_Move_Table();
+   // Methods
+   std::string getSequenceString();
+   std::vector<int> getBaseSignalIndex();
+   int getSequenceStart();
+   int getSequenceEnd();
+   Base_Move_Table(std::string sequence_data_str, std::vector<int> base_signal_index, int start, int end);
+   Base_Move_Table();
 };
 
 
@@ -202,8 +206,8 @@ public:
    std::map<char, int> modification_type_counts;
 
     // Signal data section
-    int read_count;
-    int base_count;
+   int read_count = ZeroDefault;
+   int base_count = ZeroDefault;
    //  std::vector<Base_Move_Table> read_move_table;
    std::unordered_map<std::string, Base_Move_Table> read_move_table;
    // std::map<std::string, Base_Move_Table> read_move_table = {};
@@ -226,10 +230,11 @@ public:
 
    // POD5 signal data functions
    int getReadCount();
-   void addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> move_table);
-   // void addReadBaseSignals(Base_Signals values);
+   void addReadMoveTable(std::string read_name, std::string sequence_data_str, std::vector<int> move_table, int start, int end);
    std::vector<int> getReadMoveTable(std::string read_id);
    std::string getReadSequence(std::string read_id);
+   int getReadSequenceStart(std::string read_id);
+   int getReadSequenceEnd(std::string read_id);
 
    // Add a batch of records to the output
    void add(Output_BAM &t_output_bam);

@@ -166,7 +166,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             int prev_value = 0;
             int current_index = ts;
             std::vector<int> signal_index_vector;
-            int test_count = 0;
             int move_value = 0;
             for (int32_t i = 1; i < length; i++) {
                 move_value = bam_auxB2i(mv_tag, i);
@@ -188,7 +187,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 exit_code = 1;
                 break;
             }
-            output_data.addReadMoveTable(query_name, seq_str, signal_index_vector);
+            output_data.addReadMoveTable(query_name, seq_str, signal_index_vector, ts, ns);
 
             // if (first_pod5_tag) {
             //     printMessage("Signal vector length: " 
