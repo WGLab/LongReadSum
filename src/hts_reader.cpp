@@ -91,6 +91,18 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
     bool read_ids_present = false;
     if (read_ids.size() > 0){
         read_ids_present = true;
+        printMessage("Filtering reads by read ID");
+
+        printMessage("Number of read IDs: " + std::to_string(read_ids.size()));
+        printMessage("First read ID: " + *read_ids.begin());
+        // Check if the first read ID has any newlines, carriage returns, tabs,
+        // or spaces
+        if (read_ids.begin()->find_first_of("\n\r\t ") != std::string::npos) {
+            printError("Read IDs cannot contain newlines, carriage returns, tabs, or spaces");
+            return 1;
+        }
+    } else {
+        printError("No read IDs provided for filtering");
     }
 
     // Access the base quality histogram from the output_data object
@@ -117,14 +129,27 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // Get the read (query) name
         std::string query_name = bam_get_qname(record);
 
-        // Determine if this read should be skipped
-        if (read_ids_present){
+        // Check if the read name has any newlines, carriage returns, tabs, or
+        // spaces
+        if (query_name.find_first_of("\n\r\t ") != std::string::npos) {
+            printError("BAM Read names cannot contain newlines, carriage returns, tabs, or spaces");
+            return 1;
+        }
 
+        // Determine if this read should be skipped
+        if (read_ids_present) {
 
             // Determine if this read should be skipped
             if (read_ids.find(query_name) == read_ids.end()){
                 // std::cout << "Skipping read " << query_name << std::endl;
+                // printMessage(query_name);
+                std::string test_id = "65d8befa-eec0-4496-bf2b-aa1a84e6dc5e";
+                if (query_name == test_id) {
+                    printMessage("[TEST2] Found test ID: " + test_id);
+                }
                 continue;  // Skip this read
+            } else {
+                printMessage("Processing read " + query_name);
             }
         }
 

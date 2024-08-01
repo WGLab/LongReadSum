@@ -117,8 +117,11 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
 
+                // Copy the input read IDs to a new vector
+                std::unordered_set<std::string> rrms_read_ids_copy = input_params.rrms_read_ids;
+
                 // Create a thread
-                std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
+                std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, rrms_read_ids_copy,std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
 
                 // Add the thread to the vector
                 thread_vector.push_back(std::move(t));
@@ -267,11 +270,12 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     return exit_code;
 }
 
-void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& input_params, Output_BAM& final_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex)
+void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unordered_set<std::string> read_ids, Output_BAM& final_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex)
 {
     // Read the next N records
     Output_BAM record_output;
-    reader.readNextRecords(batch_size, record_output, bam_mutex, input_params.rrms_read_ids);
+    printMessage("Number of RRMS read IDs: " + std::to_string(read_ids.size()));
+    reader.readNextRecords(batch_size, record_output, bam_mutex, read_ids);
 
     // Update the final output
     output_mutex.lock();
@@ -340,6 +344,13 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         // Store the read ID if the decision matches the pattern
         if (decision == pattern){
             rrms_read_ids.insert(read_id);
+
+            std::string test_id = "65d8befa-eec0-4496-bf2b-aa1a84e6dc5e";
+            if (read_id == test_id){
+                std::cout << "[TEST 1] Found test ID: " << test_id << std::endl;
+            }
+
+            // std::cout << read_id << std::endl;
         }
     }
     

@@ -232,63 +232,132 @@ def plot_basic_info(output_data, file_type):
 
 # Plot the read length histograms
 def read_lengths_histogram(data, font_size):
+    linear_bin_count = 10
+    log_bin_count = 10
+
     annotation_size = 10  # Annotation font size
     mean, median, n50 = data.mean_read_length, data.median_read_length, data.n50_read_length
 
     # Read the read lengths array in float64 format
     read_lengths = np.array(data.read_lengths, dtype=np.float64)
 
-    # Calculate a histogram of read lengths
-    hist, edges = np.histogram(read_lengths, bins=10)
+    # If there are no read lengths, throw an error
+    if len(read_lengths) == 0:
+        raise ValueError("No read lengths found")
+
+    # Calculate a histogram of read lengths, but don't center the bins
+    # edges = np.linspace(1, np.max(read_lengths), num=bin_count + 1)
+    edges = np.linspace(np.min(read_lengths), np.max(read_lengths), num=linear_bin_count + 1)
+    hist, _ = np.histogram(read_lengths, bins=edges)
 
     # Create a figure with two subplots
+    # fig = make_subplots(
+    #     rows=2, cols=1,
+    #     subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.5)
     fig = make_subplots(
-        rows=2, cols=1,
-        subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.3)
+        rows=1, cols=2,
+        subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.0)
+    linear_col=1
+    log_col=2
 
-    customdata = np.dstack((edges[:-1], edges[1:], hist))[0, :, :]
-    fig.add_trace(go.Bar(x=edges, y=hist, customdata=customdata,
-                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata['
-                                       '2]:.0f}<extra></extra>',
-                         marker_color='#36a5c7'), row=1, col=1)
+    linear_bindata = np.dstack((edges[:-1], edges[1:], hist))[0, :, :]
+    # linear_bin_centers = np.round((linear_bindata[:, 0] + linear_bindata[:, 1]) / 2, 0)
+    fig.add_trace(go.Bar(x=edges, y=hist, customdata=linear_bindata,
+                         hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
+                         marker_color='#36a5c7'), row=1, col=linear_col)
 
     fig.add_vline(mean, line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
-                  annotation_textangle=90, row=1, col=1)
+                  annotation_textangle=90, row=1, col=linear_col)
     fig.add_vline(median, line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
-                  annotation_textangle=90, row=1, col=1)
+                  annotation_textangle=90, row=1, col=linear_col)
     fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
-                  annotation_textangle=90, row=1, col=1)
+                  annotation_textangle=90, row=1, col=linear_col)
 
     # Log histogram
     # Get the log10 histogram of read lengths
     read_lengths_log = np.log10(read_lengths, out=np.zeros_like(read_lengths), where=(read_lengths != 0))
-    log_hist, log_edges = np.histogram(read_lengths_log, bins=len(edges))
+    # log_hist, log_edges = np.histogram(read_lengths_log, bins=bin_count)
+    log_edges = np.linspace(0, np.max(read_lengths_log), num=log_bin_count + 1)
+    log_hist, _ = np.histogram(read_lengths_log, bins=log_edges)
 
     xd = log_edges
-    customdata = np.dstack((np.power(10, log_edges)[:-1], np.power(10, log_edges)[1:], log_hist))[0, :, :]
+    log_bindata = np.dstack((np.power(10, log_edges)[:-1], np.power(10, log_edges)[1:], log_hist))[0, :, :]
+    # log_bin_centers = np.round((log_bindata[:, 0] + log_bindata[:, 1]) / 2, 0)
     yd = log_hist
-    fig.add_trace(go.Bar(x=xd, y=yd, customdata=customdata,
+    fig.add_trace(go.Bar(x=xd, y=yd, customdata=log_bindata,
                          hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
-                         marker_color='#36a5c7'), row=2, col=1)
+                         marker_color='#36a5c7'), row=1, col=log_col)
 
     fig.add_vline(np.log10(mean), line_width=1, line_dash="dash", annotation_text='Mean', annotation_bgcolor="black",
-                  annotation_textangle=90, row=2, col=1)
+                  annotation_textangle=90, row=1, col=log_col)
     fig.add_vline(np.log10(median), line_width=1, line_dash="dash", annotation_text='Median', annotation_bgcolor="blue",
-                  annotation_textangle=90, row=2, col=1)
+                  annotation_textangle=90, row=1, col=log_col)
     fig.add_vline(np.log10(n50), line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
-                  annotation_textangle=90, row=2, col=1)
+                  annotation_textangle=90, row=1, col=log_col)
     fig.update_annotations(font=dict(color="white"))
 
     # Set tick value range for the log scale
-    tick_vals = list(range(0, 5))
-    fig.update_xaxes(
-        range=[0, 5],
-        tickmode='array',
-        tickvals=tick_vals,
-        ticktext=['{:,}'.format(10 ** x) for x in tick_vals],
-        ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
+    # Use the bin edge centers as the tick values
+    # tick_vals = (log_edges[:-1] + log_edges[1:]) / 2
+    # tick_labels = ['{:,}'.format(int(10 ** x)) for x in tick_vals]
+    tick_vals = log_edges
+    # tick_labels = ['{:,}'.format(int(10 ** x)) for x in tick_vals]
 
-    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1)
+    # Format the tick labels to be in kilobases (kb) if the value is greater than
+    # 1000, and in bases (b) otherwise
+    # tick_labels = ['{:,}kb'.format(int(x / 1000)) for x in tick_vals]
+    # tick_labels = ['{:,}kb'.format(int(x) for x in log_bin_centers) if x >
+    # 1000 else '{:,}b'.format(int(x)) for x in log_bin_centers]
+    tick_labels = []
+    for i in range(len(log_bindata)):
+        # Format the tick labels to be in kilobases (kb) if the value is greater
+        # than 1000, in megabases (Mb) if the value is greater than 1,000,000,
+        # and in bases (b) if less than 1000
+        left_val = log_bindata[i][0]
+        left_val_str = '{:,}Mb'.format(int(left_val / 1000000)) if left_val > 1000000 else '{:,}kb'.format(int(left_val / 1000)) if left_val > 1000 else '{:,}bp'.format(int(left_val))
+
+        right_val = log_bindata[i][1]
+        right_val_str = '{:,}Mb'.format(int(right_val / 1000000)) if right_val > 1000000 else '{:,}kb'.format(int(right_val / 1000)) if right_val > 1000 else '{:,}bp'.format(int(right_val))
+
+        tick_labels.append('{}-{}'.format(left_val_str, right_val_str))
+
+    fig.update_xaxes(ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=1, col=log_col, tickvals=tick_vals, ticktext=tick_labels, tickangle=45)
+    # fig.update_xaxes(range=[0, np.max(log_edges)], ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
+    # fig.update_xaxes(range=[0, np.max(log_edges)], ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1, tickvals=tick_vals)
+    # tick_vals = list(range(0, 5))
+    # fig.update_xaxes(
+    #     range=[0, np.max(log_edges)],
+    #     tickmode='array',
+    #     tickvals=tick_vals,
+    #     ticktext=['{:,}'.format(10 ** x) for x in tick_vals],
+    #     ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
+
+    # Set the tick value range for the linear scale
+    # tick_vals = (edges[:-1] + edges[1:]) / 2
+    # tick_labels = ['{:,}'.format(int(x)) for x in tick_vals]
+    tick_vals = edges
+    # tick_labels = ['{:,}'.format(int(x)) for x in tick_vals]
+    
+    # Format the tick labels to be the range of the bin centers
+    tick_labels = []
+    for i in range(len(linear_bindata)):
+        # Format the tick labels to be in kilobases (kb) if the value is greater
+        # than 1000, in megabases (Mb) if the value is greater than 1,000,000,
+        # and in bases (b) if less than 1000
+        left_val = linear_bindata[i][0]
+        left_val_str = '{:,}Mb'.format(int(left_val / 1000000)) if left_val > 1000000 else '{:,}kb'.format(int(left_val / 1000)) if left_val > 1000 else '{:,}bp'.format(int(left_val))
+
+        right_val = linear_bindata[i][1]
+        right_val_str = '{:,}Mb'.format(int(right_val / 1000000)) if right_val > 1000000 else '{:,}kb'.format(int(right_val / 1000)) if right_val > 1000 else '{:,}bp'.format(int(right_val))
+
+        tick_labels.append('{}-{}'.format(left_val_str, right_val_str))
+        
+    # tick_labels = ['{:,}kb'.format(int(x / 1000)) for x in tick_vals]
+    # tick_labels = ['{:,}kb'.format(int(x)) if x > 1000 else
+    # '{:,}b'.format(int(x)) for x in linear_bin_centers]
+    linear_col=1
+    fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=linear_col, tickvals=tick_vals, ticktext=tick_labels, tickangle=45)
+    # fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1, range=[0, np.max(edges)], tickvals=tick_vals)
     fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
 
     # Update the layout
@@ -298,8 +367,9 @@ def read_lengths_histogram(data, font_size):
     # fig.update_layout(font=dict(size=font_size), autosize=True)
 
     fig.update_annotations(font_size=annotation_size)
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
-
+    # html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=1200)
+                           
     return html_obj
 
 # Save the 'Base quality' plot image.
