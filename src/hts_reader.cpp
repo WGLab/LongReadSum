@@ -141,15 +141,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
             // Determine if this read should be skipped
             if (read_ids.find(query_name) == read_ids.end()){
-                // std::cout << "Skipping read " << query_name << std::endl;
-                // printMessage(query_name);
-                std::string test_id = "65d8befa-eec0-4496-bf2b-aa1a84e6dc5e";
-                if (query_name == test_id) {
-                    printMessage("[TEST2] Found test ID: " + test_id);
-                }
                 continue;  // Skip this read
-            } else {
-                printMessage("Processing read " + query_name);
             }
         }
 
@@ -172,20 +164,12 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // Get the ts and ns tags
             int32_t ts = bam_aux2i(ts_tag);
             int32_t ns = bam_aux2i(ns_tag);
-            // if (first_pod5_tag) {
-            //     printMessage("ts: " + std::to_string(ts) + ", ns: " + std::to_string(ns));
-            // }
 
             // Get the move table (start at 1 to skip the tag type)
             int max_print = 15;
             int32_t length = bam_auxB_len(mv_tag);
             std::vector<int32_t> move_table(length);
             std::vector<std::vector<int>> sequence_move_table;  // Store the sequence move table with indices
-            // if (first_pod5_tag) {
-            //     printMessage("Move table length: " + std::to_string(length));
-            // }
-
-            int base_signal_length = 0;
             
             // Iterate over the move table values
             int prev_value = 0;
@@ -213,17 +197,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 break;
             }
             output_data.addReadMoveTable(query_name, seq_str, signal_index_vector, ts, ns);
-
-            // if (first_pod5_tag) {
-            //     printMessage("Signal vector length: " 
-            //     + std::to_string(signal_index_vector.size()) + ", Sequence string length: " 
-            //     + std::to_string(seq_str.length()));
-            //     // printMessage("Base signal length: " + std::to_string(base_signal_length) + ", Sequence string length: " + std::to_string(seq_str.length()));
-                
-            //     // printMessage("Base vector length: " + std::to_string(sequence_move_table.size()));
-            //     // printMessage("Test count: " + std::to_string(test_count));
-            //     // printMessage("Sequence string length: " + std::to_string(seq_str.length()));
-            // }
         }
 
         // Follow here to get base modification tags:
