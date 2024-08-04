@@ -190,12 +190,20 @@ public:
    uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases mapped to the reference genome
    uint64_t modified_base_count_forward = ZeroDefault;  // Total number of modified bases in the genome on the forward strand
    uint64_t modified_base_count_reverse = ZeroDefault;  // Total number of modified bases in the genome on the reverse strand
-   // uint64_t c_modified_base_count = ZeroDefault;  // Total C modified bases
    uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites (combined forward and reverse)
    uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
    uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
    uint64_t cpg_genome_count = ZeroDefault;  // Total number of CpG sites in the genome
    double percent_modified_cpg = ZeroDefault;  // Percentage of CpG sites with modified bases (forward and reverse)
+
+   // Preprint revisions: Remove all counts with unique positions in the
+   // reference genome, and only report raw counts
+   uint64_t sample_modified_base_count = ZeroDefault;  // Total number of modified bases passing the threshold
+   uint64_t sample_modified_base_count_forward = ZeroDefault;  // Total number of modified bases passing the threshold on the forward strand
+   uint64_t sample_modified_base_count_reverse = ZeroDefault;  // Total number of modified bases passing the threshold on the reverse strand
+   uint64_t sample_cpg_forward_count = ZeroDefault;  // Total number of modified bases passing the threshold that are in CpG sites and in the forward strand (non-unique)
+   uint64_t sample_cpg_reverse_count = ZeroDefault;  // Total number of modified bases passing the threshold that are in CpG sites and in the reverse strand (non-unique)
+   std::map<std::string, std::vector<std::pair<int32_t, int>>> sample_c_modified_positions;  // chr -> vector of (position, strand) for modified bases passing the threshold
 
    // Test counts
    uint64_t test_count = ZeroDefault;  // Test count
@@ -208,9 +216,7 @@ public:
     // Signal data section
    int read_count = ZeroDefault;
    int base_count = ZeroDefault;
-   //  std::vector<Base_Move_Table> read_move_table;
    std::unordered_map<std::string, Base_Move_Table> read_move_table;
-   // std::map<std::string, Base_Move_Table> read_move_table = {};
 
    // POD5 signal-level information is stored in a map of read names to a map of
    // reference positions to a tuple of (ts, ns, move table vector)

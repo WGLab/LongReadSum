@@ -41,13 +41,13 @@ class HTSReader {
         int updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics* basic_qc, uint64_t *base_quality_distribution);
 
         // Read the next batch of records from the BAM file
-        int readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex, std::unordered_set<std::string>& read_ids);
+        int readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex, std::unordered_set<std::string>& read_ids, double base_mod_threshold);
 
         // Return if the reader has finished reading the BAM file
         bool hasNextRecord();
 
         // Return the number of records in the BAM file using the BAM index
-        int64_t getNumRecords(const std::string &bam_file_name);
+        int64_t getNumRecords(const std::string &bam_file_name, Output_BAM &final_output, double base_mod_threshold);
 
         std::map<int, int> getQueryToRefMap(bam1_t *record);
 
