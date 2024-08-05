@@ -60,6 +60,9 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::mutex output_mutex;
     std::mutex cout_mutex;
 
+    // Get the modified base threshold if available
+    double base_mod_threshold = input_params.base_mod_threshold;
+
     // Loop through the input files
     int file_count = (int) input_params.num_input_files;
     //std::cout << "Number of input files = " << file_count << std::endl;
@@ -79,7 +82,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
         // Get the number of records in the file using the BAM index
         std::cout << "Getting number of records..." << std::endl;
-        int num_records = reader.getNumRecords(filepath);
+        int num_records = reader.getNumRecords(filepath, final_output, base_mod_threshold);
         std::cout << "Number of records = " << num_records << std::endl;
 
         // Exit if there are no records
@@ -117,8 +120,11 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
 
+                // Copy the input read IDs to a new vector
+                std::unordered_set<std::string> rrms_read_ids_copy = input_params.rrms_read_ids;
+
                 // Create a thread
-                std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, std::ref(input_params),std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex));
+                std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, rrms_read_ids_copy,std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex), base_mod_threshold);
 
                 // Add the thread to the vector
                 thread_vector.push_back(std::move(t));
@@ -148,6 +154,31 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             RefQuery ref_query;
             ref_query.setFilepath(input_params.ref_genome);
             std::cout << "Reference genome read." << std::endl;
+
+            // Preprint revision: Loop through the base modifications and find
+            // the CpG modifications
+            for (auto const &it : final_output.sample_c_modified_positions)
+            {
+                std::string chr = it.first;
+                std::vector<std::pair<int32_t, int>> cpg_mods = it.second;
+
+                // Determine if it resides in a CpG site
+                for (auto const &it2 : cpg_mods)
+                {
+                    int64_t ref_pos = (int64_t) it2.first;
+                    int strand = it2.second;
+
+                    // Update the strand-specific CpG modified base count
+                    if (strand == 0 && ref_query.getBase(chr, ref_pos) == "C" && ref_query.getBase(chr, ref_pos + 1) == "G")
+                    {
+                        final_output.sample_cpg_forward_count++;
+                    }
+                    else if (strand == 1 && ref_query.getBase(chr, ref_pos) == "G" && ref_query.getBase(chr, ref_pos - 1) == "C")
+                    {
+                        final_output.sample_cpg_reverse_count++;
+                    }
+                }
+            }
 
             // Loop through the base modifications and find the CpG
             // modifications
@@ -267,11 +298,11 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     return exit_code;
 }
 
-void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, Input_Para& input_params, Output_BAM& final_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex)
+void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unordered_set<std::string> read_ids, Output_BAM& final_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex, double base_mod_threshold)
 {
     // Read the next N records
     Output_BAM record_output;
-    reader.readNextRecords(batch_size, record_output, bam_mutex, input_params.rrms_read_ids);
+    reader.readNextRecords(batch_size, record_output, bam_mutex, read_ids, base_mod_threshold);
 
     // Update the final output
     output_mutex.lock();
@@ -340,6 +371,13 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         // Store the read ID if the decision matches the pattern
         if (decision == pattern){
             rrms_read_ids.insert(read_id);
+
+            std::string test_id = "65d8befa-eec0-4496-bf2b-aa1a84e6dc5e";
+            if (read_id == test_id){
+                std::cout << "[TEST 1] Found test ID: " << test_id << std::endl;
+            }
+
+            // std::cout << read_id << std::endl;
         }
     }
     

@@ -18,9 +18,8 @@ public:
 
     int run(Input_Para& input_params, Output_BAM& final_output);
     int calculateStatistics(Input_Para& input_params, Output_BAM& final_output);
-    static void batchStatistics(HTSReader& reader, int batch_size, Input_Para& input_params, Output_BAM& ref_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex);
+    static void batchStatistics(HTSReader& reader, int batch_size, std::unordered_set<std::string> read_ids, Output_BAM& ref_output, std::mutex& bam_mutex, std::mutex& output_mutex, std::mutex& cout_mutex, double base_mod_threshold);
 
-    // RRMS
     // Read the RRMS CSV file and store the read IDs (accepted or rejected)
     std::unordered_set<std::string> readRRMSFile(std::string rrms_csv_file, bool accepted_reads);
 };

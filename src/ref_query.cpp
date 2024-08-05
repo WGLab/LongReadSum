@@ -169,39 +169,8 @@ std::pair<uint64_t, uint64_t> RefQuery::getCpGModificationCounts(int strand)
     uint64_t unmodified_count = 0;
 
     std::cout << "Calculating CpG modification counts..." << std::endl;
-
-    std::cout << " [TEST] Total CpG modified count: " << this->cpg_modified_count << std::endl;
-    std::cout << " [TEST] Total CpG sites: " << this->cpg_total_count << std::endl;
-    std::cout << " [TEST] CpG test count: " << this->test_count << std::endl;
     modified_count = this->cpg_modified_count;
     unmodified_count = this->cpg_total_count - this->cpg_modified_count;
-    
-//    // Iterate over each chromosome in the CpG site map
-//    // uint32_t cpg_site_count = 0;
-//    for (const auto& chr_pos_map : this->chr_pos_to_cpg)
-//    {
-//        // uint32_t chr_cpg_site_count = 0;
-//
-//        // Iterate over each CpG site in the chromosome
-//        for (const auto& pos_to_cpg : chr_pos_map.second)
-//        {
-//            // Get the position and CpG site
-//            // int64_t pos = pos_to_cpg.first;
-//            bool is_cpg = pos_to_cpg.second;
-//
-//            // Check if the CpG site is modified
-//            if (is_cpg)
-//            {
-//                // Increment the modified count
-//                modified_count++;
-//            } else {
-//                // Increment the unmodified count
-//                unmodified_count++;
-//            }
-//            // cpg_site_count++;
-//            // chr_cpg_site_count++;
-//        }
-//    }
     std::cout << "Modified CpG sites: " << modified_count << std::endl;
     std::cout << "Unmodified CpG sites: " << unmodified_count << std::endl;
     std::cout << "Total CpG sites: " << modified_count + unmodified_count << std::endl;
@@ -231,7 +200,7 @@ std::string RefQuery::getBase(std::string chr, int64_t pos)
 
     // Check if the position is out of range
     if (static_cast<std::size_t>(pos) >= sequence.size()) {
-        throw std::out_of_range("Index out of range");
+        return "N";
     }
 
     // Get the base

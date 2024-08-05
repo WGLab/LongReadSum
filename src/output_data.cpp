@@ -405,6 +405,21 @@ void Output_BAM::add(Output_BAM &output_data)
         int end = it->second.getSequenceEnd();
         this->addReadMoveTable(read_id, sequence_data_str, signal_index, start, end);
     }
+
+    // Preprint revisions: Update base modification counts
+    this->sample_modified_base_count += output_data.sample_modified_base_count;
+    this->sample_modified_base_count_forward += output_data.sample_modified_base_count_forward;
+    this->sample_modified_base_count_reverse += output_data.sample_modified_base_count_reverse;
+
+    for ( auto it = output_data.sample_c_modified_positions.begin(); it != output_data.sample_c_modified_positions.end(); ++it ){
+        std::string chr = it->first;
+        std::vector<std::pair<int32_t, int>> positions = it->second;
+        if (this->sample_c_modified_positions.find(chr) == this->sample_c_modified_positions.end()){
+            this->sample_c_modified_positions[chr] = positions;
+        } else {
+            this->sample_c_modified_positions[chr].insert(this->sample_c_modified_positions[chr].end(), positions.begin(), positions.end());
+        }
+    }
 }
 
 void Output_BAM::global_sum(){
