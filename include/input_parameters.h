@@ -34,6 +34,7 @@ public:
     std::unordered_set<std::string> rrms_read_ids;  // List of read IDs from RRMS CSV file (accepted or rejected)
     std::string ref_genome;  // Reference genome file for BAM base modification analysis
     double base_mod_threshold;  // Base modification threshold for BAM base modification analysis
+    std::string gene_bed;  // Gene BED file for RNA-Seq transcript quantification (TIN)
 
     // Functions
     std::string add_input_file(const std::string& input_filepath);

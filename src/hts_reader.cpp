@@ -83,7 +83,7 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics *bas
 }
 
 // Read the next batch of records from the BAM file and store QC in the output_data object
-int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex, std::unordered_set<std::string>& read_ids, double base_mod_threshold){
+int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex, std::unordered_set<std::string>& read_ids, double base_mod_threshold) {
     int record_count = 0;
     int exit_code = 0;
 
@@ -349,7 +349,7 @@ bool HTSReader::hasNextRecord(){
 }
 
 // Return the number of records in the BAM file using the BAM index
-int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &final_output, double base_mod_threshold){
+int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &final_output, double base_mod_threshold, std::string gene_bed) {
     samFile* bam_file = sam_open(bam_filename.c_str(), "r");
     bam_hdr_t* bam_header = sam_hdr_read(bam_file);
     bam1_t* bam_record = bam_init1();
@@ -358,12 +358,11 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
     while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
         num_reads++;
 
-        // Base modification tag analysis (not yet ready for multi-threading)
+        // Base modification tag analysis
         // Follow here to get base modification tags:
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
         // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
         hts_base_mod_state *state = hts_base_mod_state_alloc();
-        std::map<int32_t, std::tuple<char, char, double, int>> query_base_modifications;
 
         // Preprint revisions: New data structure that does not require unique
         // positions for each base modification
@@ -395,7 +394,6 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
             // using bam_next_basemod
             hts_base_mod mods[10];
             int n = 0;
-            //int pos = 0;
             int32_t pos = 0;
             std::vector<int> query_pos;
             while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
@@ -410,8 +408,6 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                     // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
                     // Header line:
                     // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
-
-                    // TODO: Look into htslib error with missing strand information
 
                     // Determine the probability of the modification (-1 if
                     // unknown)
@@ -446,42 +442,18 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                             }
                         }
                     }
-
-                    // Add the modification to the query base modifications map
-                    this->addModificationToQueryMap(query_base_modifications, pos, mods[i].modified_base, mods[i].canonical_base, probability, strand);
-                    query_pos.push_back(pos);
                 }
             }
 
-            // Set the atomic flag and print a message if the base modification
-            // tags are present
-            if (query_pos.size() > 0 && !this->has_mm_ml_tags.test_and_set()) {
-                printMessage("Base modification data found (MM, ML tags)");
-            }
-
-            // If alignments are present, get the reference positions of the query positions
-            if (alignments_present && query_pos.size() > 0) {
-                std::vector<int> ref_pos(query_pos.size(), -1);
-
-                // Loop through the query and reference positions and add the
-                // reference positions to the output data
-                for (size_t i = 0; i < query_pos.size(); i++) {
-                    // Get the reference position from the query to reference
-                    // map
-                    if (query_to_ref_map.find(query_pos[i]) != query_to_ref_map.end()) {
-                        ref_pos[i] = query_to_ref_map[query_pos[i]];
-
-                        // Add the modification to the output data
-                        char mod_type = std::get<0>(query_base_modifications[query_pos[i]]);
-                        char canonical_base = std::get<1>(query_base_modifications[query_pos[i]]);
-                        double likelihood = std::get<2>(query_base_modifications[query_pos[i]]);
-                        int strand = std::get<3>(query_base_modifications[query_pos[i]]);
-                        final_output.add_modification(chr, ref_pos[i], mod_type, canonical_base, likelihood, strand);
-                    }
-                }
-            }
             // Preprint revisions: Append the modified positions to the output data
             if (c_modified_positions.size() > 0) {
+                // Set the atomic flag and print a message if base
+                // modification tags are present in the file
+                if (!this->has_mm_ml_tags.test_and_set()) {
+                    printMessage("Base modification data found (MM, ML tags)");
+                }
+
+                // Add the modified positions to the output data
                 if (final_output.sample_c_modified_positions.find(chr) == final_output.sample_c_modified_positions.end()) {
                     final_output.sample_c_modified_positions[chr] = c_modified_positions;
                 } else {

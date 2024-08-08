@@ -241,8 +241,8 @@ def bam_module(margs):
         mod_prob = margs.modprob
         param_dict["modprob"] = input_para.base_mod_threshold = mod_prob
 
-        # Set the GTF file for RNA-seq analysis
-        param_dict["gtf"] = margs.gtf if margs.gtf != "" or margs.gtf is not None else ""
+        # Set the gene BED file for RNA-seq transcript analysis
+        input_para.genebed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
 
         for input_file in param_dict["input_files"]:
             input_para.add_input_file(str(input_file))
@@ -676,9 +676,9 @@ bam_parser.add_argument("--ref", type=str, default="",
 bam_parser.add_argument("--modprob", type=float, default=0.5,
                         help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
 
-# Add argument for GTF file required for RNA-seq analysis (TIN, etc.)
-bam_parser.add_argument("--gtf", type=str, default="",
-                        help="GTF file required for RNA-seq analysis. Default: None.")
+# Add argument for gene BED file required for RNA-seq transcript analysis (TIN, etc.)
+bam_parser.add_argument("--genebed", type=str, default="",
+                        help="Gene BED file required for RNA-seq analysis. Default: None.")
 
 bam_parser.set_defaults(func=bam_module)
 
