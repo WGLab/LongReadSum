@@ -234,14 +234,16 @@ def bam_module(margs):
         input_para.out_prefix = str(param_dict["out_prefix"])
 
         # Set the reference genome file and base modification threshold
-        param_dict["ref"] = margs.ref if margs.ref != "" or margs.ref is not None else ""
-        param_dict["modprob"] = margs.modprob
+        ref_genome = margs.ref if margs.ref != "" or margs.ref is not None else ""
+        param_dict["ref"] = input_para.ref_genome = ref_genome
 
-        logging.info("Reference genome file is " + param_dict["ref"])
-        input_para.ref_genome = param_dict["ref"]
-        logging.info("Updated ref genome file is " + input_para.ref_genome)
+        # Set the base modification filtering threshold
+        mod_prob = margs.modprob
+        param_dict["modprob"] = input_para.base_mod_threshold = mod_prob
 
-        input_para.base_mod_threshold = margs.modprob
+        # Set the GTF file for RNA-seq analysis
+        param_dict["gtf"] = margs.gtf if margs.gtf != "" or margs.gtf is not None else ""
+
         for input_file in param_dict["input_files"]:
             input_para.add_input_file(str(input_file))
 

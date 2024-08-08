@@ -525,37 +525,31 @@ class TestForwardBaseModBAM:
     @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
     def test_modified_base_count(self, forward_base_mod_output):
         output_statistics = forward_base_mod_output[1]
-        modified_base_count = output_statistics.modified_base_count
-        assert modified_base_count == 682
+        modified_base_count = output_statistics.sample_modified_base_count
+        assert modified_base_count == 695
 
     @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
     def test_forward_modified_base_count(self, forward_base_mod_output):
         output_statistics = forward_base_mod_output[1]
-        forward_modified_base_count = output_statistics.modified_base_count_forward
-        assert forward_modified_base_count == 682
+        forward_modified_base_count = output_statistics.sample_modified_base_count_forward
+        assert forward_modified_base_count == 695
 
     @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
     def test_reverse_modified_base_count(self, forward_base_mod_output):
         output_statistics = forward_base_mod_output[1]
-        reverse_modified_base_count = output_statistics.modified_base_count_reverse
+        reverse_modified_base_count = output_statistics.sample_modified_base_count_reverse
         assert reverse_modified_base_count == 0
-
-    @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
-    def test_cpg_modified_base_count(self, forward_base_mod_output):
-        output_statistics = forward_base_mod_output[1]
-        cpg_modified_base_count = output_statistics.cpg_modified_base_count
-        assert cpg_modified_base_count == 621
 
     @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
     def test_forward_cpg_modified_base_count(self, forward_base_mod_output):
         output_statistics = forward_base_mod_output[1]
-        forward_cpg_modified_base_count = output_statistics.cpg_modified_base_count_forward
+        forward_cpg_modified_base_count = output_statistics.sample_cpg_forward_count
         assert forward_cpg_modified_base_count == 621
 
     @pytest.mark.dependency(depends=["TestForwardBaseModBAM::test_success"])
     def test_reverse_cpg_modified_base_count(self, forward_base_mod_output):
         output_statistics = forward_base_mod_output[1]
-        reverse_cpg_modified_base_count = output_statistics.cpg_modified_base_count_reverse
+        reverse_cpg_modified_base_count = output_statistics.sample_cpg_reverse_count
         assert reverse_cpg_modified_base_count == 0
 
 
@@ -601,37 +595,31 @@ class TestReverseBaseModBam:
     @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
     def test_modified_base_count(self, reverse_base_mod_output):
         output_statistics = reverse_base_mod_output[1]
-        modified_base_count = output_statistics.modified_base_count
-        assert modified_base_count == 548
+        modified_base_count = output_statistics.sample_modified_base_count
+        assert modified_base_count == 1094
 
     @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
     def test_forward_modified_base_count(self, reverse_base_mod_output):
         output_statistics = reverse_base_mod_output[1]
-        forward_modified_base_count = output_statistics.modified_base_count_forward
+        forward_modified_base_count = output_statistics.sample_modified_base_count_forward
         assert forward_modified_base_count == 0
 
     @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
     def test_reverse_modified_base_count(self, reverse_base_mod_output):
         output_statistics = reverse_base_mod_output[1]
-        reverse_modified_base_count = output_statistics.modified_base_count_reverse
-        assert reverse_modified_base_count == 548
-
-    @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
-    def test_cpg_modified_base_count(self, reverse_base_mod_output):
-        output_statistics = reverse_base_mod_output[1]
-        cpg_modified_base_count = output_statistics.cpg_modified_base_count
-        assert cpg_modified_base_count == 525
+        reverse_modified_base_count = output_statistics.sample_modified_base_count_reverse
+        assert reverse_modified_base_count == 1094
 
     @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
     def test_forward_cpg_modified_base_count(self, reverse_base_mod_output):
         output_statistics = reverse_base_mod_output[1]
-        forward_cpg_modified_base_count = output_statistics.cpg_modified_base_count_forward
+        forward_cpg_modified_base_count = output_statistics.sample_cpg_forward_count
         assert forward_cpg_modified_base_count == 0
 
     @pytest.mark.dependency(depends=["TestReverseBaseModBam::test_success"])
     def test_reverse_cpg_modified_base_count(self, reverse_base_mod_output):
         output_statistics = reverse_base_mod_output[1]
-        reverse_cpg_modified_base_count = output_statistics.cpg_modified_base_count_reverse
+        reverse_cpg_modified_base_count = output_statistics.sample_cpg_reverse_count
         assert reverse_cpg_modified_base_count == 525
 
 
