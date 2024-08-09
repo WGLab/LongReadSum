@@ -5,15 +5,15 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 
 */
 
+#include "hts_reader.h"
 
 #include <iostream>
 #include <sstream>
 #include <fstream>
-#include <htslib/sam.h>
 #include <math.h>
 #include <algorithm>  // std::find
+#include <htslib/sam.h>
 
-#include "hts_reader.h"
 #include "utils.h"
 
 void HTSReader::addModificationToQueryMap(std::map<int32_t, std::tuple<char, char, double, int>> &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, int strand)
@@ -349,7 +349,7 @@ bool HTSReader::hasNextRecord(){
 }
 
 // Return the number of records in the BAM file using the BAM index
-int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &final_output, double base_mod_threshold, std::string gene_bed) {
+int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &final_output, bool mod_analysis, double base_mod_threshold) {
     samFile* bam_file = sam_open(bam_filename.c_str(), "r");
     bam_hdr_t* bam_header = sam_hdr_read(bam_file);
     bam1_t* bam_record = bam_init1();
@@ -358,112 +358,115 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
     while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
         num_reads++;
 
-        // Base modification tag analysis
-        // Follow here to get base modification tags:
-        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
-        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
-        hts_base_mod_state *state = hts_base_mod_state_alloc();
+        if (mod_analysis) {
 
-        // Preprint revisions: New data structure that does not require unique
-        // positions for each base modification
-        // chr -> vector of (position, strand) for C modified bases passing the threshold
-        std::vector<std::pair<int32_t, int>> c_modified_positions;
+            // Base modification tag analysis
+            // Follow here to get base modification tags:
+            // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
+            // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
+            hts_base_mod_state *state = hts_base_mod_state_alloc();
 
-        // Parse the base modification tags if a primary alignment
-        int ret = bam_parse_basemod(bam_record, state);
-        if (ret >= 0 && !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP)) {
+            // Preprint revisions: New data structure that does not require unique
+            // positions for each base modification
+            // chr -> vector of (position, strand) for C modified bases passing the threshold
+            std::vector<std::pair<int32_t, int>> c_modified_positions;
 
-            // Get the chromosome if alignments are present
-            bool alignments_present = true;
-            std::string chr;
-            std::map<int, int> query_to_ref_map;
-            if (bam_record->core.tid < 0) {
-                alignments_present = false;
-            } else {
-                chr = bam_header->target_name[bam_record->core.tid];
+            // Parse the base modification tags if a primary alignment
+            int ret = bam_parse_basemod(bam_record, state);
+            if (ret >= 0 && !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP)) {
 
-                // Get the query to reference position mapping
-                query_to_ref_map = this->getQueryToRefMap(bam_record);
-            }
+                // Get the chromosome if alignments are present
+                bool alignments_present = true;
+                std::string chr;
+                std::map<int, int> query_to_ref_map;
+                if (bam_record->core.tid < 0) {
+                    alignments_present = false;
+                } else {
+                    chr = bam_header->target_name[bam_record->core.tid];
 
-            // Get the strand from the alignment flag (hts_base_mod uses 0 for positive and 1 for negative,
-            // but it always yields 0...)
-            int strand = (bam_record->core.flag & BAM_FREVERSE) ? 1 : 0;
+                    // Get the query to reference position mapping
+                    query_to_ref_map = this->getQueryToRefMap(bam_record);
+                }
 
-            // Iterate over the state object to get the base modification tags
-            // using bam_next_basemod
-            hts_base_mod mods[10];
-            int n = 0;
-            int32_t pos = 0;
-            std::vector<int> query_pos;
-            while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
-                for (int i = 0; i < n; i++) {
-                    // Update the prediction count
-                    final_output.modified_prediction_count++;
+                // Get the strand from the alignment flag (hts_base_mod uses 0 for positive and 1 for negative,
+                // but it always yields 0...)
+                int strand = (bam_record->core.flag & BAM_FREVERSE) ? 1 : 0;
 
-                    // Note: The modified base value can be a positive char (e.g. 'm',
-                    // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
-                    // https://github.com/samtools/hts-specs/issues/741
-                    // DNA Mods: https://dnamod.hoffmanlab.org/
-                    // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
-                    // Header line:
-                    // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
+                // Iterate over the state object to get the base modification tags
+                // using bam_next_basemod
+                hts_base_mod mods[10];
+                int n = 0;
+                int32_t pos = 0;
+                std::vector<int> query_pos;
+                while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
+                    for (int i = 0; i < n; i++) {
+                        // Update the prediction count
+                        final_output.modified_prediction_count++;
 
-                    // Determine the probability of the modification (-1 if
-                    // unknown)
-                    double probability = -1;
-                    if (mods[i].qual != -1) {
-                        probability = mods[i].qual / 256.0;
+                        // Note: The modified base value can be a positive char (e.g. 'm',
+                        // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
+                        // https://github.com/samtools/hts-specs/issues/741
+                        // DNA Mods: https://dnamod.hoffmanlab.org/
+                        // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
+                        // Header line:
+                        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
 
-                        // If the probability is greater than the threshold,
-                        // update the count
-                        if (probability >= base_mod_threshold) {
-                            final_output.sample_modified_base_count++;
+                        // Determine the probability of the modification (-1 if
+                        // unknown)
+                        double probability = -1;
+                        if (mods[i].qual != -1) {
+                            probability = mods[i].qual / 256.0;
 
-                            // Update the modified base count for the strand
-                            if (strand == 0) {
-                                final_output.sample_modified_base_count_forward++;
-                            } else {
-                                final_output.sample_modified_base_count_reverse++;
-                            }
+                            // If the probability is greater than the threshold,
+                            // update the count
+                            if (probability >= base_mod_threshold) {
+                                final_output.sample_modified_base_count++;
 
-                            // Preprint revisions: Store the modified positions
-                            char canonical_base_char = std::toupper(mods[i].canonical_base);
-                            char mod_type = mods[i].modified_base;
-                            if (canonical_base_char == 'C' && mod_type == 'm') {
+                                // Update the modified base count for the strand
+                                if (strand == 0) {
+                                    final_output.sample_modified_base_count_forward++;
+                                } else {
+                                    final_output.sample_modified_base_count_reverse++;
+                                }
 
-                                // Convert the query position to reference position if available
-                                if (alignments_present) {
-                                    if (query_to_ref_map.find(pos) != query_to_ref_map.end()) {
-                                        int32_t ref_pos = query_to_ref_map[pos];
-                                        c_modified_positions.push_back(std::make_pair(ref_pos, strand));
+                                // Preprint revisions: Store the modified positions
+                                char canonical_base_char = std::toupper(mods[i].canonical_base);
+                                char mod_type = mods[i].modified_base;
+                                if (canonical_base_char == 'C' && mod_type == 'm') {
+
+                                    // Convert the query position to reference position if available
+                                    if (alignments_present) {
+                                        if (query_to_ref_map.find(pos) != query_to_ref_map.end()) {
+                                            int32_t ref_pos = query_to_ref_map[pos];
+                                            c_modified_positions.push_back(std::make_pair(ref_pos, strand));
+                                        }
                                     }
                                 }
                             }
                         }
                     }
                 }
+
+                // Preprint revisions: Append the modified positions to the output data
+                if (c_modified_positions.size() > 0) {
+                    // Set the atomic flag and print a message if base
+                    // modification tags are present in the file
+                    if (!this->has_mm_ml_tags.test_and_set()) {
+                        printMessage("Base modification data found (MM, ML tags)");
+                    }
+
+                    // Add the modified positions to the output data
+                    if (final_output.sample_c_modified_positions.find(chr) == final_output.sample_c_modified_positions.end()) {
+                        final_output.sample_c_modified_positions[chr] = c_modified_positions;
+                    } else {
+                        final_output.sample_c_modified_positions[chr].insert(final_output.sample_c_modified_positions[chr].end(), c_modified_positions.begin(), c_modified_positions.end());
+                    }
+                }
             }
 
-            // Preprint revisions: Append the modified positions to the output data
-            if (c_modified_positions.size() > 0) {
-                // Set the atomic flag and print a message if base
-                // modification tags are present in the file
-                if (!this->has_mm_ml_tags.test_and_set()) {
-                    printMessage("Base modification data found (MM, ML tags)");
-                }
-
-                // Add the modified positions to the output data
-                if (final_output.sample_c_modified_positions.find(chr) == final_output.sample_c_modified_positions.end()) {
-                    final_output.sample_c_modified_positions[chr] = c_modified_positions;
-                } else {
-                    final_output.sample_c_modified_positions[chr].insert(final_output.sample_c_modified_positions[chr].end(), c_modified_positions.begin(), c_modified_positions.end());
-                }
-            }
+            // Deallocate the state object
+            hts_base_mod_state_free(state);
         }
-
-        // Deallocate the state object
-        hts_base_mod_state_free(state);
     }
 
     bam_destroy1(bam_record);

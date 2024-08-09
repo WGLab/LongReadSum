@@ -443,7 +443,7 @@ def plot(output_data, para_dict, file_type):
     create_summary_table(output_data, plot_filepaths, file_type)
 
     # Create the modified base table if available
-    if file_type == 'BAM' and output_data.modified_base_count > 0:
+    if file_type == 'BAM' and para_dict["mod"] > 0:
         base_modification_threshold = para_dict["modprob"]
         create_modified_base_table(output_data, plot_filepaths, base_modification_threshold)
 

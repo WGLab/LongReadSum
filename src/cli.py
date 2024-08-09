@@ -237,7 +237,8 @@ def bam_module(margs):
         ref_genome = margs.ref if margs.ref != "" or margs.ref is not None else ""
         param_dict["ref"] = input_para.ref_genome = ref_genome
 
-        # Set the base modification filtering threshold
+        # Set the base modification flag, and filtering threshold
+        param_dict["mod"] = input_para.mod_analysis = margs.mod
         mod_prob = margs.modprob
         param_dict["modprob"] = input_para.base_mod_threshold = mod_prob
 
@@ -671,6 +672,10 @@ bam_parser = subparsers.add_parser('bam',
 
 bam_parser.add_argument("--ref", type=str, default="",
                         help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
+
+# Add argument for whether to run base modification analysis
+bam_parser.add_argument("--mod", action="store_true",
+                        help="Run base modification analysis on the BAM file. Default: False.")
 
 # Add argument for base modification filtering threshold
 bam_parser.add_argument("--modprob", type=float, default=0.5,

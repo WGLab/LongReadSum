@@ -47,7 +47,7 @@ class HTSReader {
         bool hasNextRecord();
 
         // Return the number of records in the BAM file using the BAM index
-        int64_t getNumRecords(const std::string &bam_file_name, Output_BAM &final_output, double base_mod_threshold, std::string gene_bed);
+        int64_t getNumRecords(const std::string &bam_file_name, Output_BAM &final_output, bool mod_analysis, double base_mod_threshold);
 
         std::map<int, int> getQueryToRefMap(bam1_t *record);
 

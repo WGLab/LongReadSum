@@ -3,6 +3,8 @@ BAM_module.cpp:
 Class for generating BAM file statistics. Records are accessed using multi-threading.
 */
 
+#include "bam_module.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -12,10 +14,9 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include <unordered_set>
 #include <algorithm>
 
-#include "bam_module.h"
-
 #include "utils.h"
 #include "ref_query.h"  // For reference genome analysis
+#include "tin.h"  // For TIN analysis
 
 // Run the BAM module
 int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
@@ -58,11 +59,23 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::mutex output_mutex;
     std::mutex cout_mutex;
 
-    // Get the modified base threshold if available
+    // Get the modified base flag and threshold
+    bool mod_analysis = input_params.mod_analysis;
     double base_mod_threshold = input_params.base_mod_threshold;
 
     // Get the gene BED file if available
     std::string gene_bed = input_params.gene_bed;
+    if (gene_bed != ""){
+        std::cout << "Gene BED file: " << gene_bed << std::endl;
+
+        // Calculate TIN scores if the gene BED file is available
+        std::cout << "Calculating TIN scores..." << std::endl;
+        std::vector<double> tin_scores = calculateTIN(gene_bed, input_params.input_files[0]);
+        std::cout << "TIN scores calculated." << std::endl;
+
+        // [TEST] Exit early
+        exit(0);
+    }
 
     // Loop through the input files
     int file_count = (int) input_params.num_input_files;
@@ -84,7 +97,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         // process base modifications and TINs if available.
         // Note: This section utilizes one thread.
         std::cout << "Getting number of records..." << std::endl;
-        int num_records = reader.getNumRecords(filepath, final_output, base_mod_threshold, gene_bed);
+        int num_records = reader.getNumRecords(filepath, final_output, mod_analysis, base_mod_threshold);
         std::cout << "Number of records = " << num_records << std::endl;
 
         // Exit if there are no records
