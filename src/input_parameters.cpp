@@ -13,6 +13,8 @@ Input_Para::Input_Para(){
     this->rrms_csv = "";
     this->ref_genome = "";
     this->base_mod_threshold = 0.5;
+    this->gene_bed = "";
+    this->mod_analysis = false;
 }
 
 Input_Para::~Input_Para(){

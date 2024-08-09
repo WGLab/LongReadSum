@@ -234,14 +234,17 @@ def bam_module(margs):
         input_para.out_prefix = str(param_dict["out_prefix"])
 
         # Set the reference genome file and base modification threshold
-        param_dict["ref"] = margs.ref if margs.ref != "" or margs.ref is not None else ""
-        param_dict["modprob"] = margs.modprob
+        ref_genome = margs.ref if margs.ref != "" or margs.ref is not None else ""
+        param_dict["ref"] = input_para.ref_genome = ref_genome
 
-        logging.info("Reference genome file is " + param_dict["ref"])
-        input_para.ref_genome = param_dict["ref"]
-        logging.info("Updated ref genome file is " + input_para.ref_genome)
+        # Set the base modification flag, and filtering threshold
+        param_dict["mod"] = input_para.mod_analysis = margs.mod
+        mod_prob = margs.modprob
+        param_dict["modprob"] = input_para.base_mod_threshold = mod_prob
 
-        input_para.base_mod_threshold = margs.modprob
+        # Set the gene BED file for RNA-seq transcript analysis
+        input_para.genebed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
+
         for input_file in param_dict["input_files"]:
             input_para.add_input_file(str(input_file))
 
@@ -670,13 +673,17 @@ bam_parser = subparsers.add_parser('bam',
 bam_parser.add_argument("--ref", type=str, default="",
                         help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
 
+# Add argument for whether to run base modification analysis
+bam_parser.add_argument("--mod", action="store_true",
+                        help="Run base modification analysis on the BAM file. Default: False.")
+
 # Add argument for base modification filtering threshold
 bam_parser.add_argument("--modprob", type=float, default=0.5,
                         help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
 
-# Add argument for GTF file required for RNA-seq analysis (TIN, etc.)
-bam_parser.add_argument("--gtf", type=str, default="",
-                        help="GTF file required for RNA-seq analysis. Default: None.")
+# Add argument for gene BED file required for RNA-seq transcript analysis (TIN, etc.)
+bam_parser.add_argument("--genebed", type=str, default="",
+                        help="Gene BED file required for RNA-seq analysis. Default: None.")
 
 bam_parser.set_defaults(func=bam_module)
 
