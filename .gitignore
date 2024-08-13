@@ -29,5 +29,5 @@ SampleData
 
 # Testing scripts
 linktoscripts
-single_mod.summary.txt
-single_mod.tin.xls
+single_mod.*.txt
+single_mod.*.xls

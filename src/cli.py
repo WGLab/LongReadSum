@@ -243,8 +243,9 @@ def bam_module(margs):
         param_dict["modprob"] = input_para.base_mod_threshold = mod_prob
 
         # Set the gene BED file for RNA-seq transcript analysis
-        input_para.genebed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
+        input_para.gene_bed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
 
+        # Add the input files to the input parameter
         for input_file in param_dict["input_files"]:
             input_para.add_input_file(str(input_file))
 
@@ -260,7 +261,7 @@ def bam_module(margs):
 
             # If base modifications were found, add the base modification plots
             # after the first table
-            if bam_output.modified_base_count > 0:
+            if bam_output.sample_modified_base_count > 0:
                 qc_info_list.insert(1, "base_mods")
 
             # If base modifications were found, add the base modification plots
