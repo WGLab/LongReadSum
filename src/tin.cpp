@@ -342,7 +342,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             std::cout << "H: " << H << std::endl;
 
             double TIN = 0;
-            if (H > 0) {
+            if (H != 0) {
 
                 // Calculate U
                 double U = std::exp(-H);
@@ -351,11 +351,11 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                 int k = exon_end - exon_start + 1;
                 std::cout << "k: " << k << std::endl;
                 std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
-                double TIN = 100.0 * (U / k);
-
-                // Print the TIN score
-                std::cout << "TIN score: " << TIN << std::endl;
+                TIN = 100.0 * (U / k);
             }
+
+            // Print the TIN score
+            std::cout << "TIN score: " << TIN << std::endl;
         }
     }
 
