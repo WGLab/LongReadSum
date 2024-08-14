@@ -283,7 +283,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                     int op = bam_cigar_op(cigar[i]);
                     int len = bam_cigar_oplen(cigar[i]);
 
-                    if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF || op == BAM_CDEL) {
+                    if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
                         for (int j = 0; j < len; j++) {
 
                             // Check if the position has already been counted
