@@ -203,7 +203,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         iss >> chrom >> start >> end >> name >> score >> strand >> thick_start
             >> thick_end >> item_rgb >> exon_count >> exon_sizes_str
             >> exon_starts_str;
-
+        
         // Get the exon sizes and starts
         std::vector<int> exon_sizes;
         std::vector<int> exon_starts;
@@ -217,6 +217,8 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         int exon_start;
         while (exon_starts_iss >> exon_start) {
+            // Add 1 to the exon start to make it 1-based
+            exon_start++;
             std::cout << "Exon start: " << exon_start << std::endl;
             exon_starts.push_back(exon_start);
         }
@@ -231,9 +233,11 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         for (int i = 0; i < exon_count; i++) {
             int exon_start = start + exon_starts[i];
             int exon_end = exon_start + exon_sizes[i] - 1;
-            std::string region = chrom + ":" + std::to_string(exon_start) + "-"
-                + std::to_string(exon_end);
-            std::cout << "Region: " << region << std::endl;
+            // std::string region = chrom + ":" + std::to_string(exon_start) + "-"
+            //     + std::to_string(exon_end);
+            std::string region = chrom + ":" + std::to_string(start+1) + "-"
+                + std::to_string(end);
+            std::cout << "Region (positions range): " << region << std::endl;
 
             // Set up the region to fetch reads (1-based)
             hts_itr_t* iter = sam_itr_querys(index, header, region.c_str());
@@ -283,7 +287,8 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                     int op = bam_cigar_op(cigar[i]);
                     int len = bam_cigar_oplen(cigar[i]);
 
-                    if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+                    // if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+                    if (op == BAM_CMATCH || op == BAM_CINS) {
                         for (int j = 0; j < len; j++) {
 
                             // Check if the position has already been counted
@@ -299,8 +304,9 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                                 continue;
                             }
 
-                            // Check if the position is within the exon
-                            if (pos + j >= exon_start && pos + j <= exon_end) {
+                            // Check if the position is within the exon, or if
+                            // it is equal to the transcript start+1 or end
+                            if ((pos + j >= exon_start && pos + j <= exon_end) || pos + j == start + 1 || pos + j == end) {
                                 C[pos + j]++;
                                 sigma_Ci++;
 
