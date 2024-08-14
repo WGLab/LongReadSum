@@ -229,6 +229,10 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         std::cout << "Start: " << start << std::endl;
         std::cout << "End: " << end << std::endl;
 
+        // Create a vector of transcript depth positions to use for calculating
+        // the TIN score
+        // std::vector<int> transcript_depth_positions = {start+1, end};
+
         // Calculate the TIN score for each exon in the transcript
         for (int i = 0; i < exon_count; i++) {
             int exon_start = start + exon_starts[i];
@@ -251,6 +255,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             std::unordered_map<int, int> C;
             for (int i = exon_start; i <= exon_end; i++) {
                 C[i] = 0;
+                // transcript_depth_positions.push_back(i);
             }
 
             // Loop through the reads in the region and calculate the read depth
@@ -298,7 +303,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                             }
 
                             // Skip if base quality is less than 13
-                            // if (bam_get_qual(record)[j] < 13) {
                             if (bam_get_qual(record)[query_pos + j] < 13) {
                                 base_skip++;
                                 continue;
@@ -337,6 +341,28 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // Destroy the record
             bam_destroy1(record);
 
+            // Print the transcript depth positions
+            // std::cout << "Transcript depth positions: " << std::endl;
+            // for (const auto& position : transcript_depth_positions) {
+            //     std::cout << position << std::endl;
+            // }
+            // std::cout << "Size of transcript depth positions: " << transcript_depth_positions.size() << std::endl;
+
+            // // Create a new vector with depth values for calculating the TIN
+            // // score
+            // std::vector<int> read_depth_values;
+            // for (const auto& position : transcript_depth_positions) {
+            //     read_depth_values.push_back(C[position]);
+            // }
+
+            // Determine the sample size for the transcript (transcript start,
+            // end, + exon lengths)
+            int sample_size = 2;
+            for (const auto& exon_size : exon_sizes) {
+                sample_size += exon_size;
+            }
+            std::cout << "Sample size: " << sample_size << std::endl;
+
             // Sort C by position
             std::vector<int> positions;
             for (const auto& entry : C) {
@@ -351,17 +377,17 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             }
             std::cout << std::endl;
 
-            // Use k evenly spaced positions from C
-            // int k = 7;
-            int k = positions.size();
-            std::unordered_map<int, int> C_evenly_spaced;
-            int step = positions.size() / k;
-            std::cout << "Step: " << step << std::endl;
-            for (int i = 0; i < k; i++) {
-                C_evenly_spaced[positions[i * step]] = C[positions[i * step]];
-            }
+            // // Use k evenly spaced positions from C
+            // // int k = 7;
+            // int k = positions.size();
+            // std::unordered_map<int, int> C_evenly_spaced;
+            // int step = positions.size() / k;
+            // std::cout << "Step: " << step << std::endl;
+            // for (int i = 0; i < k; i++) {
+            //     C_evenly_spaced[positions[i * step]] = C[positions[i * step]];
+            // }
 
-            C = C_evenly_spaced;
+            // C = C_evenly_spaced;
             // std::cout << "Evenly spaced positions: " << std::endl;
             // for (const auto& entry : C) {
             //     std::cout << "C[" << entry.first << "]: " << entry.second << std::endl;
@@ -375,9 +401,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // Calculate the relative coverage, Pi = Ci / ΣCi
             std::vector<double> Pi;
             if (sigma_Ci > 0) {
+                // for (const auto& depth_value : read_depth_values) {
                 for (const auto& entry : C) {
                     double Pi_value = static_cast<double>(entry.second) / sigma_Ci;
+                    // double Pi_value = static_cast<double>(depth_value) / sigma_Ci;
                     Pi.push_back(Pi_value);
+                    // std::cout << "Pi: " << Pi_value << std::endl;
                     std::cout << "Pi[" << entry.first << "]: " << Pi_value << std::endl;
                 }
             } else {
@@ -392,7 +421,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                     H += Pi_value * std::log(Pi_value);
                 }  // else { H += 0; }
             }
-            std::cout << "H: " << H << std::endl;
+            std::cout << "H: " << -H << std::endl;
 
             double TIN = 0;
             if (H != 0) {
@@ -402,7 +431,8 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
                 // Calculate the TIN score for the exon
                 // int k = exon_end - exon_start + 1;
-                std::cout << "k: " << k << std::endl;
+                int k = sample_size;
+                std::cout << "sample size: " << k << std::endl;
                 std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
                 TIN = 100.0 * (U / k);
             }
