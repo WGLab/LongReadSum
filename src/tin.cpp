@@ -255,32 +255,57 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             int sigma_Ci = 0;
             int read_count = 0;
             int skip_count = 0;
+            // Vector for keeping track of each read's positions and avoid
+            // counting overlapping reads
+            std::vector<int> read_positions;
             while (sam_itr_next(bam_file, iter, record) >= 0) {
 
-                // Skip unmapped, secondary, and supplementary alignments
-                // (primary only)
-                if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY
-                    || record->core.flag & BAM_FSUPPLEMENTARY) {
+                // Skip unmapped and secondary alignments, and QC failures
+                if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
                     skip_count++;
                     continue;
                 }
-
                 read_count++;
 
+
+                // Clear positions for each read
+                read_positions.clear();
+
                 // Get the alignment position (0-based)
+                // int pos = record->core.pos + 1;  // 1-based
                 int pos = record->core.pos + 1;  // 1-based
+                int query_pos = 0;
 
                 // Loop through the CIGAR string and update depth at matches
                 uint32_t* cigar = bam_get_cigar(record);
-                for (int i = 0; i < record->core.n_cigar; i++) {
+                int base_skip = 0;
+                for (uint32_t i = 0; i < record->core.n_cigar; i++) {
                     int op = bam_cigar_op(cigar[i]);
                     int len = bam_cigar_oplen(cigar[i]);
 
-                    if (op == BAM_CMATCH) {
+                    if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF || op == BAM_CDEL) {
                         for (int j = 0; j < len; j++) {
+
+                            // Check if the position has already been counted
+                            if (std::find(read_positions.begin(), read_positions.end(), pos + j) != read_positions.end()) {
+                                std::cout << "Read position " << pos + j << " already counted" << std::endl;
+                                continue;
+                            }
+
+                            // Skip if base quality is less than 13
+                            // if (bam_get_qual(record)[j] < 13) {
+                            if (bam_get_qual(record)[query_pos + j] < 13) {
+                                base_skip++;
+                                continue;
+                            }
+
+                            // Check if the position is within the exon
                             if (pos + j >= exon_start && pos + j <= exon_end) {
                                 C[pos + j]++;
                                 sigma_Ci++;
+
+                                // Add the position to the read positions
+                                read_positions.push_back(pos + j);
                             }
                         }
                     }
@@ -289,10 +314,16 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                     if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
                         pos += len;
                     }
+
+                    // Update the query position
+                    if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+                        query_pos += len;
+                    }
                 }
+                std::cout << "Base skip count: " << base_skip << std::endl;
             }
             std::cout << "Read count: " << read_count << std::endl;
-            std::cout << "Skip count: " << skip_count << std::endl;
+            std::cout << "Read skip count: " << skip_count << std::endl;
 
             // Destroy the iterator
             hts_itr_destroy(iter);
@@ -307,9 +338,28 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             }
             std::sort(positions.begin(), positions.end());
 
-            for (int i = 0; i < positions.size(); i++) {
-                std::cout << "C[" << positions[i] << "]: " << C[positions[i]] << std::endl;
+            // Print the positions and read depth values
+            std::cout << "Read depth values: " << std::endl;
+            for (const auto& position : positions) {
+                std::cout << "C[" << position << "]: " << C[position] << std::endl;
             }
+            std::cout << std::endl;
+
+            // Use k evenly spaced positions from C
+            // int k = 7;
+            int k = positions.size();
+            std::unordered_map<int, int> C_evenly_spaced;
+            int step = positions.size() / k;
+            std::cout << "Step: " << step << std::endl;
+            for (int i = 0; i < k; i++) {
+                C_evenly_spaced[positions[i * step]] = C[positions[i * step]];
+            }
+
+            C = C_evenly_spaced;
+            // std::cout << "Evenly spaced positions: " << std::endl;
+            // for (const auto& entry : C) {
+            //     std::cout << "C[" << entry.first << "]: " << entry.second << std::endl;
+            // }
 
             // Print the length of C
             std::cout << "Length of C: " << C.size() << std::endl;
@@ -334,10 +384,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                 // Use the natural logarithm
                 if (Pi_value > 0) {
                     H += Pi_value * std::log(Pi_value);
-                } else {
-                    H += 0;
-                }
-                // std::cout << "H: " << Pi_value << " * " << std::log(Pi_value) << " = " << Pi_value * std::log(Pi_value) << std::endl;
+                }  // else { H += 0; }
             }
             std::cout << "H: " << H << std::endl;
 
@@ -348,7 +395,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                 double U = std::exp(-H);
 
                 // Calculate the TIN score for the exon
-                int k = exon_end - exon_start + 1;
+                // int k = exon_end - exon_start + 1;
                 std::cout << "k: " << k << std::endl;
                 std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
                 TIN = 100.0 * (U / k);
