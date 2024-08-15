@@ -7,8 +7,117 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include <htslib/sam.h>
 /// @endcond
+
+std::pair<std::unordered_map<int, int>, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
+{
+    // Set up the region to fetch reads (1-based)
+    std::string region = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
+    hts_itr_t* iter = sam_itr_querys(idx, header, region.c_str());
+    // hts_itr_t* iter = sam_itr_querys(index, header, region.c_str());
+    if (iter == NULL) {
+        std::cerr << "Error creating iterator for region " << region << std::endl;
+        exit(1);
+    }
+
+    // Initialize a map to store the read depth values at each position
+    std::unordered_map<int, int> C;
+    for (int i = start; i <= end; i++) {
+        C[i] = 0;
+    }
+
+    // Loop through the reads in the region and calculate the read depth
+    // values
+    bam1_t* record = bam_init1();
+    int sigma_Ci = 0;
+    int read_count = 0;
+    int skip_count = 0;
+
+    // Vector for keeping track of each read's positions and avoid
+    // counting overlapping reads
+    std::vector<int> read_positions;
+    while (sam_itr_next(bam_file, iter, record) >= 0) {
+
+        // Skip unmapped and secondary alignments, and QC failures
+        if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
+            skip_count++;
+            continue;
+        }
+        read_count++;
+
+
+        // Clear positions for each read
+        read_positions.clear();
+
+        // Get the alignment position (0-based)
+        int pos = record->core.pos + 1;  // 1-based
+        int query_pos = 0;
+
+        // Loop through the CIGAR string and update depth at matches
+        uint32_t* cigar = bam_get_cigar(record);
+        int base_skip = 0;
+        for (uint32_t i = 0; i < record->core.n_cigar; i++) {
+            int op = bam_cigar_op(cigar[i]);
+            int len = bam_cigar_oplen(cigar[i]);
+            if (op == BAM_CMATCH) {
+                for (int j = 0; j < len; j++) {
+
+                    // Check if the position has already been counted
+                    if (std::find(read_positions.begin(), read_positions.end(), pos + j) != read_positions.end()) {
+                        std::cout << "Read position " << pos + j << " already counted" << std::endl;
+                        continue;
+                    }
+
+                    // Check if the base is N
+                    // if (bam_seqi(seq, query_pos + j) == 15) {
+                    if (bam_seqi(bam_get_seq(record), query_pos + j) == 15) {
+                        base_skip++;
+                        continue;
+                    }
+
+                    // Skip if base quality is less than 13
+                    if (bam_get_qual(record)[query_pos + j] < 13) {
+                        base_skip++;
+                        continue;
+                    }
+
+                    // Check if the position is within the exon, or if
+                    // it is equal to the transcript start+1 or end
+                    // if ((pos + j >= exon_start && pos + j <= exon_end) || pos + j == start + 1 || pos + j == end) {
+                    if (pos + j >= start && pos + j <= end) {
+                        C[pos + j]++;
+                        sigma_Ci++;
+
+                        // Add the position to the read positions
+                        read_positions.push_back(pos + j);
+                    }
+                }
+            }
+
+            // Update the reference position
+            if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+                pos += len;
+            }
+
+            // Update the query position
+            if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
+                query_pos += len;
+            }
+        }
+        std::cout << "Base skip count: " << base_skip << std::endl;
+    }
+    std::cout << "Read count: " << read_count << std::endl;
+    std::cout << "Read skip count: " << skip_count << std::endl;
+
+    // Destroy the iterator
+    hts_itr_destroy(iter);
+
+    // Destroy the record
+    bam_destroy1(record);
+
+    return std::make_pair(C, sigma_Ci);
+}
+
 
 std::unordered_map<std::string, int> getExonExonJunctions(const std::string& gene_bed)
 {
@@ -204,24 +313,47 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             >> thick_end >> item_rgb >> exon_count >> exon_sizes_str
             >> exon_starts_str;
         
-        // Get the exon sizes and starts
+        // Get the comma-separated exon sizes for the transcript
         std::vector<int> exon_sizes;
-        std::vector<int> exon_starts;
-        std::istringstream exon_sizes_iss(exon_sizes_str);
-        std::istringstream exon_starts_iss(exon_starts_str);
-        int exon_size;
-        while (exon_sizes_iss >> exon_size) {
-            std::cout << "Exon size: " << exon_size << std::endl;
-            exon_sizes.push_back(exon_size);
+        // std::istringstream exon_sizes_iss(exon_sizes_str);
+        // std::istringstream exon_starts_iss(exon_starts_str);
+        std::cout << "Exon sizes: " << exon_sizes_str << std::endl;
+        while (exon_sizes_str.find(",") != std::string::npos) {
+            int pos = exon_sizes_str.find(",");
+            std::string exon_size_str = exon_sizes_str.substr(0, pos);
+            exon_sizes.push_back(std::stoi(exon_size_str));
+            exon_sizes_str.erase(0, pos + 1);
+            std::cout << "Exon size: " << exon_size_str << std::endl;
         }
+        exon_sizes.push_back(std::stoi(exon_sizes_str));
+        std::cout << "Exon size: " << exon_sizes_str << std::endl;
 
-        int exon_start;
-        while (exon_starts_iss >> exon_start) {
-            // Add 1 to the exon start to make it 1-based
-            exon_start++;
-            std::cout << "Exon start: " << exon_start << std::endl;
-            exon_starts.push_back(exon_start);
+        // Get the comma-separated exon starts for the transcript
+        std::vector<int> exon_starts;
+        std::cout << "Exon starts: " << exon_starts_str << std::endl;
+        while (exon_starts_str.find(",") != std::string::npos) {
+            int pos = exon_starts_str.find(",");
+            std::string exon_start_str = exon_starts_str.substr(0, pos);
+            exon_starts.push_back(std::stoi(exon_start_str));
+            exon_starts_str.erase(0, pos + 1);
+            std::cout << "Exon start: " << exon_start_str << std::endl;
         }
+        exon_starts.push_back(std::stoi(exon_starts_str));
+        std::cout << "Exon start: " << exon_starts_str << std::endl;
+
+        // int exon_size;
+        // while (exon_sizes_iss >> exon_size) {
+        //     std::cout << "Exon size: " << exon_size << std::endl;
+        //     exon_sizes.push_back(exon_size);
+        // }
+
+        // int exon_start;
+        // while (exon_starts_iss >> exon_start) {
+        //     // Add 1 to the exon start to make it 1-based
+        //     exon_start++;
+        //     std::cout << "Exon start: " << exon_start << std::endl;
+        //     exon_starts.push_back(exon_start);
+        // }
 
         std::cout << "Exon count: " << exon_count << std::endl;
         std::cout << "Transcript: " << name << std::endl;
@@ -229,190 +361,116 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         std::cout << "Start: " << start << std::endl;
         std::cout << "End: " << end << std::endl;
 
-        // Create a vector of transcript depth positions to use for calculating
-        // the TIN score
-        // std::vector<int> transcript_depth_positions = {start+1, end};
-
-        // Calculate the TIN score for each exon in the transcript
+        // Get the read depths and cumulative read depth for each exon
+        std::unordered_map<int, int> C;
+        int sigma_Ci = 0;
         for (int i = 0; i < exon_count; i++) {
-            int exon_start = start + exon_starts[i];
+            // int exon_start = start + exon_starts[i];
+            int exon_start = start + 1 + exon_starts[i];
             int exon_end = exon_start + exon_sizes[i] - 1;
+            // int exon_end = exon_start + exon_sizes[i];
+
+            std::cout << "Exon start: " << exon_start << ", Exon end: " << exon_end << std::endl;
             // std::string region = chrom + ":" + std::to_string(exon_start) + "-"
             //     + std::to_string(exon_end);
-            std::string region = chrom + ":" + std::to_string(start+1) + "-"
-                + std::to_string(end);
-            std::cout << "Region (positions range): " << region << std::endl;
+            // std::string region = chrom + ":" + std::to_string(start+1) + "-"
+            //     + std::to_string(end);
+            // std::cout << "Region (positions range): " << region << std::endl;
 
-            // Set up the region to fetch reads (1-based)
-            hts_itr_t* iter = sam_itr_querys(index, header, region.c_str());
-            if (iter == NULL) {
-                std::cerr << "Error creating iterator for region " << chrom << ":"
-                    << exon_start << "-" << exon_end << std::endl;
-                exit(1);
+            // Get the depths and cumulative depths for the region
+            std::pair<std::unordered_map<int, int>, int> depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
+
+            // Update the read depth values and cumulative read depth
+            std::unordered_map<int, int> exon_depths = depths.first;
+            int exon_sigma_Ci = depths.second;
+            sigma_Ci += exon_sigma_Ci;
+            
+            // Update the cumulative read depth map
+            for (const auto& depth : exon_depths) {
+                C[depth.first] = depth.second;
             }
-
-            // Initialize a map to store the read depth values at each position
-            std::unordered_map<int, int> C;
-            for (int i = exon_start; i <= exon_end; i++) {
-                C[i] = 0;
-            }
-
-            // Loop through the reads in the region and calculate the read depth
-            // values
-            bam1_t* record = bam_init1();
-            int sigma_Ci = 0;
-            int read_count = 0;
-            int skip_count = 0;
-
-            // Vector for keeping track of each read's positions and avoid
-            // counting overlapping reads
-            std::vector<int> read_positions;
-            while (sam_itr_next(bam_file, iter, record) >= 0) {
-
-                // Skip unmapped and secondary alignments, and QC failures
-                if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
-                    skip_count++;
-                    continue;
-                }
-                read_count++;
-
-
-                // Clear positions for each read
-                read_positions.clear();
-
-                // Get the alignment position (0-based)
-                int pos = record->core.pos + 1;  // 1-based
-                int query_pos = 0;
-
-                // Loop through the CIGAR string and update depth at matches
-                uint32_t* cigar = bam_get_cigar(record);
-                int base_skip = 0;
-                for (uint32_t i = 0; i < record->core.n_cigar; i++) {
-                    int op = bam_cigar_op(cigar[i]);
-                    int len = bam_cigar_oplen(cigar[i]);
-                    if (op == BAM_CMATCH) {
-                        for (int j = 0; j < len; j++) {
-
-                            // Check if the position has already been counted
-                            if (std::find(read_positions.begin(), read_positions.end(), pos + j) != read_positions.end()) {
-                                std::cout << "Read position " << pos + j << " already counted" << std::endl;
-                                continue;
-                            }
-
-                            // Check if the base is N
-                            if (bam_seqi(seq, query_pos + j) == 15) {
-                                base_skip++;
-                                continue;
-                            }
-
-                            // Skip if base quality is less than 13
-                            if (bam_get_qual(record)[query_pos + j] < 13) {
-                                base_skip++;
-                                continue;
-                            }
-
-                            // Check if the position is within the exon, or if
-                            // it is equal to the transcript start+1 or end
-                            if ((pos + j >= exon_start && pos + j <= exon_end) || pos + j == start + 1 || pos + j == end) {
-                                C[pos + j]++;
-                                sigma_Ci++;
-
-                                // Add the position to the read positions
-                                read_positions.push_back(pos + j);
-                            }
-                        }
-                    }
-
-                    // Update the reference position
-                    if (op == BAM_CMATCH || op == BAM_CDEL || op == BAM_CREF_SKIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
-                        pos += len;
-                    }
-
-                    // Update the query position
-                    if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
-                        query_pos += len;
-                    }
-                }
-                std::cout << "Base skip count: " << base_skip << std::endl;
-            }
-            std::cout << "Read count: " << read_count << std::endl;
-            std::cout << "Read skip count: " << skip_count << std::endl;
-
-            // Destroy the iterator
-            hts_itr_destroy(iter);
-
-            // Destroy the record
-            bam_destroy1(record);
-
-            // Determine the sample size for the transcript (transcript start,
-            // end, + exon lengths)
-            int sample_size = 2;
-            for (const auto& exon_size : exon_sizes) {
-                sample_size += exon_size;
-            }
-            std::cout << "Sample size: " << sample_size << std::endl;
-
-            // Sort C by position
-            std::vector<int> positions;
-            for (const auto& entry : C) {
-                positions.push_back(entry.first);
-            }
-            std::sort(positions.begin(), positions.end());
-
-            // Print the positions and read depth values
-            std::cout << "Read depth values: " << std::endl;
-            for (const auto& position : positions) {
-                std::cout << "C[" << position << "]: " << C[position] << std::endl;
-            }
-            std::cout << std::endl;
-
-            // Print the length of C
-            std::cout << "Length of C: " << C.size() << std::endl;
-
-            std::cout << "Sigma Ci: " << sigma_Ci << std::endl;
-
-            // Calculate the relative coverage, Pi = Ci / ΣCi
-            std::vector<double> Pi;
-            if (sigma_Ci > 0) {
-                // for (const auto& depth_value : read_depth_values) {
-                for (const auto& entry : C) {
-                    double Pi_value = static_cast<double>(entry.second) / sigma_Ci;
-                    // double Pi_value = static_cast<double>(depth_value) / sigma_Ci;
-                    Pi.push_back(Pi_value);
-                    // std::cout << "Pi: " << Pi_value << std::endl;
-                    std::cout << "Pi[" << entry.first << "]: " << Pi_value << std::endl;
-                }
-            } else {
-                Pi = std::vector<double>(C.size(), 0);
-            }
-
-            // Calculate H
-            double H = 0;
-            for (const auto& Pi_value : Pi) {
-                // Use the natural logarithm
-                if (Pi_value > 0) {
-                    H += Pi_value * std::log(Pi_value);
-                }  // else { H += 0; }
-            }
-            std::cout << "H: " << -H << std::endl;
-
-            double TIN = 0;
-            if (H != 0) {
-
-                // Calculate U
-                double U = std::exp(-H);
-
-                // Calculate the TIN score for the exon
-                // int k = exon_end - exon_start + 1;
-                int k = sample_size;
-                std::cout << "sample size: " << k << std::endl;
-                std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
-                TIN = 100.0 * (U / k);
-            }
-
-            // Print the TIN score
-            std::cout << "TIN score: " << TIN << std::endl;
         }
+
+        // Get the read depths for the transcript start+1 and end
+        std::vector<int> transcript_positions = {start + 1, end};
+        for (const auto& position : transcript_positions) {
+            std::pair<std::unordered_map<int, int>, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position);
+            std::unordered_map<int, int> transcript_C = transcript_depths.first;
+            int transcript_sigma_Ci = transcript_depths.second;
+            sigma_Ci += transcript_sigma_Ci;
+            for (const auto& depth : transcript_C) {
+                C[depth.first] = depth.second;
+            }
+        }
+
+        // Determine the sample size for the transcript (transcript start,
+        // end, + exon lengths)
+        int sample_size = 2;
+        for (const auto& exon_size : exon_sizes) {
+            sample_size += exon_size;
+        }
+        std::cout << "Sample size: " << sample_size << std::endl;
+
+        // Sort C by position
+        std::vector<int> positions;
+        for (const auto& entry : C) {
+            positions.push_back(entry.first);
+        }
+        std::sort(positions.begin(), positions.end());
+
+        // Print the positions and read depth values
+        std::cout << "Read depth values: " << std::endl;
+        for (const auto& position : positions) {
+            std::cout << "C[" << position << "]: " << C[position] << std::endl;
+        }
+        std::cout << std::endl;
+
+        // Print the length of C
+        std::cout << "Length of C: " << C.size() << std::endl;
+
+        std::cout << "Sigma Ci: " << sigma_Ci << std::endl;
+
+        // Calculate the relative coverage, Pi = Ci / ΣCi
+        std::vector<double> Pi;
+        if (sigma_Ci > 0) {
+            // for (const auto& depth_value : read_depth_values) {
+            for (const auto& entry : C) {
+                double Pi_value = static_cast<double>(entry.second) / sigma_Ci;
+                // double Pi_value = static_cast<double>(depth_value) / sigma_Ci;
+                Pi.push_back(Pi_value);
+                // std::cout << "Pi: " << Pi_value << std::endl;
+                std::cout << "Pi[" << entry.first << "]: " << Pi_value << std::endl;
+            }
+        } else {
+            Pi = std::vector<double>(C.size(), 0);
+        }
+
+        // Calculate H
+        double H = 0;
+        for (const auto& Pi_value : Pi) {
+            // Use the natural logarithm
+            if (Pi_value > 0) {
+                H += Pi_value * std::log(Pi_value);
+            }  // else { H += 0; }
+        }
+        std::cout << "H: " << -H << std::endl;
+
+        double TIN = 0;
+        if (H != 0) {
+
+            // Calculate U
+            double U = std::exp(-H);
+
+            // Calculate the TIN score for the exon
+            // int k = exon_end - exon_start + 1;
+            int k = sample_size;
+            std::cout << "sample size: " << k << std::endl;
+            std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
+            TIN = 100.0 * (U / k);
+        }
+
+        // Print the TIN score
+        std::cout << "TIN score: " << TIN << std::endl;
     }
 
     // Close the BAM file
@@ -490,7 +548,3 @@ double calculateTINScore(const std::vector<int>& read_depth_values, int junction
 
     return TIN;
 }
-
-// TIN::~TIN()
-// {
-// }
