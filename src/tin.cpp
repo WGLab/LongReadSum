@@ -255,7 +255,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             std::unordered_map<int, int> C;
             for (int i = exon_start; i <= exon_end; i++) {
                 C[i] = 0;
-                // transcript_depth_positions.push_back(i);
             }
 
             // Loop through the reads in the region and calculate the read depth
@@ -264,6 +263,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             int sigma_Ci = 0;
             int read_count = 0;
             int skip_count = 0;
+
             // Vector for keeping track of each read's positions and avoid
             // counting overlapping reads
             std::vector<int> read_positions;
@@ -281,7 +281,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                 read_positions.clear();
 
                 // Get the alignment position (0-based)
-                // int pos = record->core.pos + 1;  // 1-based
                 int pos = record->core.pos + 1;  // 1-based
                 int query_pos = 0;
 
@@ -291,14 +290,18 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                 for (uint32_t i = 0; i < record->core.n_cigar; i++) {
                     int op = bam_cigar_op(cigar[i]);
                     int len = bam_cigar_oplen(cigar[i]);
-
-                    // if (op == BAM_CMATCH || op == BAM_CINS || op == BAM_CSOFT_CLIP || op == BAM_CEQUAL || op == BAM_CDIFF) {
-                    if (op == BAM_CMATCH || op == BAM_CINS) {
+                    if (op == BAM_CMATCH) {
                         for (int j = 0; j < len; j++) {
 
                             // Check if the position has already been counted
                             if (std::find(read_positions.begin(), read_positions.end(), pos + j) != read_positions.end()) {
                                 std::cout << "Read position " << pos + j << " already counted" << std::endl;
+                                continue;
+                            }
+
+                            // Check if the base is N
+                            if (bam_seqi(seq, query_pos + j) == 15) {
+                                base_skip++;
                                 continue;
                             }
 
@@ -341,20 +344,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // Destroy the record
             bam_destroy1(record);
 
-            // Print the transcript depth positions
-            // std::cout << "Transcript depth positions: " << std::endl;
-            // for (const auto& position : transcript_depth_positions) {
-            //     std::cout << position << std::endl;
-            // }
-            // std::cout << "Size of transcript depth positions: " << transcript_depth_positions.size() << std::endl;
-
-            // // Create a new vector with depth values for calculating the TIN
-            // // score
-            // std::vector<int> read_depth_values;
-            // for (const auto& position : transcript_depth_positions) {
-            //     read_depth_values.push_back(C[position]);
-            // }
-
             // Determine the sample size for the transcript (transcript start,
             // end, + exon lengths)
             int sample_size = 2;
@@ -376,22 +365,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
                 std::cout << "C[" << position << "]: " << C[position] << std::endl;
             }
             std::cout << std::endl;
-
-            // // Use k evenly spaced positions from C
-            // // int k = 7;
-            // int k = positions.size();
-            // std::unordered_map<int, int> C_evenly_spaced;
-            // int step = positions.size() / k;
-            // std::cout << "Step: " << step << std::endl;
-            // for (int i = 0; i < k; i++) {
-            //     C_evenly_spaced[positions[i * step]] = C[positions[i * step]];
-            // }
-
-            // C = C_evenly_spaced;
-            // std::cout << "Evenly spaced positions: " << std::endl;
-            // for (const auto& entry : C) {
-            //     std::cout << "C[" << entry.first << "]: " << entry.second << std::endl;
-            // }
 
             // Print the length of C
             std::cout << "Length of C: " << C.size() << std::endl;
