@@ -9,7 +9,7 @@
 #include <algorithm>
 /// @endcond
 
-std::pair<std::unordered_map<int, int>, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
+std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
 {
     // Set up the region to fetch reads (1-based)
     std::string region = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
@@ -29,7 +29,6 @@ std::pair<std::unordered_map<int, int>, int> getReadDepths(htsFile* bam_file, ht
     // Loop through the reads in the region and calculate the read depth
     // values
     bam1_t* record = bam_init1();
-    int sigma_Ci = 0;
     int read_count = 0;
     int skip_count = 0;
 
@@ -86,7 +85,6 @@ std::pair<std::unordered_map<int, int>, int> getReadDepths(htsFile* bam_file, ht
                     // if ((pos + j >= exon_start && pos + j <= exon_end) || pos + j == start + 1 || pos + j == end) {
                     if (pos + j >= start && pos + j <= end) {
                         C[pos + j]++;
-                        sigma_Ci++;
 
                         // Add the position to the read positions
                         read_positions.push_back(pos + j);
@@ -104,7 +102,7 @@ std::pair<std::unordered_map<int, int>, int> getReadDepths(htsFile* bam_file, ht
                 query_pos += len;
             }
         }
-        std::cout << "Base skip count: " << base_skip << std::endl;
+        // std::cout << "Base skip count: " << base_skip << std::endl;
     }
     std::cout << "Read count: " << read_count << std::endl;
     std::cout << "Read skip count: " << skip_count << std::endl;
@@ -115,7 +113,7 @@ std::pair<std::unordered_map<int, int>, int> getReadDepths(htsFile* bam_file, ht
     // Destroy the record
     bam_destroy1(record);
 
-    return std::make_pair(C, sigma_Ci);
+    return C;
 }
 
 
@@ -261,7 +259,8 @@ std::unordered_map<std::string, std::vector<std::tuple<std::string, int, int>>> 
     return exon_positions;
 }
 
-std::vector<double> calculateTIN(const std::string& gene_bed, const std::string& bam_filepath) {
+std::vector<double> calculateTIN(const std::string& gene_bed, const std::string& bam_filepath)
+{
     // Open the BAM file
     htsFile* bam_file = sam_open(bam_filepath.c_str(), "r");
     if (bam_file == NULL) {
@@ -313,6 +312,15 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             >> thick_end >> item_rgb >> exon_count >> exon_sizes_str
             >> exon_starts_str;
         
+
+        // Remove the last comma from the exon sizes and starts strings
+        if (exon_sizes_str.back() == ',') {
+            exon_sizes_str.pop_back();
+        }
+        if (exon_starts_str.back() == ',') {
+            exon_starts_str.pop_back();
+        }
+
         // Get the comma-separated exon sizes for the transcript
         std::vector<int> exon_sizes;
         // std::istringstream exon_sizes_iss(exon_sizes_str);
@@ -320,7 +328,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         std::cout << "Exon sizes: " << exon_sizes_str << std::endl;
         while (exon_sizes_str.find(",") != std::string::npos) {
             int pos = exon_sizes_str.find(",");
-            std::string exon_size_str = exon_sizes_str.substr(0, pos);
+            std::string exon_size_str = exon_sizes_str.substr(0, pos);            
             exon_sizes.push_back(std::stoi(exon_size_str));
             exon_sizes_str.erase(0, pos + 1);
             std::cout << "Exon size: " << exon_size_str << std::endl;
@@ -363,7 +371,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         // Get the read depths and cumulative read depth for each exon
         std::unordered_map<int, int> C;
-        int sigma_Ci = 0;
         for (int i = 0; i < exon_count; i++) {
             // int exon_start = start + exon_starts[i];
             int exon_start = start + 1 + exon_starts[i];
@@ -378,14 +385,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // std::cout << "Region (positions range): " << region << std::endl;
 
             // Get the depths and cumulative depths for the region
-            std::pair<std::unordered_map<int, int>, int> depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
-
-            // Update the read depth values and cumulative read depth
-            std::unordered_map<int, int> exon_depths = depths.first;
-            int exon_sigma_Ci = depths.second;
-            sigma_Ci += exon_sigma_Ci;
-            
-            // Update the cumulative read depth map
+            std::unordered_map<int, int> exon_depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
             for (const auto& depth : exon_depths) {
                 C[depth.first] = depth.second;
             }
@@ -394,12 +394,10 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         // Get the read depths for the transcript start+1 and end
         std::vector<int> transcript_positions = {start + 1, end};
         for (const auto& position : transcript_positions) {
-            std::pair<std::unordered_map<int, int>, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position);
-            std::unordered_map<int, int> transcript_C = transcript_depths.first;
-            int transcript_sigma_Ci = transcript_depths.second;
-            sigma_Ci += transcript_sigma_Ci;
-            for (const auto& depth : transcript_C) {
+            std::unordered_map<int, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position);
+            for (const auto& depth : transcript_depths) {
                 C[depth.first] = depth.second;
+                // C[depth.first] = depth.second;
             }
         }
 
@@ -421,25 +419,27 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         // Print the positions and read depth values
         std::cout << "Read depth values: " << std::endl;
         for (const auto& position : positions) {
-            std::cout << "C[" << position << "]: " << C[position] << std::endl;
+            std::string Ci_str = std::to_string(C[position]) + ".0";
+            std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
+            // std::cout << "C[" << position << "]: " << C[position] << std::endl;
         }
         std::cout << std::endl;
-
-        // Print the length of C
         std::cout << "Length of C: " << C.size() << std::endl;
 
+        // Calculate total coverage, ΣCi
+        int sigma_Ci = 0;
+        for (const auto& entry : C) {
+            sigma_Ci += entry.second;
+        }
         std::cout << "Sigma Ci: " << sigma_Ci << std::endl;
 
         // Calculate the relative coverage, Pi = Ci / ΣCi
         std::vector<double> Pi;
         if (sigma_Ci > 0) {
-            // for (const auto& depth_value : read_depth_values) {
             for (const auto& entry : C) {
                 double Pi_value = static_cast<double>(entry.second) / sigma_Ci;
-                // double Pi_value = static_cast<double>(depth_value) / sigma_Ci;
                 Pi.push_back(Pi_value);
-                // std::cout << "Pi: " << Pi_value << std::endl;
-                std::cout << "Pi[" << entry.first << "]: " << Pi_value << std::endl;
+                // std::cout << "Pi[" << entry.first << "]: " << Pi_value << std::endl;
             }
         } else {
             Pi = std::vector<double>(C.size(), 0);
@@ -484,67 +484,4 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
     // Return the TIN scores
     return std::vector<double>();
-}
-
-// Function to calculate the transcript integrity number (TIN) score for the
-// transcript
-// (Reference: https://bmcbioinformatics.biomedcentral.com/articles/10.1186/s12859-016-0922-z#Sec11)
-double calculateTINScore(const std::vector<int>& read_depth_values, int junctions) {
-    int num_values = read_depth_values.size();
-
-    // TODO: Calculate U = e(-SUM(Pi * log(Pi) for i = 1 to k+j)), where k is the
-    // number of equally spaced positions, and j is the number of exon-exon
-    // junctions
-
-    // Set k as the number of equally spaced positions (k = 100)
-    // int k = std::min(100, num_values);
-    int k = num_values;
-    std::cout << "k: " << k << std::endl;
-    std::cout << "junctions (j): " << junctions << std::endl;
-    std::cout << "num_values: " << num_values << std::endl;
-
-    // Calculate total coverage, ΣCi
-    int sigma_Ci = 0;
-    for (int i = 0; i < num_values; i++) {
-        sigma_Ci += read_depth_values[i];
-    }
-    std::cout << "Sigma Ci: " << sigma_Ci << std::endl;
-
-    // Calculate relative coverage, Pi = Ci / ΣCi
-    std::vector<double> Pi;
-    for (int i = 0; i < num_values; i++) {
-        double Pi_value = static_cast<double>(read_depth_values[i]) / sigma_Ci;
-        // std::cout << "Pi[" << i << "]: " << Pi_value << std::endl;
-        Pi.push_back(Pi_value);
-    }
-
-    // Calculate coverage entropy, H = -Σ(Pi * log(Pi) for i = 1 to k)
-    // For computational efficiency, we can calculate H at k equally spaced
-    // positions
-    // double H = 0;
-    // int step = num_values / k;
-    // std::cout << "Step: " << step << std::endl;
-    // for (int i = 0; i < num_values; i += step) {
-    //     H += Pi[i] * log(Pi[i]);
-    // }
-    // H = -H;
-    double H = 0;
-    for (int i = 0; i < num_values; i++) {
-        H += Pi[i] * log(Pi[i]);
-    }
-    H = -H;
-
-    // Calculate U = e^(-H)
-    // double U = exp(-H);
-    double U = exp(H);
-
-    // Calculate TIN score, TIN = 100 * (U/k+j)
-    // double tinScore = 100 * (U / (k + junctions));
-    // double TIN = 100 * (U / (num_values + junctions));
-    double TIN = 100 * (U / k);
-
-    // double average = static_cast<double>(sum) / num_values;
-    // double tinScore = average / sum;
-
-    return TIN;
 }
