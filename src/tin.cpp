@@ -104,8 +104,8 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
         }
         // std::cout << "Base skip count: " << base_skip << std::endl;
     }
-    std::cout << "Read count: " << read_count << std::endl;
-    std::cout << "Read skip count: " << skip_count << std::endl;
+    // std::cout << "Read count: " << read_count << std::endl;
+    // std::cout << "Read skip count: " << skip_count << std::endl;
 
     // Destroy the iterator
     hts_itr_destroy(iter);
@@ -288,11 +288,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
     // Vector to store the TIN scores for each transcript (gene ID -> (chrom,
     // tx_start, tx_end, TIN)
-    std::unordered_map<std::string, std::tuple<std::string, int, int, double>>
-        tin_scores;
+    // std::unordered_map<std::string, std::tuple<std::string, int, int, double>>
+    //     tin_scores;
 
     // Loop through the gene BED file and calculate the TIN score for each
     // transcript
+    std::vector<double> TIN_scores;
     std::string line;
     while (std::getline(gene_bed_file, line)) {
         // Parse the gene BED line and get the exon positions for the transcript
@@ -325,29 +326,29 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         std::vector<int> exon_sizes;
         // std::istringstream exon_sizes_iss(exon_sizes_str);
         // std::istringstream exon_starts_iss(exon_starts_str);
-        std::cout << "Exon sizes: " << exon_sizes_str << std::endl;
+        // std::cout << "Exon sizes: " << exon_sizes_str << std::endl;
         while (exon_sizes_str.find(",") != std::string::npos) {
             int pos = exon_sizes_str.find(",");
             std::string exon_size_str = exon_sizes_str.substr(0, pos);            
             exon_sizes.push_back(std::stoi(exon_size_str));
             exon_sizes_str.erase(0, pos + 1);
-            std::cout << "Exon size: " << exon_size_str << std::endl;
+            // std::cout << "Exon size: " << exon_size_str << std::endl;
         }
         exon_sizes.push_back(std::stoi(exon_sizes_str));
-        std::cout << "Exon size: " << exon_sizes_str << std::endl;
+        // std::cout << "Exon size: " << exon_sizes_str << std::endl;
 
         // Get the comma-separated exon starts for the transcript
         std::vector<int> exon_starts;
-        std::cout << "Exon starts: " << exon_starts_str << std::endl;
+        // std::cout << "Exon starts: " << exon_starts_str << std::endl;
         while (exon_starts_str.find(",") != std::string::npos) {
             int pos = exon_starts_str.find(",");
             std::string exon_start_str = exon_starts_str.substr(0, pos);
             exon_starts.push_back(std::stoi(exon_start_str));
             exon_starts_str.erase(0, pos + 1);
-            std::cout << "Exon start: " << exon_start_str << std::endl;
+            // std::cout << "Exon start: " << exon_start_str << std::endl;
         }
         exon_starts.push_back(std::stoi(exon_starts_str));
-        std::cout << "Exon start: " << exon_starts_str << std::endl;
+        // std::cout << "Exon start: " << exon_starts_str << std::endl;
 
         // int exon_size;
         // while (exon_sizes_iss >> exon_size) {
@@ -377,7 +378,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             int exon_end = exon_start + exon_sizes[i] - 1;
             // int exon_end = exon_start + exon_sizes[i];
 
-            std::cout << "Exon start: " << exon_start << ", Exon end: " << exon_end << std::endl;
+            // std::cout << "Exon start: " << exon_start << ", Exon end: " << exon_end << std::endl;
             // std::string region = chrom + ":" + std::to_string(exon_start) + "-"
             //     + std::to_string(exon_end);
             // std::string region = chrom + ":" + std::to_string(start+1) + "-"
@@ -407,7 +408,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         for (const auto& exon_size : exon_sizes) {
             sample_size += exon_size;
         }
-        std::cout << "Sample size: " << sample_size << std::endl;
+        // std::cout << "Sample size: " << sample_size << std::endl;
 
         // Sort C by position
         std::vector<int> positions;
@@ -417,12 +418,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         std::sort(positions.begin(), positions.end());
 
         // Print the positions and read depth values
-        std::cout << "Read depth values: " << std::endl;
-        for (const auto& position : positions) {
-            std::string Ci_str = std::to_string(C[position]) + ".0";
-            std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
-            // std::cout << "C[" << position << "]: " << C[position] << std::endl;
-        }
+        // std::cout << "Read depth values: " << std::endl;
+        // for (const auto& position : positions) {
+        //     std::string Ci_str = std::to_string(C[position]) + ".0";
+        //     std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
+        //     // std::cout << "C[" << position << "]: " << C[position] << std::endl;
+        // }
         std::cout << std::endl;
         std::cout << "Length of C: " << C.size() << std::endl;
 
@@ -471,16 +472,33 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         // Print the TIN score
         std::cout << "TIN score: " << TIN << std::endl;
+        TIN_scores.push_back(TIN);
     }
 
     // Close the BAM file
     sam_close(bam_file);
 
+    // Print the TIN mean, median, and standard deviation
+    double TIN_sum = 0;
+    double TIN_sum_sq = 0;
+    for (const auto& TIN_score : TIN_scores) {
+        TIN_sum += TIN_score;
+        TIN_sum_sq += TIN_score * TIN_score;
+    }
+    double TIN_mean = TIN_sum / TIN_scores.size();
+    double TIN_stddev = std::sqrt((TIN_sum_sq - TIN_sum * TIN_sum / TIN_scores.size()) / (TIN_scores.size() - 1));
+    std::cout << "TIN mean: " << TIN_mean << std::endl;
+    std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
+    std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
+
     // Close the gene BED file
-    // gene_bed_file.close();
+    gene_bed_file.close();
 
     // Destroy the header
     bam_hdr_destroy(header);
+
+    // Destroy the index
+    hts_idx_destroy(index);
 
     // Return the TIN scores
     return std::vector<double>();
