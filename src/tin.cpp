@@ -408,7 +408,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         for (const auto& exon_size : exon_sizes) {
             sample_size += exon_size;
         }
-        // std::cout << "Sample size: " << sample_size << std::endl;
 
         // Sort C by position
         std::vector<int> positions;
@@ -416,6 +415,42 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             positions.push_back(entry.first);
         }
         std::sort(positions.begin(), positions.end());
+
+        // Sample the values if the mRNA size is greater than the user-specified
+        // sample size
+        int mRNA_size = sample_size - 2;
+        int user_specified_sample_size = 100;
+        if (mRNA_size > user_specified_sample_size) {
+            std::cout << "Sampling " << user_specified_sample_size << " positions" << std::endl;
+            std::vector<int> sampled_positions;
+            int step = mRNA_size / user_specified_sample_size;
+            for (size_t i = 0; i < positions.size(); i += step) {
+                sampled_positions.push_back(positions[i]);
+            }
+            positions = sampled_positions;
+
+            // Also add all the exon start and end positions
+            for (size_t i = 0; i < exon_starts.size(); i++) {
+                positions.push_back(start + 1 + exon_starts[i]);
+                positions.push_back(start + 1 + exon_starts[i] + exon_sizes[i] - 1);
+                // std::cout << "Added exon start: " << start + 1 + exon_starts[i] << ", end: " << start + 1 + exon_starts[i] + exon_sizes[i] - 1 << std::endl;
+            }
+
+            // Remove duplicates
+            std::sort(positions.begin(), positions.end());
+            positions.erase(std::unique(positions.begin(), positions.end()), positions.end());
+
+            // Create a new map with the sampled positions
+            std::unordered_map<int, int> sampled_C;
+            for (const auto& position : positions) {
+                // std::cout << "Position: " << position << " Coverage: " << C[position] << std::endl;
+                sampled_C[position] = C[position];
+            }
+            C = sampled_C;
+
+            // Update the sample size
+            sample_size = positions.size();
+        }
 
         // Print the positions and read depth values
         // std::cout << "Read depth values: " << std::endl;
