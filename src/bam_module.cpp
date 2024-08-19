@@ -70,7 +70,9 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
         // Calculate TIN scores if the gene BED file is available
         std::cout << "Calculating TIN scores..." << std::endl;
-        std::vector<double> tin_scores = calculateTIN(gene_bed, input_params.input_files[0]);
+        int sample_size = input_params.tin_sample_size;
+        int min_cov = input_params.tin_min_coverage;
+        std::vector<double> tin_scores = calculateTIN(gene_bed, input_params.input_files[0], min_cov, sample_size);
         std::cout << "TIN scores calculated." << std::endl;
 
         // [TEST] Exit early

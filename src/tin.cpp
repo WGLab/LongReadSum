@@ -38,7 +38,7 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
     while (sam_itr_next(bam_file, iter, record) >= 0) {
 
         // Skip unmapped and secondary alignments, and QC failures
-        if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
+        if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL || record->core.flag & BAM_FDUP || record->core.flag & BAM_FSUPPLEMENTARY) {
             skip_count++;
             continue;
         }
@@ -88,6 +88,28 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
 
                         // Add the position to the read positions
                         read_positions.push_back(pos + j);
+
+                        // Print all read information if position equals 89295
+                        if (pos + j == 89295) {
+                            // Print the read name
+                            std::cout << "Read name: " << bam_get_qname(record) << std::endl;
+
+                            // Print type of alignment
+                            if (record->core.flag & BAM_FSUPPLEMENTARY) {
+                                std::cout << "Supplementary alignment" << std::endl;
+                            } else if (record->core.flag & BAM_FSECONDARY) {
+                                std::cout << "Secondary alignment" << std::endl;
+                            } else {
+                                std::cout << "Primary alignment" << std::endl;
+                            }
+
+                            // Print the base
+                            std::cout << "Base: " << bam_seqi(bam_get_seq(record), query_pos + j) << std::endl;
+
+                            // Print the base quality
+                            std::cout << "Base quality: " << bam_get_qual(record)[query_pos + j] << std::endl;
+                        }
+
                     }
                 }
             }
@@ -259,8 +281,58 @@ std::unordered_map<std::string, std::vector<std::tuple<std::string, int, int>>> 
     return exon_positions;
 }
 
-std::vector<double> calculateTIN(const std::string& gene_bed, const std::string& bam_filepath)
+bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end, int min_reads)
 {
+    // Set up the region to fetch reads (1-based)
+    std::string region = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
+    hts_itr_t* iter = sam_itr_querys(idx, header, region.c_str());
+    if (iter == NULL) {
+        std::cerr << "Error creating iterator for region " << region << std::endl;
+        exit(1);
+    }
+
+    // Calculate the read depth values for the region
+    int read_count = 0;
+    bool min_reads_met = false;
+    bam1_t* record = bam_init1();
+    while (sam_itr_next(bam_file, iter, record) >= 0) {
+        // Skip unmapped and secondary alignments, and QC failures
+        if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
+            continue;
+        }
+
+        // Get the alignment position
+        int pos = record->core.pos;
+        if (pos < start || pos >= end) {
+            // std::cout << "Read position " << pos << " outside of region " << region << std::endl;
+            continue;
+        }
+        read_count++;
+
+        // Break if the minimum read count is reached
+        if (read_count > min_reads) {
+            min_reads_met = true;
+            // std::cout << "Read count reached: " << read_count << std::endl;
+            break;
+        }
+    }
+
+    // Destroy the iterator
+    hts_itr_destroy(iter);
+
+    // Destroy the record
+    bam_destroy1(record);
+
+    // Return whether the minimum read count was met
+    std::cout << "TEST Read count: " << read_count << std::endl;
+    return min_reads_met;
+    // return read_count > min_reads;
+}
+
+std::vector<double> calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size)
+{
+    std::cout << "Calculating TIN scores with minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
+
     // Open the BAM file
     htsFile* bam_file = sam_open(bam_filepath.c_str(), "r");
     if (bam_file == NULL) {
@@ -312,7 +384,13 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         iss >> chrom >> start >> end >> name >> score >> strand >> thick_start
             >> thick_end >> item_rgb >> exon_count >> exon_sizes_str
             >> exon_starts_str;
-        
+
+        // Check if the transcript passes the minimum read depth threshold
+        if (!checkMinReads(bam_file, index, header, chrom, start, end, min_cov)) {
+            std::cout << "Skipping transcript " << name << " because it does not meet the minimum coverage requirement" << std::endl;
+            std::cout << std::endl;
+            continue;
+        }
 
         // Remove the last comma from the exon sizes and starts strings
         if (exon_sizes_str.back() == ',') {
@@ -388,6 +466,9 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // Get the depths and cumulative depths for the region
             std::unordered_map<int, int> exon_depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
             for (const auto& depth : exon_depths) {
+                if (depth.first == 89295) {
+                    std::cout << "[1[] Updated read depth at position 89295: " << depth.second << std::endl;
+                }
                 C[depth.first] = depth.second;
             }
         }
@@ -397,6 +478,9 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         for (const auto& position : transcript_positions) {
             std::unordered_map<int, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position);
             for (const auto& depth : transcript_depths) {
+                if (depth.first == 89295) {
+                    std::cout << "[2] Updated read depth at position 89295: " << depth.second << std::endl;
+                }
                 C[depth.first] = depth.second;
                 // C[depth.first] = depth.second;
             }
@@ -404,10 +488,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         // Determine the sample size for the transcript (transcript start,
         // end, + exon lengths)
-        int sample_size = 2;
+        // int sample_size = 2;
+        int transcript_size = 2;
         for (const auto& exon_size : exon_sizes) {
-            sample_size += exon_size;
+            transcript_size += exon_size;
         }
+        std::cout << "mRNA size: " << transcript_size - 2 << " for transcript " << name << std::endl;
 
         // Sort C by position
         std::vector<int> positions;
@@ -418,12 +504,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         // Sample the values if the mRNA size is greater than the user-specified
         // sample size
-        int mRNA_size = sample_size - 2;
-        int user_specified_sample_size = 100;
-        if (mRNA_size > user_specified_sample_size) {
-            std::cout << "Sampling " << user_specified_sample_size << " positions" << std::endl;
+        int mRNA_size = transcript_size - 2;
+        // int user_specified_sample_size = 100;
+        if (mRNA_size > sample_size) {
+            std::cout << "Sampling " << sample_size << " positions" << std::endl;
             std::vector<int> sampled_positions;
-            int step = mRNA_size / user_specified_sample_size;
+            int step = mRNA_size / sample_size;
             for (size_t i = 0; i < positions.size(); i += step) {
                 sampled_positions.push_back(positions[i]);
             }
@@ -449,18 +535,17 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             C = sampled_C;
 
             // Update the sample size
-            sample_size = positions.size();
+            transcript_size = positions.size();
         }
 
         // Print the positions and read depth values
-        // std::cout << "Read depth values: " << std::endl;
-        // for (const auto& position : positions) {
-        //     std::string Ci_str = std::to_string(C[position]) + ".0";
-        //     std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
-        //     // std::cout << "C[" << position << "]: " << C[position] << std::endl;
-        // }
-        std::cout << std::endl;
-        std::cout << "Length of C: " << C.size() << std::endl;
+        std::cout << "Read depth values: " << std::endl;
+        for (const auto& position : positions) {
+            std::string Ci_str = std::to_string(C[position]) + ".0";
+            // std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
+            // std::cout << "C[" << position << "]: " << C[position] << std::endl;
+        }
+        // std::cout << "Length of C: " << C.size() << std::endl;
 
         // Calculate total coverage, ΣCi
         int sigma_Ci = 0;
@@ -499,32 +584,22 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
             // Calculate the TIN score for the exon
             // int k = exon_end - exon_start + 1;
-            int k = sample_size;
+            int k = transcript_size;
             std::cout << "sample size: " << k << std::endl;
             std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
             TIN = 100.0 * (U / k);
         }
 
         // Print the TIN score
-        std::cout << "TIN score: " << TIN << std::endl;
+        std::cout << "TIN for transcript " << name << ": " << TIN << std::endl;
+        // std::cout << "TIN score: " << TIN << std::endl;
         TIN_scores.push_back(TIN);
+
+        std::cout << std::endl;
     }
 
     // Close the BAM file
     sam_close(bam_file);
-
-    // Print the TIN mean, median, and standard deviation
-    double TIN_sum = 0;
-    double TIN_sum_sq = 0;
-    for (const auto& TIN_score : TIN_scores) {
-        TIN_sum += TIN_score;
-        TIN_sum_sq += TIN_score * TIN_score;
-    }
-    double TIN_mean = TIN_sum / TIN_scores.size();
-    double TIN_stddev = std::sqrt((TIN_sum_sq - TIN_sum * TIN_sum / TIN_scores.size()) / (TIN_scores.size() - 1));
-    std::cout << "TIN mean: " << TIN_mean << std::endl;
-    std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
-    std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
 
     // Close the gene BED file
     gene_bed_file.close();
@@ -534,6 +609,53 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
     // Destroy the index
     hts_idx_destroy(index);
+
+    if (TIN_scores.size() == 0) {
+        std::cerr << "No TIN scores calculated" << std::endl;
+    } else {
+
+        // Print the TIN mean, median, and standard deviation
+        double TIN_sum = 0;
+        // double TIN_sum_sq = 0;
+        for (const auto& TIN_score : TIN_scores) {
+            TIN_sum += TIN_score;
+            // TIN_sum_sq += TIN_score * TIN_score;
+        }
+        double TIN_mean = TIN_sum / TIN_scores.size();
+
+        // Calculate the standard deviation
+        double TIN_sum_sq = 0;
+        for (const auto& TIN_score : TIN_scores) {
+            TIN_sum_sq += (TIN_score - TIN_mean) * (TIN_score - TIN_mean);
+        }
+
+        // double TIN_variance1 = TIN_sum_sq / (TIN_scores.size() - 1);
+        double TIN_variance = TIN_sum_sq / TIN_scores.size();
+
+        // double TIN_stddev1 = std::sqrt(TIN_variance1);
+        // std::cout << "TIN standard deviation 1: " << TIN_stddev1 << std::endl;
+
+        double TIN_stddev = std::sqrt(TIN_variance);
+        // std::cout << "TIN standard deviation 2: " << TIN_stddev << std::endl;
+        // double TIN_stddev = std::sqrt((TIN_sum_sq - TIN_sum * TIN_sum / TIN_scores.size()) / (TIN_scores.size() - 1));
+        // double TIN_stddev = std::sqrt((TIN_sum_sq - TIN_sum * TIN_sum / TIN_scores.size()) / (TIN_scores.size() - 1));
+        
+        // // Set NaN values to 0
+        // if (TIN_stddev != TIN_stddev) {
+        //     TIN_stddev = 0;
+        // }
+
+        std::cout << "TIN mean: " << TIN_mean << std::endl;
+        std::cout << "Number of TIN scores: " << TIN_scores.size() << std::endl;
+
+        // Sort the TIN scores
+        std::sort(TIN_scores.begin(), TIN_scores.end());
+
+        // Calculate the median
+        std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
+        // std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
+        std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
+    }
 
     // Return the TIN scores
     return std::vector<double>();

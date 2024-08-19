@@ -245,6 +245,10 @@ def bam_module(margs):
         # Set the gene BED file for RNA-seq transcript analysis
         input_para.gene_bed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
 
+        # Set the minimum coverage and sample size for TIN calculation
+        input_para.tin_sample_size = margs.sample_size
+        input_para.tin_min_coverage = margs.min_coverage
+
         # Add the input files to the input parameter
         for input_file in param_dict["input_files"]:
             input_para.add_input_file(str(input_file))
@@ -685,6 +689,14 @@ bam_parser.add_argument("--modprob", type=float, default=0.5,
 # Add argument for gene BED file required for RNA-seq transcript analysis (TIN, etc.)
 bam_parser.add_argument("--genebed", type=str, default="",
                         help="Gene BED file required for RNA-seq analysis. Default: None.")
+
+# Add TIN sample size argument
+bam_parser.add_argument("--sample-size", type=int, default=100,
+                        help="Sample size for TIN calculation. Default: 100.")
+
+# Add TIN minimum coverage argument
+bam_parser.add_argument("--min-coverage", type=int, default=10,
+                        help="Minimum coverage for TIN calculation. Default: 10.")
 
 bam_parser.set_defaults(func=bam_module)
 

@@ -36,6 +36,8 @@ public:
     double base_mod_threshold;  // Base modification threshold for BAM base modification analysis
     std::string gene_bed;  // Gene BED file for RNA-Seq transcript quantification (TIN)
     bool mod_analysis;  // Perform base modification analysis on BAM file
+    int tin_sample_size;  // Number of equally spaced samples for TIN calculation
+    int tin_min_coverage;  // Minimum coverage for TIN calculation
 
     // Functions
     std::string add_input_file(const std::string& input_filepath);
