@@ -7,6 +7,7 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#include <unordered_set>
 /// @endcond
 
 std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
@@ -291,30 +292,53 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
         exit(1);
     }
 
+    // Create a set for storing the read positions
+    std::unordered_set<int> read_positions;
+
     // Calculate the read depth values for the region
     int read_count = 0;
     bool min_reads_met = false;
     bam1_t* record = bam_init1();
+    int test_count = 0;
     while (sam_itr_next(bam_file, iter, record) >= 0) {
         // Skip unmapped and secondary alignments, and QC failures
+        // if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL || record->core.flag & BAM_FDUP || record->core.flag & BAM_FSUPPLEMENTARY) {
         if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
             continue;
         }
 
+        test_count++;
+
         // Get the alignment position
         int pos = record->core.pos;
-        if (pos < start || pos >= end) {
-            // std::cout << "Read position " << pos << " outside of region " << region << std::endl;
+        if (pos < start) {
+            std::cout << "Read position " << pos << " is less than transcript start " << start << std::endl;
             continue;
         }
+
+        if (pos >= end) {
+            std::cout << "Read position " << pos << " is greater than transcript end " << end << std::endl;
+            continue;
+        }
+
+        // Add the position to the set
+        read_positions.insert(pos);
+        // if (pos < start || pos >= end) {
+        //     // std::cout << "Read position " << pos << " outside of region " << region << std::endl;
+        //     continue;
+        // }
         read_count++;
 
         // Break if the minimum read count is reached
-        if (read_count > min_reads) {
+        if ((int) read_positions.size() > min_reads) {
             min_reads_met = true;
-            // std::cout << "Read count reached: " << read_count << std::endl;
             break;
         }
+        // if (read_count > min_reads) {
+        //     min_reads_met = true;
+        //     // std::cout << "Read count reached: " << read_count << std::endl;
+        //     break;
+        // }
     }
 
     // Destroy the iterator
@@ -324,7 +348,9 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     bam_destroy1(record);
 
     // Return whether the minimum read count was met
-    std::cout << "TEST Read count: " << read_count << std::endl;
+    std::cout << "TEST Read count: " << read_positions.size() << std::endl;
+    // std::cout << "TEST Read count: " << read_count << std::endl;
+    // std::cout << "Test count: " << test_count << std::endl;
     return min_reads_met;
     // return read_count > min_reads;
 }
