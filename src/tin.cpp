@@ -39,12 +39,11 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
     while (sam_itr_next(bam_file, iter, record) >= 0) {
 
         // Skip unmapped and secondary alignments, and QC failures
-        if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL || record->core.flag & BAM_FDUP || record->core.flag & BAM_FSUPPLEMENTARY) {
+        if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL || record->core.flag & BAM_FDUP) {
             skip_count++;
             continue;
         }
         read_count++;
-
 
         // Clear positions for each read
         read_positions.clear();
@@ -56,15 +55,16 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
         // Loop through the CIGAR string and update depth at matches
         uint32_t* cigar = bam_get_cigar(record);
         int base_skip = 0;
+        // std::cout << "Processing read at position " << pos << " with CIGAR length " << record->core.n_cigar << std::endl;
         for (uint32_t i = 0; i < record->core.n_cigar; i++) {
             int op = bam_cigar_op(cigar[i]);
             int len = bam_cigar_oplen(cigar[i]);
-            if (op == BAM_CMATCH) {
+            if (op == BAM_CMATCH || op == BAM_CEQUAL || op == BAM_CDIFF) {
                 for (int j = 0; j < len; j++) {
 
                     // Check if the position has already been counted
                     if (std::find(read_positions.begin(), read_positions.end(), pos + j) != read_positions.end()) {
-                        std::cout << "Read position " << pos + j << " already counted" << std::endl;
+                        // std::cout << "Read position " << pos + j << " already counted" << std::endl;
                         continue;
                     }
 
@@ -72,45 +72,24 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
                     // if (bam_seqi(seq, query_pos + j) == 15) {
                     if (bam_seqi(bam_get_seq(record), query_pos + j) == 15) {
                         base_skip++;
+                        // std::cout << "Base is N at position " << pos + j << std::endl;
                         continue;
                     }
 
                     // Skip if base quality is less than 13
                     if (bam_get_qual(record)[query_pos + j] < 13) {
                         base_skip++;
+                        // std::cout << "Base quality is less than 13 at position " << pos + j << std::endl;
                         continue;
                     }
 
                     // Check if the position is within the exon, or if
                     // it is equal to the transcript start+1 or end
-                    // if ((pos + j >= exon_start && pos + j <= exon_end) || pos + j == start + 1 || pos + j == end) {
                     if (pos + j >= start && pos + j <= end) {
                         C[pos + j]++;
 
                         // Add the position to the read positions
                         read_positions.push_back(pos + j);
-
-                        // Print all read information if position equals 89295
-                        if (pos + j == 89295) {
-                            // Print the read name
-                            std::cout << "Read name: " << bam_get_qname(record) << std::endl;
-
-                            // Print type of alignment
-                            if (record->core.flag & BAM_FSUPPLEMENTARY) {
-                                std::cout << "Supplementary alignment" << std::endl;
-                            } else if (record->core.flag & BAM_FSECONDARY) {
-                                std::cout << "Secondary alignment" << std::endl;
-                            } else {
-                                std::cout << "Primary alignment" << std::endl;
-                            }
-
-                            // Print the base
-                            std::cout << "Base: " << bam_seqi(bam_get_seq(record), query_pos + j) << std::endl;
-
-                            // Print the base quality
-                            std::cout << "Base quality: " << bam_get_qual(record)[query_pos + j] << std::endl;
-                        }
-
                     }
                 }
             }
@@ -125,10 +104,7 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
                 query_pos += len;
             }
         }
-        // std::cout << "Base skip count: " << base_skip << std::endl;
     }
-    // std::cout << "Read count: " << read_count << std::endl;
-    // std::cout << "Read skip count: " << skip_count << std::endl;
 
     // Destroy the iterator
     hts_itr_destroy(iter);
@@ -192,7 +168,6 @@ std::unordered_map<std::string, std::tuple<std::string, int, int>> getGenePositi
     // end positions for each transcript (gene ID -> (chrom, tx_start, tx_end))
     std::unordered_map<std::string, std::tuple<std::string, int, int>> gene_positions;
     std::string line;
-    std::string test_gene = "ENSG00000227232.5";
     while (std::getline(gene_bed_file, line)) {
         // Parse the gene BED line (chrom, start, end, transcript_id) (1-based)
         std::istringstream iss(line);
@@ -213,12 +188,6 @@ std::unordered_map<std::string, std::tuple<std::string, int, int>> getGenePositi
             std::string current_chrom = std::get<0>(current_positions);
             int current_start = std::get<1>(current_positions);
             int current_end = std::get<2>(current_positions);
-
-            if (gene_id == test_gene) {
-                std::cout << "Found gene " << test_gene << std::endl;
-                std::cout << "Positions: " << chrom << " " << start << " " << end << std::endl;
-            }
-
             if (start < current_start) {
                 gene_positions[gene_id] = std::make_tuple(chrom, start, current_end);
             }
@@ -228,13 +197,6 @@ std::unordered_map<std::string, std::tuple<std::string, int, int>> getGenePositi
             }
         }
     }
-
-    // Print the test gene's range
-    std::tuple<std::string, int, int> test_gene_positions = gene_positions[test_gene];
-    std::string test_chrom = std::get<0>(test_gene_positions);
-    int test_start = std::get<1>(test_gene_positions);
-    int test_end = std::get<2>(test_gene_positions);
-    std::cout << "Test gene positions: " << test_chrom << " " << test_start << " " << test_end << std::endl;
 
     // Close the gene BED file
     gene_bed_file.close();
@@ -299,7 +261,6 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     int read_count = 0;
     bool min_reads_met = false;
     bam1_t* record = bam_init1();
-    int test_count = 0;
     while (sam_itr_next(bam_file, iter, record) >= 0) {
         // Skip unmapped and secondary alignments, and QC failures
         // if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL || record->core.flag & BAM_FDUP || record->core.flag & BAM_FSUPPLEMENTARY) {
@@ -307,26 +268,20 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
             continue;
         }
 
-        test_count++;
-
         // Get the alignment position
         int pos = record->core.pos;
         if (pos < start) {
-            std::cout << "Read position " << pos << " is less than transcript start " << start << std::endl;
+            // std::cout << "Read position " << pos << " is less than transcript start " << start << std::endl;
             continue;
         }
 
         if (pos >= end) {
-            std::cout << "Read position " << pos << " is greater than transcript end " << end << std::endl;
+            // std::cout << "Read position " << pos << " is greater than transcript end " << end << std::endl;
             continue;
         }
 
         // Add the position to the set
         read_positions.insert(pos);
-        // if (pos < start || pos >= end) {
-        //     // std::cout << "Read position " << pos << " outside of region " << region << std::endl;
-        //     continue;
-        // }
         read_count++;
 
         // Break if the minimum read count is reached
@@ -334,11 +289,6 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
             min_reads_met = true;
             break;
         }
-        // if (read_count > min_reads) {
-        //     min_reads_met = true;
-        //     // std::cout << "Read count reached: " << read_count << std::endl;
-        //     break;
-        // }
     }
 
     // Destroy the iterator
@@ -347,12 +297,7 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     // Destroy the record
     bam_destroy1(record);
 
-    // Return whether the minimum read count was met
-    std::cout << "TEST Read count: " << read_positions.size() << std::endl;
-    // std::cout << "TEST Read count: " << read_count << std::endl;
-    // std::cout << "Test count: " << test_count << std::endl;
     return min_reads_met;
-    // return read_count > min_reads;
 }
 
 std::vector<double> calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size)
@@ -414,7 +359,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         // Check if the transcript passes the minimum read depth threshold
         if (!checkMinReads(bam_file, index, header, chrom, start, end, min_cov)) {
             std::cout << "Skipping transcript " << name << " because it does not meet the minimum coverage requirement" << std::endl;
-            std::cout << std::endl;
+            // std::cout << std::endl;
             continue;
         }
 
@@ -452,27 +397,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // std::cout << "Exon start: " << exon_start_str << std::endl;
         }
         exon_starts.push_back(std::stoi(exon_starts_str));
-        // std::cout << "Exon start: " << exon_starts_str << std::endl;
 
-        // int exon_size;
-        // while (exon_sizes_iss >> exon_size) {
-        //     std::cout << "Exon size: " << exon_size << std::endl;
-        //     exon_sizes.push_back(exon_size);
-        // }
-
-        // int exon_start;
-        // while (exon_starts_iss >> exon_start) {
-        //     // Add 1 to the exon start to make it 1-based
-        //     exon_start++;
-        //     std::cout << "Exon start: " << exon_start << std::endl;
-        //     exon_starts.push_back(exon_start);
-        // }
-
-        std::cout << "Exon count: " << exon_count << std::endl;
-        std::cout << "Transcript: " << name << std::endl;
-        std::cout << "Chrom: " << chrom << std::endl;
-        std::cout << "Start: " << start << std::endl;
-        std::cout << "End: " << end << std::endl;
+        // std::cout << "Exon count: " << exon_count << std::endl;
+        // std::cout << "Transcript: " << name << std::endl;
+        // std::cout << "Chrom: " << chrom << std::endl;
+        // std::cout << "Start: " << start << std::endl;
+        // std::cout << "End: " << end << std::endl;
 
         // Get the read depths and cumulative read depth for each exon
         std::unordered_map<int, int> C;
@@ -492,9 +422,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             // Get the depths and cumulative depths for the region
             std::unordered_map<int, int> exon_depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
             for (const auto& depth : exon_depths) {
-                if (depth.first == 89295) {
-                    std::cout << "[1[] Updated read depth at position 89295: " << depth.second << std::endl;
-                }
                 C[depth.first] = depth.second;
             }
         }
@@ -504,17 +431,12 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         for (const auto& position : transcript_positions) {
             std::unordered_map<int, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position);
             for (const auto& depth : transcript_depths) {
-                if (depth.first == 89295) {
-                    std::cout << "[2] Updated read depth at position 89295: " << depth.second << std::endl;
-                }
                 C[depth.first] = depth.second;
-                // C[depth.first] = depth.second;
             }
         }
 
         // Determine the sample size for the transcript (transcript start,
         // end, + exon lengths)
-        // int sample_size = 2;
         int transcript_size = 2;
         for (const auto& exon_size : exon_sizes) {
             transcript_size += exon_size;
@@ -533,7 +455,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         int mRNA_size = transcript_size - 2;
         // int user_specified_sample_size = 100;
         if (mRNA_size > sample_size) {
-            std::cout << "Sampling " << sample_size << " positions" << std::endl;
+            // std::cout << "Sampling " << sample_size << " positions" << std::endl;
             std::vector<int> sampled_positions;
             int step = mRNA_size / sample_size;
             for (size_t i = 0; i < positions.size(); i += step) {
@@ -564,13 +486,13 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             transcript_size = positions.size();
         }
 
-        // Print the positions and read depth values
-        std::cout << "Read depth values: " << std::endl;
-        for (const auto& position : positions) {
-            std::string Ci_str = std::to_string(C[position]) + ".0";
-            // std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
-            // std::cout << "C[" << position << "]: " << C[position] << std::endl;
-        }
+        // // Print the positions and read depth values
+        // std::cout << "Read depth values: " << std::endl;
+        // for (const auto& position : positions) {
+        //     std::string Ci_str = std::to_string(C[position]) + ".0";
+        //     std::cout << "Position: " << position << " Coverage: " << Ci_str << std::endl;
+        //     // std::cout << "C[" << position << "]: " << C[position] << std::endl;
+        // }
         // std::cout << "Length of C: " << C.size() << std::endl;
 
         // Calculate total coverage, ΣCi
@@ -642,10 +564,8 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         // Print the TIN mean, median, and standard deviation
         double TIN_sum = 0;
-        // double TIN_sum_sq = 0;
         for (const auto& TIN_score : TIN_scores) {
             TIN_sum += TIN_score;
-            // TIN_sum_sq += TIN_score * TIN_score;
         }
         double TIN_mean = TIN_sum / TIN_scores.size();
 
@@ -655,21 +575,8 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
             TIN_sum_sq += (TIN_score - TIN_mean) * (TIN_score - TIN_mean);
         }
 
-        // double TIN_variance1 = TIN_sum_sq / (TIN_scores.size() - 1);
         double TIN_variance = TIN_sum_sq / TIN_scores.size();
-
-        // double TIN_stddev1 = std::sqrt(TIN_variance1);
-        // std::cout << "TIN standard deviation 1: " << TIN_stddev1 << std::endl;
-
         double TIN_stddev = std::sqrt(TIN_variance);
-        // std::cout << "TIN standard deviation 2: " << TIN_stddev << std::endl;
-        // double TIN_stddev = std::sqrt((TIN_sum_sq - TIN_sum * TIN_sum / TIN_scores.size()) / (TIN_scores.size() - 1));
-        // double TIN_stddev = std::sqrt((TIN_sum_sq - TIN_sum * TIN_sum / TIN_scores.size()) / (TIN_scores.size() - 1));
-        
-        // // Set NaN values to 0
-        // if (TIN_stddev != TIN_stddev) {
-        //     TIN_stddev = 0;
-        // }
 
         std::cout << "TIN mean: " << TIN_mean << std::endl;
         std::cout << "Number of TIN scores: " << TIN_scores.size() << std::endl;
@@ -679,7 +586,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
         // Calculate the median
         std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
-        // std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
         std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
     }
 
