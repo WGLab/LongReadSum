@@ -8,6 +8,7 @@
 #include <cmath>
 #include <algorithm>
 #include <unordered_set>
+#include <iomanip>
 /// @endcond
 
 std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
@@ -300,7 +301,7 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     return min_reads_met;
 }
 
-std::vector<double> calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size)
+void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder)
 {
     std::cout << "Calculating TIN scores with minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
 
@@ -331,8 +332,7 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
 
     // Vector to store the TIN scores for each transcript (gene ID -> (chrom,
     // tx_start, tx_end, TIN)
-    // std::unordered_map<std::string, std::tuple<std::string, int, int, double>>
-    //     tin_scores;
+    TINMap tin_scores;
 
     // Loop through the gene BED file and calculate the TIN score for each
     // transcript
@@ -359,7 +359,10 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         // Check if the transcript passes the minimum read depth threshold
         if (!checkMinReads(bam_file, index, header, chrom, start, end, min_cov)) {
             std::cout << "Skipping transcript " << name << " because it does not meet the minimum coverage requirement" << std::endl;
-            // std::cout << std::endl;
+            
+            // Set the TIN score to 0
+            tin_scores[name] = std::make_tuple(chrom, start, end, 0.0);
+
             continue;
         }
 
@@ -453,7 +456,6 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         // Sample the values if the mRNA size is greater than the user-specified
         // sample size
         int mRNA_size = transcript_size - 2;
-        // int user_specified_sample_size = 100;
         if (mRNA_size > sample_size) {
             // std::cout << "Sampling " << sample_size << " positions" << std::endl;
             std::vector<int> sampled_positions;
@@ -544,6 +546,9 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         TIN_scores.push_back(TIN);
 
         std::cout << std::endl;
+
+        // Store the TIN score for the transcript
+        tin_scores[name] = std::make_tuple(chrom, start, end, TIN);
     }
 
     // Close the BAM file
@@ -578,17 +583,76 @@ std::vector<double> calculateTIN(const std::string& gene_bed, const std::string&
         double TIN_variance = TIN_sum_sq / TIN_scores.size();
         double TIN_stddev = std::sqrt(TIN_variance);
 
-        std::cout << "TIN mean: " << TIN_mean << std::endl;
         std::cout << "Number of TIN scores: " << TIN_scores.size() << std::endl;
+
+        // Set the precision for the output
+        std::cout << std::fixed << std::setprecision(14);
+
+        std::cout << "TIN mean: " << TIN_mean << std::endl;
 
         // Sort the TIN scores
         std::sort(TIN_scores.begin(), TIN_scores.end());
 
         // Calculate the median
-        std::cout << "TIN median: " << TIN_scores[TIN_scores.size() / 2] << std::endl;
+        double TIN_median = TIN_scores[TIN_scores.size() / 2];
+        std::cout << "TIN median: " << TIN_median << std::endl;
         std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
+
+        std::cout << "Writing TIN scores to file" << std::endl;
+
+        // Write the TIN scores to a file
+        std::string output_tin_tsv = output_folder + "/tin_scores.tsv";
+        std::ofstream output_tin_file(output_tin_tsv);
+        output_tin_file << std::fixed << std::setprecision(14);
+
+        if (!output_tin_file.is_open()) {
+            std::cerr << "Error opening output TIN file" << std::endl;
+            exit(1);
+        }
+
+        // Write the header
+        output_tin_file << "geneID\tchrom\ttx_start\ttx_end\tTIN" << std::endl;
+
+        // Write the TIN scores to the file
+        for (const auto& entry : tin_scores) {
+            std::string gene_id = entry.first;
+            std::string chrom = std::get<0>(entry.second);
+            int tx_start = std::get<1>(entry.second);
+            int tx_end = std::get<2>(entry.second);
+            double TIN = std::get<3>(entry.second);
+
+            output_tin_file << gene_id << "\t" << chrom << "\t" << tx_start << "\t" << tx_end << "\t" << TIN << std::endl;
+        }
+
+        // Close the output TIN file
+        output_tin_file.close();
+
+        std::cout << "TIN scores written to " << output_tin_tsv << std::endl;
+
+        // Write the TIN summary to a file
+        std::string output_tin_summary_tsv = output_folder + "/tin_summary.tsv";
+
+        std::ofstream output_tin_summary_file(output_tin_summary_tsv);
+        output_tin_summary_file << std::fixed << std::setprecision(14);
+
+        if (!output_tin_summary_file.is_open()) {
+            std::cerr << "Error opening output TIN summary file" << std::endl;
+            exit(1);
+        }
+
+        // Write the header
+        output_tin_summary_file << "Bam_file\tTIN(mean)\tTIN(median)\tTIN(stddev)" << std::endl;
+
+        // Write the TIN summary to the file
+        output_tin_summary_file << bam_filepath << "\t" << TIN_mean << "\t" << TIN_median << "\t" << TIN_stddev << std::endl;
+
+        // Close the output TIN summary file
+        output_tin_summary_file.close();
+
+        std::cout << "TIN summary written to " << output_tin_summary_tsv << std::endl;
     }
 
-    // Return the TIN scores
-    return std::vector<double>();
+    // // Return the TIN scores
+    // return tin_scores;
+    // // return TIN_scores;
 }

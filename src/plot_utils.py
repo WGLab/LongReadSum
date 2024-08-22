@@ -496,8 +496,6 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
 
-    font_size = para_dict["fontsize"]
-
     # Create the summary table
     create_pod5_table(pod5_output, plot_filepaths)
 
@@ -625,7 +623,6 @@ def plot_signal(output_data, para_dict):
     
     # Get input parameters
     output_dir = para_dict["output_folder"]
-    # font_size = para_dict["fontsize"]
     marker_size = para_dict["markersize"]
     read_count_max = para_dict["read_count"]
     

@@ -66,8 +66,8 @@ def get_common_param(margs):
             param_dict["input_files"].extend(
                 glob(os.path.join("*".join(pat_split[:-1]), "*" + pat_split[-1])))
 
-        read_count = int(margs.read_count)
-        param_dict["read_count"] = read_count
+        # read_count = int(margs.read_count)
+        # param_dict["read_count"] = read_count
         
         if len(param_dict["input_files"]) == 0:
             parsing_error_msg += "No input file(s) can be found. \n"
@@ -111,13 +111,7 @@ def get_common_param(margs):
         param_dict["log_file"] = margs.log
         param_dict["log_level"] = margs.log_level
 
-    param_dict["downsample_percentage"] = margs.downsample_percentage
-
     param_dict["threads"] = margs.threads
-
-    param_dict["random_seed"] = margs.seed
-
-    param_dict["detail"] = margs.detail
 
     # Plot style parameters
     param_dict["fontsize"] = margs.fontsize
@@ -147,11 +141,9 @@ def fq_module(margs):
         # Import the SWIG Python wrapper for our C++ module
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
 
         input_para.other_flags = 0
-        input_para.user_defined_fastq_base_qual_offset = margs.udqual;
+        input_para.user_defined_fastq_base_qual_offset = margs.udqual
 
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
@@ -190,8 +182,6 @@ def fa_module(margs):
         param_dict["out_prefix"] += "fasta"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
         input_para.other_flags = 0
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
@@ -227,9 +217,6 @@ def bam_module(margs):
         param_dict["out_prefix"] += "bam";
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
-        input_para.other_flags = (1 if param_dict["detail"] > 0 else 0);
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
 
@@ -288,9 +275,6 @@ def rrms_module(margs):
         logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
-        input_para.other_flags = (1 if param_dict["detail"] > 0 else 0);
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
         for _ipf in param_dict["input_files"]:
@@ -345,11 +329,8 @@ def seqtxt_module(margs):
         param_dict["out_prefix"] += "seqtxt"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
         input_para.other_flags = margs.seq  # Default = 1
         input_para.other_flags = (input_para.other_flags << 4)
-        input_para.other_flags += (1 if param_dict["detail"] > 0 else 0)
         input_para.other_flags = (input_para.other_flags << 4)
         input_para.other_flags += int(margs.sum_type)
 
@@ -392,8 +373,6 @@ def fast5_module(margs):
         param_dict["out_prefix"] += "FAST5"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
         input_para.other_flags = 0  # 0 for normal QC, 1 for signal statistics output
@@ -429,11 +408,13 @@ def fast5_signal_module(margs):
         param_dict["out_prefix"] += "fast5_signal"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.rdm_seed = param_dict["random_seed"]
-        input_para.downsample_percentage = param_dict["downsample_percentage"]
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
         input_para.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
+
+        # Get the read count if specified
+        read_count = int(margs.read_count)
+        param_dict["read_count"] = read_count
 
         # Get the read ID list if specified
         read_ids = margs.read_ids
@@ -461,6 +442,30 @@ def fast5_signal_module(margs):
             logging.error("QC did not generate.")
 
 
+def set_file_parser_defaults(filetype, parser):
+    """Create a parser with default arguments for a specific filetype."""
+    parser.add_argument("-i", "--input", type=argparse.FileType('r'), default=None,
+                        help="Single input filepath")
+    parser.add_argument("-I", "--inputs", type=str, default=None,
+                        help="Multiple comma-separated input filepaths")
+    parser.add_argument("-P", "--pattern", type=str, default=None,
+                        help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
+    parser.add_argument("-g", "--log", type=str, default="log_output.log",
+                        help="Log file")
+    parser.add_argument("-G", "--log-level", type=int, default=2,
+                        help="Logging level. 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL. Default: 2.")
+    parser.add_argument("-o", "--outputfolder", type=str, default="output_" + prg_name,
+                        help="The output folder.")
+    parser.add_argument("-t", "--threads", type=int, default=1,
+                        help="The number of threads used. Default: 1.")
+    parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
+                        help="The prefix for output filenames. Default: `QC_`.")
+    parser.add_argument("--fontsize", type=int, default=14,
+                        help="Font size for plots. Default: 14")
+    parser.add_argument("--markersize", type=int, default=10,
+                        help="Marker size for plots. Default: 10")
+
+
 def pod5_module(margs):
     """POD5 file input module."""
     # Get the filetype-specific parameters
@@ -474,14 +479,16 @@ def pod5_module(margs):
         param_dict["out_prefix"] += "POD5"
         input_para = {}
         input_para['threads'] = param_dict["threads"]
-        input_para['rdm_seed'] = param_dict["random_seed"]
-        input_para['downsample_percentage'] = param_dict["downsample_percentage"]
         input_para['output_folder'] = str(param_dict["output_folder"])
         input_para['out_prefix'] = str(param_dict["out_prefix"])
         input_para['other_flags'] = 0  # 0 for normal QC, 1 for signal statistics output
         input_para['input_files'] = []
         for input_file in param_dict["input_files"]:
             input_para['input_files'].append(str(input_file))
+
+        # Get the read count if specified
+        read_count = int(margs.read_count)
+        param_dict["read_count"] = read_count
 
         # Get the read ID list if specified
         read_ids = margs.read_ids
@@ -497,9 +504,6 @@ def pod5_module(margs):
         if basecalls != "" and basecalls is not None:
             basecalls_input = lrst.Input_Para()
             basecalls_input.threads = param_dict["threads"]
-            basecalls_input.rdm_seed = param_dict["random_seed"]
-            basecalls_input.downsample_percentage = param_dict["downsample_percentage"]
-            basecalls_input.other_flags = (1 if param_dict["detail"] > 0 else 0)
             basecalls_input.output_folder = str(param_dict["output_folder"])
             basecalls_input.out_prefix = str(param_dict["out_prefix"])
             basecalls_input.add_input_file(basecalls)
@@ -541,58 +545,10 @@ parser = argparse.ArgumentParser(description="QC tools for long-read sequencing 
                                  formatter_class=RawTextHelpFormatter)
 
 # The subparser will determine our filetype-specific modules
-subparsers = parser.add_subparsers()
+subparsers = parser.add_subparsers(title="File types", dest="filetype")
 
 # The parent parser contains parameters common to all modules (input/output file, etc.)
 parent_parser = argparse.ArgumentParser(add_help=False)
-
-common_grp_param = parent_parser.add_argument_group(
-    "Common parameters for %(prog)s")
-
-# File input parameter
-input_files_group = common_grp_param.add_mutually_exclusive_group()
-input_files_group.add_argument(
-    "-i", "--input", type=argparse.FileType('r'), default=None, help="Single input filepath")
-
-input_files_group.add_argument(
-    "-I", "--inputs", type=str, default=None,
-    help="Multiple comma-separated input filepaths", )
-
-input_files_group.add_argument(
-    "-P", "--pattern", type=str, default=None,
-    help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
-
-# Plot style parameters
-common_grp_param.add_argument("--fontsize", type=int, default=14,
-                              help="Font size for plots. Default: 14")
-
-common_grp_param.add_argument("--markersize", type=int, default=10,
-                              help="Marker size for plots. Default: 10")
-
-# Number of reads to sample
-common_grp_param.add_argument(
-    "-R", "--read-count", type=int, default=3,
-    help="Set the number of reads to randomly sample from the file. Default: 3.")
-
-# Misc. parameters
-input_files_group.add_argument("-p", "--downsample_percentage", type=float, default=1.0,
-                               help="The percentage of downsampling for quick run. Default: 1.0 without downsampling")
-
-common_grp_param.add_argument(
-    "-g", "--log", type=str, default="log_output.log", help="Log file")
-common_grp_param.add_argument("-G", "--log_level", type=int, default=2,
-                              help="Logging level. 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL. Default: 2.")
-
-common_grp_param.add_argument("-o", "--outputfolder", type=str,
-                              default="output_" + prg_name, help="The output folder.")
-common_grp_param.add_argument("-t", "--threads", type=int,
-                              default=1, help="The number of threads used. Default: 1.")
-common_grp_param.add_argument("-Q", "--outprefix", type=str,
-                              default="QC_", help="The prefix of output. Default: `QC_`.")
-common_grp_param.add_argument(
-    "-s", "--seed", type=int, default=1, help="The number for random seed. Default: 1.")
-common_grp_param.add_argument("-d", "--detail", type=int, default=0,
-                              help="Will output detail in files? Default: 0(no).")
 
 # FASTA input file
 fa_parser = subparsers.add_parser('fa',
@@ -601,6 +557,8 @@ fa_parser = subparsers.add_parser('fa',
                                    description="For example:\n"
                                                "python %(prog)s -i input.fasta -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
+
+set_file_parser_defaults('fa', fa_parser)
 fa_parser.set_defaults(func=fa_module)
 
 # FASTQ input file
@@ -610,8 +568,9 @@ fq_parser = subparsers.add_parser('fq',
                                    description="For example:\n"
                                                "python %(prog)s -i input.fastq -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
-fq_parser.add_argument("-u", "--udqual", type=int, default=-1,
-                        help="User defined quality offset for bases in fq. Default: -1.")
+set_file_parser_defaults('fq', fq_parser)
+fq_parser.add_argument("-u", "--udqual", type=int, default=33,
+                        help="User defined quality offset for bases in fq. Default: 33.")
 fq_parser.set_defaults(func=fq_module)
 
 # FAST5 input file
@@ -621,6 +580,7 @@ fast5_parser = subparsers.add_parser('f5',
                                      description="For example:\n"
                                                  "python %(prog)s -i input.fast5 -o /output_directory/",
                                      formatter_class=RawTextHelpFormatter)
+set_file_parser_defaults('f5', fast5_parser)
 fast5_parser.set_defaults(func=fast5_module)
 
 # FAST5 input file in signal statistics mode
@@ -630,11 +590,16 @@ fast5_signal_parser = subparsers.add_parser('f5s',
                                             description="For example:\n"
                                                         "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
                                             formatter_class=RawTextHelpFormatter)
+set_file_parser_defaults('f5s', fast5_signal_parser)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
 # Add an argument for specifying the read names to extract
 fast5_signal_parser.add_argument("-r", "--read_ids", type=str, default=None,
                                  help="A comma-separated list of read IDs to extract from the file.")
+
+# Add an argument for specifying the maximum number of reads to extract
+fast5_signal_parser.add_argument("-R", "--read-count", type=int, default=3,
+                                    help="Set the number of reads to randomly sample from the file. Default: 3.")
 
 # POD5 input file
 pod5_parser = subparsers.add_parser('pod5',
@@ -643,6 +608,7 @@ pod5_parser = subparsers.add_parser('pod5',
                                     description="For example:\n"
                                                 "python %(prog)s -i input.pod5 -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
+set_file_parser_defaults('pod5', pod5_parser)
 pod5_parser.set_defaults(func=pod5_module)
 
 # Add an argument for specifying the read names to extract
@@ -653,6 +619,10 @@ pod5_parser.add_argument("-r", "--read_ids", type=str, default=None,
 pod5_parser.add_argument("-b", "--basecalls", type=str, default=None,
                             help="The basecalled BAM file to use for signal extraction.")
 
+# Add an argument for specifying the maximum number of reads to extract
+pod5_parser.add_argument("-R", "--read-count", type=int, default=3,
+                            help="Set the number of reads to randomly sample from the file. Default: 3.")
+
 # Sequencing summary text file input
 seqtxt_parser = subparsers.add_parser('seqtxt',
                                        parents=[parent_parser],
@@ -660,6 +630,7 @@ seqtxt_parser = subparsers.add_parser('seqtxt',
                                        description="For example:\n"
                                                    "python %(prog)s -i sequencing_summary.txt -o /output_directory/",
                                        formatter_class=RawTextHelpFormatter)
+set_file_parser_defaults('seqtxt', seqtxt_parser)
 seqtxt_parser.add_argument("-S", "--seq", type=int, default=1,
                             help="sequencing_summary.txt only? Default: 1(yes).")
 seqtxt_parser.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
@@ -674,6 +645,7 @@ bam_parser = subparsers.add_parser('bam',
                                     description="For example:\n"
                                                 "python %(prog)s -i input.bam -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
+set_file_parser_defaults('bam', bam_parser)
 
 bam_parser.add_argument("--ref", type=str, default="",
                         help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
@@ -707,13 +679,15 @@ rrms_bam_parser = subparsers.add_parser('rrms',
                                          description="For example:\n"
                                                      "python %(prog)s -i input.bam -c input.csv -o /output_directory/",
                                          formatter_class=RawTextHelpFormatter)
+set_file_parser_defaults('rrms', rrms_bam_parser)
 
 # Add required input CSV file for RRMS
-rrms_help_str = "CSV file containing read IDs to extract from the BAM file.\n" \
-                "The CSV file should contain a read id column with the header 'read_id' as well as a column " \
-                "containing the accepted/rejected status of the read with the header 'decision'.\n" \
-                "Accepted reads should have a value of 'stop_receiving' in the 'decision' column, while rejected reads " \
-                "should have a value of 'unblock'."
+rrms_help_str = "CSV file containing read IDs to extract from the BAM file. See README for formatting specifics."
+
+# "The CSV file should contain a read id column with the header 'read_id' as well as a column " \
+# "containing the accepted/rejected status of the read with the header 'decision'." \
+# "Accepted reads should have a value of 'stop_receiving' in the 'decision' column, while rejected reads " \
+# "should have a value of 'unblock'."
                 
 rrms_bam_parser.add_argument("-c", "--csv", type=str, required=True,
                                 help=rrms_help_str)

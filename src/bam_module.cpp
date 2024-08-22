@@ -72,11 +72,8 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         std::cout << "Calculating TIN scores..." << std::endl;
         int sample_size = input_params.tin_sample_size;
         int min_cov = input_params.tin_min_coverage;
-        std::vector<double> tin_scores = calculateTIN(gene_bed, input_params.input_files[0], min_cov, sample_size);
+        calculateTIN(gene_bed, input_params.input_files[0], min_cov, sample_size, input_params.output_folder);
         std::cout << "TIN scores calculated." << std::endl;
-
-        // [TEST] Exit early
-        exit(0);
     }
 
     // Loop through the input files
