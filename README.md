@@ -10,9 +10,15 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
 - [Installation using Anaconda](#installation-using-anaconda)
 - [Installation using Docker](#installation-using-anaconda)
 - [Building from source](#building-from-source)
-- [General usage](#general-usage)
-	- [WGS BAM files](#wgs-bam-files)
-	- [RRMS BAM files](#rrms-bam-files)
+- Supported QC filetypes:
+	- [WGS BAM](#wgs-bam)
+	- [RRMS BAM](#rrms-bam)
+  - [RNA-Seq BAM (TIN values)](#rna-seq-bam)
+  - [ONT POD5](#ont-pod5)
+  - [ONT FAST5](#ont-fast5)
+  - [Basecall summary (ONT sequencing_summary.txt)](#basecall-summary)
+  - [FASTQ](#fastq)
+  - [FASTA](#fasta)
 
 # Installation using Anaconda
 First, install [Anaconda](https://www.anaconda.com/).
@@ -86,8 +92,14 @@ python longreadsum [arguments]
 ```
 
 # General Usage
-## WGS BAM files
-## RRMS BAM files
+## WGS BAM
+## RRMS BAM
+## RNA-Seq BAM
+## ONT POD5
+## ONT FAST5
+## Basecall summary
+## FASTQ
+## FASTA
 
 Specifying input files:
 
