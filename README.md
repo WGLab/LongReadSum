@@ -19,6 +19,9 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
   - [Basecall summary (ONT sequencing_summary.txt)](#basecall-summary)
   - [FASTQ](#fastq)
   - [FASTA](#fasta)
+- [Revision history](#revision-history)
+- [Getting help](#getting-help)
+- [Citing LongReadSum](#citing-longreadsum)
 
 # Installation using Anaconda
 First, install [Anaconda](https://www.anaconda.com/).
@@ -143,6 +146,6 @@ For release history, please visit [here](https://github.com/WGLab/LongReadSum/re
 Please refer to the [LongReadSum issue pages](https://github.com/WGLab/LongReadSum/issues) for posting your issues. We will also respond your questions quickly. Your comments are criticl to improve our tool and will benefit other users.
 
 # Citing LongReadSum
-***Please cite the presentation below if you use our tool***
+### Please cite the preprint below if you use our tool:
 
-Perdomo, J. E., M. U. Ahsan, Q. Liu, L. Fang, K. Wang. *LongReadSum: A fast and flexible quality control tool for long-read sequencing data*. Poster presented at: American Society of Human Genetics (ASHG) Annual Meeting; 2022 October 25-29; Los Angeles Convention Center, Los Angeles, CA.
+Perdomo, J. E., Ahsan, M. U., Liu, Q., Fang, L. & Wang, K. LongReadSum: A fast and flexible quality control and signal summarization tool for long-read sequencing data. bioRxiv, 2024.2008.2005.606643, [doi:10.1101/2024.08.05.606643](https://doi.org/doi:10.1101/2024.08.05.606643) (2024).
