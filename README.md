@@ -10,7 +10,7 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
 - [Installation using Anaconda](#installation-using-anaconda)
 - [Installation using Docker](#installation-using-anaconda)
 - [Building from source](#building-from-source)
-- Supported QC filetypes:
+- General usage:
 	- [WGS BAM](#wgs-bam)
 	- [RRMS BAM](#rrms-bam)
   - [RNA-Seq BAM (TIN values)](#rna-seq-bam)
