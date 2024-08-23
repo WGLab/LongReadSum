@@ -1,27 +1,30 @@
 # LongReadSum: A fast and flexible QC tool for long read sequencing data
 
-![image](https://user-images.githubusercontent.com/14855676/180858677-bba1dda7-15a2-4ba0-8ff5-6c954d00ba85.png)
+![image](https://github.com/user-attachments/assets/ae3d2b6a-46da-476a-8fe5-7e0a34751585)
 
 [![build tests](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml/badge.svg)](https://github.com/WGLab/LongReadSum/actions/workflows/build-test.yml)
 
 LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
 
-## Software requirements
-Please refer to the conda
-[environment.yml](https://github.com/WGLab/LongReadSum/blob/main/environment.yml)
-file for all required packages.
+# README Contents
+- [Installation using Anaconda](#installation-using-anaconda)
+- [Installation using Docker](#installation-using-anaconda)
+- [Building from source](#building-from-source)
+- [General usage](#general-usage)
+	- [WGS BAM files](#wgs-bam-files)
+	- [RRMS BAM files](#rrms-bam-files)
 
-# Installation using Anaconda (Linux 64-bit)
+# Installation using Anaconda
 First, install [Anaconda](https://www.anaconda.com/).
 
-Next, create a new environment. This installation has been tested with Python 3.10:
+Next, create a new environment. This installation has been tested with Python 3.10, Linux 64-bit.
 
 ```
-conda create -n py10 python=3.10
-conda activate py10
+conda create -n longreadsum python=3.10
+conda activate longreadsum
 ```
 
-LongReadSum can then be installed using the following command:
+LongReadSum and its dependencies can then be installed using the following command:
 
 ```
 conda install -c bioconda -c wglab longreadsum=1.3.1
@@ -29,7 +32,7 @@ conda install -c bioconda -c wglab longreadsum=1.3.1
 
 # Installation using Docker
 First, install [Docker](https://docs.docker.com/engine/install/).
-Pull the latest image from Docker hub:
+Pull the latest image from Docker hub, which contains the latest longreadsum release and its dependencies.
 
 ```
 docker pull genomicslab/longreadsum
@@ -44,24 +47,25 @@ docker run -v C:/Users/.../DataDirectory:/mnt/ -it genomicslab/longreadsum bam -
 Note that the `-v` command is required for Docker to find the input file. Use a directory under `C:/Users/` to ensure volume files are mounted correctly. In the above example, the local directory `C:/Users/.../DataDirectory` containing the input file `input.bam` is mapped to a directory `/mnt/` in the Docker container. Thus, the input file and output directory arguments are relative to the `/mnt/` directory, but the output files will also be saved locally in `C:/Users/.../DataDirectory` under the specified subdirectory `output`.
 
 
-# Installation using Anaconda
+# Building from source
+To get the latest updates in longreadsum, you can build from source.
 First install [Anaconda](https://www.anaconda.com/). Then follow the instructions below to install LongReadSum and its dependencies:
 
 ```
+# Pull the latest updates
 git clone https://github.com/WGLab/LongReadSum
 cd LongReadSum
+
+# Create the longreadsum environment, install dependencies, and activate
 conda env create -f environment.yml
+conda activate longreadsum
 
-export PATH=~/miniconda3/envs/lrst_py39/bin:$PATH
-conda activate lrst_py39
+# Build the program
 make
-
 ```
 
 If you are using FAST5 files with VBZ compression, you will need to download and install the VBZ plugin corresponding to your architecture:
 https://github.com/nanoporetech/vbz_compression/releases
-
-For example:
 
 ```
 wget https://github.com/nanoporetech/vbz_compression/releases/download/v1.0.1/ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
@@ -82,6 +86,8 @@ python longreadsum [arguments]
 ```
 
 # General Usage
+## WGS BAM files
+## RRMS BAM files
 
 Specifying input files:
 
@@ -116,6 +122,7 @@ RRMS example:
 FAST5 signal mode example:
   longreadsum f5s --input input.fast5 --output output_directory
 ```
+
 
 # Revision history
 For release history, please visit [here](https://github.com/WGLab/LongReadSum/releases). 
