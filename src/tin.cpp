@@ -332,11 +332,12 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
     // Vector to store the TIN scores for each transcript (gene ID -> (chrom,
     // tx_start, tx_end, TIN)
-    TINMap tin_scores;
+    TINMap tin_map;
 
     // Loop through the gene BED file and calculate the TIN score for each
     // transcript
     std::vector<double> TIN_scores;
+    std::vector<std::string> gene_ids;
     std::string line;
     while (std::getline(gene_bed_file, line)) {
         // Parse the gene BED line and get the exon positions for the transcript
@@ -361,7 +362,8 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
             std::cout << "Skipping transcript " << name << " because it does not meet the minimum coverage requirement" << std::endl;
             
             // Set the TIN score to 0
-            tin_scores[name] = std::make_tuple(chrom, start, end, 0.0);
+            tin_map[name] = std::make_tuple(chrom, start, end, 0.0);
+            gene_ids.push_back(name);
 
             continue;
         }
@@ -544,11 +546,12 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         std::cout << "TIN for transcript " << name << ": " << TIN << std::endl;
         // std::cout << "TIN score: " << TIN << std::endl;
         TIN_scores.push_back(TIN);
+        gene_ids.push_back(name);
 
         std::cout << std::endl;
 
         // Store the TIN score for the transcript
-        tin_scores[name] = std::make_tuple(chrom, start, end, TIN);
+        tin_map[name] = std::make_tuple(chrom, start, end, TIN);
     }
 
     // Close the BAM file
@@ -613,16 +616,24 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         // Write the header
         output_tin_file << "geneID\tchrom\ttx_start\ttx_end\tTIN" << std::endl;
 
-        // Write the TIN scores to the file
-        for (const auto& entry : tin_scores) {
-            std::string gene_id = entry.first;
-            std::string chrom = std::get<0>(entry.second);
-            int tx_start = std::get<1>(entry.second);
-            int tx_end = std::get<2>(entry.second);
-            double TIN = std::get<3>(entry.second);
+        // Write the TIN scores to the file in the order of the gene IDs
+        for (const auto& gene_id : gene_ids) {
+            std::string chrom = std::get<0>(tin_map[gene_id]);
+            int tx_start = std::get<1>(tin_map[gene_id]);
+            int tx_end = std::get<2>(tin_map[gene_id]);
+            double TIN = std::get<3>(tin_map[gene_id]);
 
             output_tin_file << gene_id << "\t" << chrom << "\t" << tx_start << "\t" << tx_end << "\t" << TIN << std::endl;
         }
+        // for (const auto& entry : tin_map) {
+        //     std::string gene_id = entry.first;
+        //     std::string chrom = std::get<0>(entry.second);
+        //     int tx_start = std::get<1>(entry.second);
+        //     int tx_end = std::get<2>(entry.second);
+        //     double TIN = std::get<3>(entry.second);
+
+        //     output_tin_file << gene_id << "\t" << chrom << "\t" << tx_start << "\t" << tx_end << "\t" << TIN << std::endl;
+        // }
 
         // Close the output TIN file
         output_tin_file.close();

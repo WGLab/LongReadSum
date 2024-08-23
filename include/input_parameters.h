@@ -23,8 +23,6 @@ public:
     size_t num_input_files;
     std::string out_prefix;
     int64_t other_flags;
-    int rdm_seed;
-    float downsample_percentage;
     int32_t user_defined_fastq_base_qual_offset;
     std::string output_folder;  // Output folder
     std::string input_files[MAX_INPUT_FILES];  // Input files
