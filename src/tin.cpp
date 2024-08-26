@@ -44,6 +44,13 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
             skip_count++;
             continue;
         }
+
+        // // Skip supplementary reads
+        // if (record->core.flag & BAM_FSUPPLEMENTARY) {
+        //     skip_count++;
+        //     continue;
+        // }
+
         read_count++;
 
         // Clear positions for each read
@@ -60,6 +67,13 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
         for (uint32_t i = 0; i < record->core.n_cigar; i++) {
             int op = bam_cigar_op(cigar[i]);
             int len = bam_cigar_oplen(cigar[i]);
+
+            // Skip deletions
+            if (op == BAM_CDEL) {
+                base_skip += len;
+                continue;
+            }
+
             if (op == BAM_CMATCH || op == BAM_CEQUAL || op == BAM_CDIFF) {
                 for (int j = 0; j < len; j++) {
 
@@ -84,8 +98,7 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
                         continue;
                     }
 
-                    // Check if the position is within the exon, or if
-                    // it is equal to the transcript start+1 or end
+                    // Check if the position is within the exon
                     if (pos + j >= start && pos + j <= end) {
                         C[pos + j]++;
 
