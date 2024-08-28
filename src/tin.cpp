@@ -294,7 +294,7 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         for (const auto& exon_size : exon_sizes) {
             transcript_size += exon_size;
         }
-        std::cout << "mRNA size: " << transcript_size - 2 << " for transcript " << name << std::endl;
+        // std::cout << "mRNA size: " << transcript_size - 2 << " for transcript " << name << std::endl;
 
         // Sort C by position
         std::vector<int> positions;
@@ -352,7 +352,7 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         for (const auto& entry : C) {
             sigma_Ci += entry.second;
         }
-        std::cout << "Sigma Ci: " << sigma_Ci << std::endl;
+        // std::cout << "Sigma Ci: " << sigma_Ci << std::endl;
 
         // Calculate the relative coverage, Pi = Ci / ΣCi
         std::vector<double> Pi;
@@ -373,7 +373,7 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
                 H += Pi_value * std::log(Pi_value);
             }
         }
-        std::cout << "H: " << -H << std::endl;
+        // std::cout << "H: " << -H << std::endl;
 
         double TIN = 0;
         if (H != 0) {
@@ -383,13 +383,13 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
             // Calculate the TIN score for the exon
             int k = transcript_size;
-            std::cout << "sample size: " << k << std::endl;
-            std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
+            // std::cout << "sample size: " << k << std::endl;
+            // std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
             TIN = 100.0 * (U / k);
         }
 
         // Print the TIN score
-        std::cout << "TIN for transcript " << name << ": " << TIN << std::endl;
+        // std::cout << "TIN for transcript " << name << ": " << TIN << std::endl;
         TIN_scores.push_back(TIN);
         gene_ids.push_back(name);
 
