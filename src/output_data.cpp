@@ -370,6 +370,26 @@ void Output_BAM::add(Output_BAM &output_data)
     }
 }
 
+void Output_BAM::addTINData(std::string &bam_file, TINStats &tin_data) {
+    this->tin_data[bam_file] = tin_data;
+}
+
+double Output_BAM::getTINMean(std::string bam_file) {
+    return this->tin_data[bam_file].mean;
+}
+
+double Output_BAM::getTINMedian(std::string bam_file) {
+    return this->tin_data[bam_file].median;
+}
+
+double Output_BAM::getTINStdDev(std::string bam_file) {
+    return this->tin_data[bam_file].stddev;
+}
+
+int Output_BAM::getTINCount(std::string bam_file) {
+    return this->tin_data[bam_file].num_transcripts;
+}
+
 void Output_BAM::global_sum(){
     // Calculate the global sums for the basic statistics
     mapped_long_read_info.global_sum();

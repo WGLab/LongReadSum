@@ -13,6 +13,7 @@ Define the output structures for each module.
 #include <stdint.h>
 
 #include "input_parameters.h"
+#include "tin_stats.h"
 
 #define MAX_READ_LENGTH 10485760
 #define MAX_BASE_QUALITY 100
@@ -201,6 +202,9 @@ public:
    // reference positions to a tuple of (ts, ns, move table vector)
    std::unordered_map<std::string, POD5_Signal_Data> pod5_signal_data;
 
+   // Dictionary of bam filepath to TIN data
+   std::unordered_map<std::string, TINStats> tin_data;
+
    Basic_Seq_Statistics mapped_long_read_info;
    Basic_Seq_Statistics unmapped_long_read_info;
 
@@ -217,6 +221,21 @@ public:
 
    // Add a batch of records to the output
    void add(Output_BAM &t_output_bam);
+
+   // Add TIN data for a single BAM file
+   void addTINData(std::string &bam_file, TINStats &tin_data);
+
+   // Get the TIN mean for a single BAM file
+   double getTINMean(std::string bam_file);
+
+   // Get the TIN median for a single BAM file
+   double getTINMedian(std::string bam_file);
+
+   // Get the TIN standard deviation for a single BAM file
+   double getTINStdDev(std::string bam_file);
+
+   // Get the TIN count for a single BAM file
+   int getTINCount(std::string bam_file);
 
    // Calculate QC across all records
    void global_sum();

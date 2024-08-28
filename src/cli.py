@@ -231,6 +231,7 @@ def bam_module(margs):
 
         # Set the gene BED file for RNA-seq transcript analysis
         input_para.gene_bed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
+        param_dict["genebed"] = input_para.gene_bed
 
         # Set the minimum coverage and sample size for TIN calculation
         input_para.tin_sample_size = margs.sample_size
@@ -255,7 +256,11 @@ def bam_module(margs):
             if bam_output.sample_modified_base_count > 0:
                 qc_info_list.insert(1, "base_mods")
 
-            # If base modifications were found, add the base modification plots
+            # If gene BED file was provided, add the TIN plots
+            if input_para.gene_bed != "":
+                qc_info_list.insert(1, "tin")
+
+            # Generate the HTML report
             bam_html_gen = generate_html.ST_HTML_Generator(
                 [qc_info_list, "BAM QC", param_dict], plot_filepaths, static=False)
             bam_html_gen.generate_html()

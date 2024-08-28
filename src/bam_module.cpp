@@ -16,7 +16,8 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 
 #include "utils.h"
 #include "ref_query.h"  // For reference genome analysis
-#include "tin.h"  // For TIN analysis
+#include "tin_stats.h"  // TIN structure
+#include "tin.h"  // TIN analysis
 
 // Run the BAM module
 int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
@@ -72,8 +73,28 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         std::cout << "Calculating TIN scores..." << std::endl;
         int sample_size = input_params.tin_sample_size;
         int min_cov = input_params.tin_min_coverage;
-        calculateTIN(gene_bed, input_params.input_files[0], min_cov, sample_size, input_params.output_folder);
-        std::cout << "TIN scores calculated." << std::endl;
+
+        // Calculate the TIN scores for each BAM file
+        for (int i = 0; i < (int) input_params.num_input_files; i++)
+        {
+            std::string filepath(input_params.input_files[i]);
+            std::cout << "Calculating TIN scores for file: " << filepath << std::endl;
+
+            TINStats tin_stats;
+            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder);
+            // calculateTIN(tin_stats, gene_bed, input_params.input_files[0], min_cov, sample_size, input_params.output_folder);
+            std::cout << "TIN scores calculated." << std::endl;
+
+            // Print the TIN stats
+            std::cout << "TIN score summary:" << std::endl;
+            std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;
+            std::cout << "Mean TIN: " << tin_stats.mean << std::endl;
+            std::cout << "Median TIN: " << tin_stats.median << std::endl;
+            std::cout << "TIN standard deviation: " << tin_stats.stddev << std::endl;
+
+            // Update the final output with the TIN stats
+            final_output.addTINData(filepath, tin_stats);
+        }
     }
 
     // Loop through the input files

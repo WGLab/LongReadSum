@@ -11,6 +11,8 @@
 #include <iomanip>
 /// @endcond
 
+#include "tin_stats.h"
+
 std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
 {
     // Set up the region to fetch reads (1-based)
@@ -170,7 +172,7 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     return min_reads_met;
 }
 
-void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder)
+void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder)
 {
     std::cout << "Calculating TIN scores with minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
 
@@ -431,20 +433,20 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         double TIN_variance = TIN_sum_sq / TIN_scores.size();
         double TIN_stddev = std::sqrt(TIN_variance);
 
-        std::cout << "Number of TIN scores: " << TIN_scores.size() << std::endl;
+        // std::cout << "Number of TIN scores: " << TIN_scores.size() << std::endl;
 
         // Set the precision for the output
         std::cout << std::fixed << std::setprecision(14);
 
-        std::cout << "TIN mean: " << TIN_mean << std::endl;
+        // std::cout << "TIN mean: " << TIN_mean << std::endl;
 
         // Sort the TIN scores
         std::sort(TIN_scores.begin(), TIN_scores.end());
 
         // Calculate the median
         double TIN_median = TIN_scores[TIN_scores.size() / 2];
-        std::cout << "TIN median: " << TIN_median << std::endl;
-        std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
+        // std::cout << "TIN median: " << TIN_median << std::endl;
+        // std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
 
         std::cout << "Writing TIN scores to file" << std::endl;
 
@@ -497,5 +499,11 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         output_tin_summary_file.close();
 
         std::cout << "TIN summary written to " << output_tin_summary_tsv << std::endl;
+
+        // Update the TIN stats struct
+        tin_stats->mean = TIN_mean;
+        tin_stats->median = TIN_median;
+        tin_stats->stddev = TIN_stddev;
+        tin_stats->num_transcripts = TIN_scores.size();
     }
 }
