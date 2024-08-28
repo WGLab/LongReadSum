@@ -45,12 +45,6 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
             continue;
         }
 
-        // // Skip supplementary reads
-        // if (record->core.flag & BAM_FSUPPLEMENTARY) {
-        //     skip_count++;
-        //     continue;
-        // }
-
         read_count++;
 
         // Clear positions for each read
@@ -63,17 +57,9 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
         // Loop through the CIGAR string and update depth at matches
         uint32_t* cigar = bam_get_cigar(record);
         int base_skip = 0;
-        // std::cout << "Processing read at position " << pos << " with CIGAR length " << record->core.n_cigar << std::endl;
         for (uint32_t i = 0; i < record->core.n_cigar; i++) {
             int op = bam_cigar_op(cigar[i]);
             int len = bam_cigar_oplen(cigar[i]);
-
-            // Skip deletions
-            if (op == BAM_CDEL) {
-                base_skip += len;
-                continue;
-            }
-
             if (op == BAM_CMATCH || op == BAM_CEQUAL || op == BAM_CDIFF) {
                 for (int j = 0; j < len; j++) {
 
@@ -129,135 +115,6 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
     return C;
 }
 
-
-std::unordered_map<std::string, int> getExonExonJunctions(const std::string& gene_bed)
-{
-    // Open the gene BED file
-    std::ifstream gene_bed_file(gene_bed);
-
-    if (!gene_bed_file.is_open()) {
-        std::cerr << "Error opening gene BED file" << std::endl;
-        exit(1);
-    }
-
-    // Loop through the gene BED file and get the exon-exon junctions for each
-    // transcript (gene ID -> exon-exon junctions)
-    std::unordered_map<std::string, int> exon_exon_junctions;
-    std::string line;
-    while (std::getline(gene_bed_file, line)) {
-        // Parse the gene BED line (chrom, start, end, transcript_id) (1-based)
-        std::istringstream iss(line);
-        std::string chrom;
-        int start, end;
-        std::string gene_id;
-        iss >> chrom >> start >> end >> gene_id;
-
-        // Get the exon-exon junctions for the transcript. If the gene ID is not
-        // in the map, initialize it to 0
-        if (exon_exon_junctions.find(gene_id) == exon_exon_junctions.end()) {
-            exon_exon_junctions[gene_id] = 0;
-        } else {
-            exon_exon_junctions[gene_id]++;
-            // std::cout << "Found exon-exon junction for gene " << gene_id << std::endl;
-        }
-    }
-
-    // Close the gene BED file
-    gene_bed_file.close();
-
-    return exon_exon_junctions;
-}
-
-std::unordered_map<std::string, std::tuple<std::string, int, int>> getGenePositions(const std::string& gene_bed)
-{
-    // Open the gene BED file
-    std::ifstream gene_bed_file(gene_bed);
-
-    if (!gene_bed_file.is_open()) {
-        std::cerr << "Error opening gene BED file" << std::endl;
-        exit(1);
-    }
-
-    // Loop through the BED file with exon positions and get the gene start and
-    // end positions for each transcript (gene ID -> (chrom, tx_start, tx_end))
-    std::unordered_map<std::string, std::tuple<std::string, int, int>> gene_positions;
-    std::string line;
-    while (std::getline(gene_bed_file, line)) {
-        // Parse the gene BED line (chrom, start, end, transcript_id) (1-based)
-        std::istringstream iss(line);
-        std::string chrom;
-        int start, end;
-        std::string gene_id;
-        iss >> chrom >> start >> end >> gene_id;
-
-        // Check if the gene ID is already in the map
-        if (gene_positions.find(gene_id) == gene_positions.end()) {
-            gene_positions[gene_id] = std::make_tuple(chrom, start, end);
-
-        // Else, update the gene start and end positions if the current start
-        // position is less than the stored start position, or if the current
-        // end position is greater than the stored end position
-        } else {
-            std::tuple<std::string, int, int> current_positions = gene_positions[gene_id];
-            std::string current_chrom = std::get<0>(current_positions);
-            int current_start = std::get<1>(current_positions);
-            int current_end = std::get<2>(current_positions);
-            if (start < current_start) {
-                gene_positions[gene_id] = std::make_tuple(chrom, start, current_end);
-            }
-
-            if (end > current_end) {
-                gene_positions[gene_id] = std::make_tuple(chrom, current_start, end);
-            }
-        }
-    }
-
-    // Close the gene BED file
-    gene_bed_file.close();
-
-    return gene_positions;
-}
-
-std::unordered_map<std::string, std::vector<std::tuple<std::string, int, int>>> getExonPositions(const std::string &gene_bed)
-{
-    // Open the gene BED file
-    std::ifstream gene_bed_file(gene_bed);
-
-    if (!gene_bed_file.is_open()) {
-        std::cerr << "Error opening gene BED file" << std::endl;
-        exit(1);
-    }
-
-    // Loop through the BED file with exon positions and get the exon positions
-    // for each transcript (gene ID -> (chrom, start, end))
-    std::unordered_map<std::string, std::vector<std::tuple<std::string, int, int>>> exon_positions;
-    std::string line;
-    while (std::getline(gene_bed_file, line)) {
-        // Parse the gene BED line (chrom, start, end, transcript_id) (1-based)
-        std::istringstream iss(line);
-        std::string chrom;
-        int start, end;
-        std::string gene_id;
-        iss >> chrom >> start >> end >> gene_id;
-
-        // Get the exon positions for the transcript
-        if (exon_positions.find(gene_id) == exon_positions.end()) {
-            std::vector<std::tuple<std::string, int, int>> positions;
-            positions.push_back(std::make_tuple(chrom, start, end));
-            exon_positions[gene_id] = positions;
-        } else {
-            std::vector<std::tuple<std::string, int, int>> positions = exon_positions[gene_id];
-            positions.push_back(std::make_tuple(chrom, start, end));
-            exon_positions[gene_id] = positions;
-        }
-    }
-
-    // Close the gene BED file
-    gene_bed_file.close();
-
-    return exon_positions;
-}
-
 bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end, int min_reads)
 {
     // Set up the region to fetch reads (1-based)
@@ -277,7 +134,6 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     bam1_t* record = bam_init1();
     while (sam_itr_next(bam_file, iter, record) >= 0) {
         // Skip unmapped and secondary alignments, and QC failures
-        // if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL || record->core.flag & BAM_FDUP || record->core.flag & BAM_FSUPPLEMENTARY) {
         if (record->core.flag & BAM_FUNMAP || record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FQCFAIL) {
             continue;
         }
@@ -372,7 +228,7 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
         // Check if the transcript passes the minimum read depth threshold
         if (!checkMinReads(bam_file, index, header, chrom, start, end, min_cov)) {
-            std::cout << "Skipping transcript " << name << " because it does not meet the minimum coverage requirement" << std::endl;
+            // std::cout << "Skipping transcript " << name << " because it does not meet the minimum coverage requirement" << std::endl;
             
             // Set the TIN score to 0
             tin_map[name] = std::make_tuple(chrom, start, end, 0.0);
@@ -391,22 +247,16 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
         // Get the comma-separated exon sizes for the transcript
         std::vector<int> exon_sizes;
-        // std::istringstream exon_sizes_iss(exon_sizes_str);
-        // std::istringstream exon_starts_iss(exon_starts_str);
-        // std::cout << "Exon sizes: " << exon_sizes_str << std::endl;
         while (exon_sizes_str.find(",") != std::string::npos) {
             int pos = exon_sizes_str.find(",");
             std::string exon_size_str = exon_sizes_str.substr(0, pos);            
             exon_sizes.push_back(std::stoi(exon_size_str));
             exon_sizes_str.erase(0, pos + 1);
-            // std::cout << "Exon size: " << exon_size_str << std::endl;
         }
         exon_sizes.push_back(std::stoi(exon_sizes_str));
-        // std::cout << "Exon size: " << exon_sizes_str << std::endl;
 
         // Get the comma-separated exon starts for the transcript
         std::vector<int> exon_starts;
-        // std::cout << "Exon starts: " << exon_starts_str << std::endl;
         while (exon_starts_str.find(",") != std::string::npos) {
             int pos = exon_starts_str.find(",");
             std::string exon_start_str = exon_starts_str.substr(0, pos);
@@ -416,26 +266,11 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
         }
         exon_starts.push_back(std::stoi(exon_starts_str));
 
-        // std::cout << "Exon count: " << exon_count << std::endl;
-        // std::cout << "Transcript: " << name << std::endl;
-        // std::cout << "Chrom: " << chrom << std::endl;
-        // std::cout << "Start: " << start << std::endl;
-        // std::cout << "End: " << end << std::endl;
-
         // Get the read depths and cumulative read depth for each exon
         std::unordered_map<int, int> C;
         for (int i = 0; i < exon_count; i++) {
-            // int exon_start = start + exon_starts[i];
             int exon_start = start + 1 + exon_starts[i];
             int exon_end = exon_start + exon_sizes[i] - 1;
-            // int exon_end = exon_start + exon_sizes[i];
-
-            // std::cout << "Exon start: " << exon_start << ", Exon end: " << exon_end << std::endl;
-            // std::string region = chrom + ":" + std::to_string(exon_start) + "-"
-            //     + std::to_string(exon_end);
-            // std::string region = chrom + ":" + std::to_string(start+1) + "-"
-            //     + std::to_string(end);
-            // std::cout << "Region (positions range): " << region << std::endl;
 
             // Get the depths and cumulative depths for the region
             std::unordered_map<int, int> exon_depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
@@ -525,7 +360,6 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
             for (const auto& entry : C) {
                 double Pi_value = static_cast<double>(entry.second) / sigma_Ci;
                 Pi.push_back(Pi_value);
-                // std::cout << "Pi[" << entry.first << "]: " << Pi_value << std::endl;
             }
         } else {
             Pi = std::vector<double>(C.size(), 0);
@@ -537,7 +371,7 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
             // Use the natural logarithm
             if (Pi_value > 0) {
                 H += Pi_value * std::log(Pi_value);
-            }  // else { H += 0; }
+            }
         }
         std::cout << "H: " << -H << std::endl;
 
@@ -548,7 +382,6 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
             double U = std::exp(-H);
 
             // Calculate the TIN score for the exon
-            // int k = exon_end - exon_start + 1;
             int k = transcript_size;
             std::cout << "sample size: " << k << std::endl;
             std::cout << "TIN calculation: " << U << " / " << k << " = " << std::to_string(U / k) << std::endl;
@@ -557,7 +390,6 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
         // Print the TIN score
         std::cout << "TIN for transcript " << name << ": " << TIN << std::endl;
-        // std::cout << "TIN score: " << TIN << std::endl;
         TIN_scores.push_back(TIN);
         gene_ids.push_back(name);
 
@@ -638,15 +470,6 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
             output_tin_file << gene_id << "\t" << chrom << "\t" << tx_start << "\t" << tx_end << "\t" << TIN << std::endl;
         }
-        // for (const auto& entry : tin_map) {
-        //     std::string gene_id = entry.first;
-        //     std::string chrom = std::get<0>(entry.second);
-        //     int tx_start = std::get<1>(entry.second);
-        //     int tx_end = std::get<2>(entry.second);
-        //     double TIN = std::get<3>(entry.second);
-
-        //     output_tin_file << gene_id << "\t" << chrom << "\t" << tx_start << "\t" << tx_end << "\t" << TIN << std::endl;
-        // }
 
         // Close the output TIN file
         output_tin_file.close();
@@ -675,8 +498,4 @@ void calculateTIN(const std::string& gene_bed, const std::string& bam_filepath, 
 
         std::cout << "TIN summary written to " << output_tin_summary_tsv << std::endl;
     }
-
-    // // Return the TIN scores
-    // return tin_scores;
-    // // return TIN_scores;
 }
