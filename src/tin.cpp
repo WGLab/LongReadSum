@@ -395,8 +395,6 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         TIN_scores.push_back(TIN);
         gene_ids.push_back(name);
 
-        std::cout << std::endl;
-
         // Store the TIN score for the transcript
         tin_map[name] = std::make_tuple(chrom, start, end, TIN);
     }
@@ -436,7 +434,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         // std::cout << "Number of TIN scores: " << TIN_scores.size() << std::endl;
 
         // Set the precision for the output
-        std::cout << std::fixed << std::setprecision(14);
+        // std::cout << std::fixed << std::setprecision(14);
 
         // std::cout << "TIN mean: " << TIN_mean << std::endl;
 

@@ -82,7 +82,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
             TINStats tin_stats;
             calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder);
-            // calculateTIN(tin_stats, gene_bed, input_params.input_files[0], min_cov, sample_size, input_params.output_folder);
             std::cout << "TIN scores calculated." << std::endl;
 
             // Print the TIN stats
@@ -313,13 +312,6 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         // Store the read ID if the decision matches the pattern
         if (decision == pattern){
             rrms_read_ids.insert(read_id);
-
-            std::string test_id = "65d8befa-eec0-4496-bf2b-aa1a84e6dc5e";
-            if (read_id == test_id){
-                std::cout << "[TEST 1] Found test ID: " << test_id << std::endl;
-            }
-
-            // std::cout << read_id << std::endl;
         }
     }
     
