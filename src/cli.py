@@ -541,12 +541,7 @@ def pod5_module(margs):
 
 
 # Set up the argument parser
-parser = argparse.ArgumentParser(description="QC tools for long-read sequencing data",
-                                 epilog="Example with single inputs:\n"
-                                        "\tpython %(prog)s bam -i path/to/input.bam -o /output_directory/\n"
-                                        "\nExample with multiple inputs:\n"
-                                        "\tpython %(prog)s bam -I \"path/to/input1.bam, path/to/input2.bam\" -o /output_directory/\n"
-                                        "\tpython %(prog)s bam -P \"path/to/*.bam\" -o /output_directory/\n",
+parser = argparse.ArgumentParser(description="QC summary tool for long-read sequencing data.",
                                  formatter_class=RawTextHelpFormatter)
 
 # The subparser will determine our filetype-specific modules

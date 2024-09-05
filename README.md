@@ -10,9 +10,10 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
 - [Installation using Anaconda](#installation-using-anaconda)
 - [Installation using Docker](#installation-using-anaconda)
 - [Building from source](#building-from-source)
-- General usage:
-	- [WGS BAM](#wgs-bam)
-	- [RRMS BAM](#rrms-bam)
+- General usage for common filetypes:
+  - [Common parameters](#common-parameters)
+  - [WGS BAM](#wgs-bam)
+  - [RRMS BAM](#rrms-bam)
   - [RNA-Seq BAM (TIN values)](#rna-seq-bam)
   - [ONT POD5](#ont-pod5)
   - [ONT FAST5](#ont-fast5)
@@ -95,6 +96,27 @@ python longreadsum [arguments]
 ```
 
 # General Usage
+## Common parameters
+
+To see all parameters for a filetype, run:
+
+```longreadsum [filetype] --help```
+
+This section describes parameters common to all filetypes:
+
+| Parameter	| Description | Default |
+| --- | --- | --- |
+| -i, --input | A single input filepath
+| -I, --inputs | Multiple comma-separated input filepaths
+| -P, --pattern | Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.
+| -g, --log | Log file path | log_output.log
+| -G, --log-level |Logging level (1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL) | 2
+| -o, --outputfolder | Output directory | output_longreadsum
+| -t, --threads | The number of threads used | 1
+| -Q, --outprefix | Output file prefix |  QC_
+| --fontsize | Font size for plots | 14
+| --markersize | Marker size for plots | 10
+
 ## WGS BAM
 ## RRMS BAM
 ## RNA-Seq BAM
