@@ -437,7 +437,7 @@ def plot(output_data, para_dict, file_type):
     plot_filepaths = getDefaultPlotFilenames()
 
     # Get the font size for plotly plots
-    font_size = para_dict["fontsize"]
+    font_size = 14
 
     # Create the summary table
     create_summary_table(output_data, plot_filepaths, file_type)
@@ -511,7 +511,7 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
     create_pod5_table(pod5_output, plot_filepaths)
 
     # Generate the signal plots
-    marker_size = para_dict["markersize"]
+    marker_size = 10
     read_count_max = para_dict["read_count"]
 
     read_count = len(pod5_output.keys())
@@ -634,7 +634,7 @@ def plot_signal(output_data, para_dict):
     
     # Get input parameters
     output_dir = para_dict["output_folder"]
-    marker_size = para_dict["markersize"]
+    marker_size = 10
     read_count_max = para_dict["read_count"]
     
     # Get read and base counts

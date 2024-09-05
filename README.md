@@ -13,7 +13,9 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
 - General usage for common filetypes:
   - [Common parameters](#common-parameters)
   - [WGS BAM](#wgs-bam)
+  - [BAM with base modifications/methylation](#bam-with-base-modifications)
   - [RRMS BAM](#rrms-bam)
+  - [PacBio unaligned BAM](#pacbio-unaligned-bam)
   - [RNA-Seq BAM (TIN values)](#rna-seq-bam)
   - [ONT POD5](#ont-pod5)
   - [ONT FAST5](#ont-fast5)
@@ -96,7 +98,13 @@ python longreadsum [arguments]
 ```
 
 # General Usage
-## Common parameters
+
+Specify the filetype followed by parameters:
+```
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+```
+
+# Common parameters
 
 To see all parameters for a filetype, run:
 
@@ -114,17 +122,91 @@ This section describes parameters common to all filetypes:
 | -o, --outputfolder | Output directory | output_longreadsum
 | -t, --threads | The number of threads used | 1
 | -Q, --outprefix | Output file prefix |  QC_
-| --fontsize | Font size for plots | 14
-| --markersize | Marker size for plots | 10
 
-## WGS BAM
-## RRMS BAM
-## RNA-Seq BAM
-## ONT POD5
-## ONT FAST5
-## Basecall summary
-## FASTQ
-## FASTA
+# WGS BAM
+
+This section describes general usage for BAM files from whole-genome sequencing
+(WGS) with alignments to a linear reference genome such as GRCh38:
+
+```
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+```
+Download an example HTML report [here]() (data is HG002 sequenced with ONT Kit V14
+Promethion R10.4.1 from https://labs.epi2me.io/askenazi-kit14-2022-12/)
+
+# BAM with base modifications
+
+This section describes parameters for BAM files with base modification tags (MM,
+ML).
+
+| Parameter	| Description | Default |
+| --- | --- | --- |
+| --mod | Run base modification analysis on the BAM file | False
+| --modprob | Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. | 0.8
+| --ref | The reference genome FASTA file to use for identifying CpG sites (optional)
+
+General usage:
+```
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --ref $REF_GENOME --modprob 0.8
+```
+
+Download an example HTML report [here]() (data is HG002 sequenced with ONT
+MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
+
+# RRMS BAM
+
+This section describes parameters for ONT RRMS BAM files and associated CSVs.
+
+| Parameter	| Description | Default |
+| --- | --- | --- |
+| -c, --csv | CSV file containing read IDs to extract from the BAM file*
+
+The CSV file should contain a `read_id` column with the read IDs in the BAM
+file, and a `decision` column with the accepted/rejected status of the read.
+Accepted reads will have `stop_receiving` in the `decision` column, while rejected
+reads will have `unblock`:
+
+```
+batch_time,read_number,channel,num_samples,read_id,sequence_length,decision
+1675186897.6034577,93,4,4011,f943c811-3f97-4971-8aed-bb9f36ffb8d1,361,unblock
+1675186897.7544408,80,68,4025,fab0c19d-8085-454c-bfb7-c375bbe237a1,462,unblock
+1675186897.7544408,93,127,4028,5285e0ba-86c0-4b5d-ba27-5783acad6105,438,unblock
+1675186897.7544408,103,156,4023,65d8befa-eec0-4496-bf2b-aa1a84e6dc5e,362,stop_receiving
+```
+
+General usage:
+```
+longreadsum rrms -i $INPUT_FILE -o $OUTPUT_DIRECTORY -c $RRMS_CSV
+```
+
+Download an example HTML report [here]() (data is HG002 RRMS using ONT
+R9.4.1)
+
+# RNA-Seq BAM
+
+This section describes parameters for generating TIN (transcript integrity
+number) scores from RNA-Seq BAM files.
+
+| Parameter	| Description | Default |
+| --- | --- | --- |
+| --genebed | Gene BED12 file required for calculating TIN scores
+| --sample-size | Sample size for TIN calculation | 100
+| --min-coverage | Minimum coverage for TIN calculation | 10
+
+General usage:
+```
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --genebed $BED_FILE --min-coverage 10 --sample-size 100
+```
+
+Download an example HTML report [here]() (data is Adult GTEx v9 long-read RNA-seq data sequenced with ONT
+cDNA-PCR protocol from https://www.gtexportal.org/home/downloads/adult-gtex/long_read_data)
+
+# PacBio unaligned BAM
+# ONT POD5
+# ONT FAST5
+# Basecall summary
+# FASTQ
+# FASTA
 
 Specifying input files:
 

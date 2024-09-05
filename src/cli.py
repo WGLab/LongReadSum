@@ -51,7 +51,7 @@ def get_common_param(margs):
 
     if (margs.input == None or margs.input == "") and (margs.inputs == None or margs.inputs == "") and (
             margs.pattern == None or margs.pattern == ""):
-        parsing_error_msg += "No input file(s) are provided. \n"
+        parsing_error_msg += "No input file(s) were provided.\n"
     else:
         # Group parameters into an array
         param_dict["input_files"] = []
@@ -70,14 +70,14 @@ def get_common_param(margs):
         # param_dict["read_count"] = read_count
         
         if len(param_dict["input_files"]) == 0:
-            parsing_error_msg += "No input file(s) can be found. \n"
+            parsing_error_msg += "No input file(s) were provided.\n"
         else:
             for input_filepath in param_dict["input_files"]:
                 if not os.path.isfile(input_filepath):
                     parsing_error_msg += "Cannot find the input file: " + input_filepath + "\n"
 
     if (margs.outputfolder is None or margs.outputfolder == ""):
-        parsing_error_msg += "No output file is provided. \n"
+        parsing_error_msg += "No output directory was provided.\n"
     else:
         output_dir = margs.outputfolder
         param_dict["output_folder"] = output_dir
@@ -92,7 +92,7 @@ def get_common_param(margs):
 
     # Set up logging to file and stdout
     if margs.log is None or margs.log == "":
-        parsing_error_msg += "No log file is provided. \n"
+        parsing_error_msg += "No log file was provided.\n"
 
         # Set up logging to stdout
         logging.basicConfig(stream=sys.stdout,
@@ -112,10 +112,6 @@ def get_common_param(margs):
         param_dict["log_level"] = margs.log_level
 
     param_dict["threads"] = margs.threads
-
-    # Plot style parameters
-    param_dict["fontsize"] = margs.fontsize
-    param_dict["markersize"] = margs.markersize
 
     # Reset the param_dict if there are parsing errors
     if parsing_error_msg != "":
@@ -465,11 +461,6 @@ def set_file_parser_defaults(file_parser):
                         help="The number of threads used. Default: 1.")
     file_parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
                         help="The prefix for output filenames. Default: `QC_`.")
-    file_parser.add_argument("--fontsize", type=int, default=14,
-                        help="Font size for plots. Default: 14")
-    file_parser.add_argument("--markersize", type=int, default=10,
-                        help="Marker size for plots. Default: 10")
-
 
 def pod5_module(margs):
     """POD5 file input module."""
@@ -647,20 +638,18 @@ bam_parser = subparsers.add_parser('bam',
                                     formatter_class=RawTextHelpFormatter)
 set_file_parser_defaults(bam_parser)
 
-bam_parser.add_argument("--ref", type=str, default="",
-                        help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
-
-# Add argument for whether to run base modification analysis
 bam_parser.add_argument("--mod", action="store_true",
                         help="Run base modification analysis on the BAM file. Default: False.")
 
-# Add argument for base modification filtering threshold
-bam_parser.add_argument("--modprob", type=float, default=0.5,
-                        help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
-
 # Add argument for gene BED file required for RNA-seq transcript analysis (TIN, etc.)
 bam_parser.add_argument("--genebed", type=str, default="",
-                        help="Gene BED file required for RNA-seq analysis. Default: None.")
+                        help="Gene BED12 file required for calculating TIN scores from RNA-seq BAM files. Default: None.")
+
+bam_parser.add_argument("--modprob", type=float, default=0.8,
+                        help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.8.")
+
+bam_parser.add_argument("--ref", type=str, default="",
+                        help="The reference genome FASTA file to use for identifying CpG sites.")
 
 # Add TIN sample size argument
 bam_parser.add_argument("--sample-size", type=int, default=100,
