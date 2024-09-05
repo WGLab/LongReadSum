@@ -447,27 +447,27 @@ def fast5_signal_module(margs):
             logging.error("QC did not generate.")
 
 
-def set_file_parser_defaults(filetype, parser):
+def set_file_parser_defaults(file_parser):
     """Create a parser with default arguments for a specific filetype."""
-    parser.add_argument("-i", "--input", type=argparse.FileType('r'), default=None,
+    file_parser.add_argument("-i", "--input", type=argparse.FileType('r'), default=None,
                         help="Single input filepath")
-    parser.add_argument("-I", "--inputs", type=str, default=None,
+    file_parser.add_argument("-I", "--inputs", type=str, default=None,
                         help="Multiple comma-separated input filepaths")
-    parser.add_argument("-P", "--pattern", type=str, default=None,
+    file_parser.add_argument("-P", "--pattern", type=str, default=None,
                         help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
-    parser.add_argument("-g", "--log", type=str, default="log_output.log",
+    file_parser.add_argument("-g", "--log", type=str, default="log_output.log",
                         help="Log file")
-    parser.add_argument("-G", "--log-level", type=int, default=2,
+    file_parser.add_argument("-G", "--log-level", type=int, default=2,
                         help="Logging level. 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL. Default: 2.")
-    parser.add_argument("-o", "--outputfolder", type=str, default="output_" + prg_name,
+    file_parser.add_argument("-o", "--outputfolder", type=str, default="output_" + prg_name,
                         help="The output folder.")
-    parser.add_argument("-t", "--threads", type=int, default=1,
+    file_parser.add_argument("-t", "--threads", type=int, default=1,
                         help="The number of threads used. Default: 1.")
-    parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
+    file_parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
                         help="The prefix for output filenames. Default: `QC_`.")
-    parser.add_argument("--fontsize", type=int, default=14,
+    file_parser.add_argument("--fontsize", type=int, default=14,
                         help="Font size for plots. Default: 14")
-    parser.add_argument("--markersize", type=int, default=10,
+    file_parser.add_argument("--markersize", type=int, default=10,
                         help="Marker size for plots. Default: 10")
 
 
@@ -558,7 +558,7 @@ fa_parser = subparsers.add_parser('fa',
                                                "python %(prog)s -i input.fasta -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
 
-set_file_parser_defaults('fa', fa_parser)
+set_file_parser_defaults(fa_parser)
 fa_parser.set_defaults(func=fa_module)
 
 # FASTQ input file
@@ -568,7 +568,7 @@ fq_parser = subparsers.add_parser('fq',
                                    description="For example:\n"
                                                "python %(prog)s -i input.fastq -o /output_directory/",
                                    formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('fq', fq_parser)
+set_file_parser_defaults(fq_parser)
 fq_parser.add_argument("-u", "--udqual", type=int, default=33,
                         help="User defined quality offset for bases in fq. Default: 33.")
 fq_parser.set_defaults(func=fq_module)
@@ -580,7 +580,7 @@ fast5_parser = subparsers.add_parser('f5',
                                      description="For example:\n"
                                                  "python %(prog)s -i input.fast5 -o /output_directory/",
                                      formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('f5', fast5_parser)
+set_file_parser_defaults(fast5_parser)
 fast5_parser.set_defaults(func=fast5_module)
 
 # FAST5 input file in signal statistics mode
@@ -590,7 +590,7 @@ fast5_signal_parser = subparsers.add_parser('f5s',
                                             description="For example:\n"
                                                         "python %(prog)s -R 5 10 -i input.fast5 -o /output_directory/",
                                             formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('f5s', fast5_signal_parser)
+set_file_parser_defaults(fast5_signal_parser)
 fast5_signal_parser.set_defaults(func=fast5_signal_module)
 
 # Add an argument for specifying the read names to extract
@@ -608,7 +608,7 @@ pod5_parser = subparsers.add_parser('pod5',
                                     description="For example:\n"
                                                 "python %(prog)s -i input.pod5 -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('pod5', pod5_parser)
+set_file_parser_defaults(pod5_parser)
 pod5_parser.set_defaults(func=pod5_module)
 
 # Add an argument for specifying the read names to extract
@@ -630,7 +630,7 @@ seqtxt_parser = subparsers.add_parser('seqtxt',
                                        description="For example:\n"
                                                    "python %(prog)s -i sequencing_summary.txt -o /output_directory/",
                                        formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('seqtxt', seqtxt_parser)
+set_file_parser_defaults(seqtxt_parser)
 seqtxt_parser.add_argument("-S", "--seq", type=int, default=1,
                             help="sequencing_summary.txt only? Default: 1(yes).")
 seqtxt_parser.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
@@ -645,7 +645,7 @@ bam_parser = subparsers.add_parser('bam',
                                     description="For example:\n"
                                                 "python %(prog)s -i input.bam -o /output_directory/",
                                     formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('bam', bam_parser)
+set_file_parser_defaults(bam_parser)
 
 bam_parser.add_argument("--ref", type=str, default="",
                         help="Reference genome file for the BAM file, used for base modification analysis. Default: None.")
@@ -679,7 +679,7 @@ rrms_bam_parser = subparsers.add_parser('rrms',
                                          description="For example:\n"
                                                      "python %(prog)s -i input.bam -c input.csv -o /output_directory/",
                                          formatter_class=RawTextHelpFormatter)
-set_file_parser_defaults('rrms', rrms_bam_parser)
+set_file_parser_defaults(rrms_bam_parser)
 
 # Add required input CSV file for RRMS
 rrms_help_str = "CSV file containing read IDs to extract from the BAM file. See README for formatting specifics."
