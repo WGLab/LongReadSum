@@ -79,6 +79,9 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                     }
                     long_read_info.total_num_reads += 1;
 
+                    // Store the read length
+                    long_read_info.read_lengths.push_back(base_count);
+
                     // Get the sequence length distribution
                     if (base_count < long_read_info.read_length_count.size()) {
                         long_read_info.read_length_count[(int)base_count] += 1;
