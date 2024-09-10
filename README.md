@@ -19,6 +19,8 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
   - [RNA-Seq BAM (TIN values)](#rna-seq-bam)
   - [ONT POD5](#ont-pod5)
   - [ONT FAST5](#ont-fast5)
+    - [Signal QC](#signal-qc)
+    - [Sequence QC](#sequence-qc)
   - [Basecall summary (ONT sequencing_summary.txt)](#basecall-summary)
   - [FASTQ](#fastq)
   - [FASTA](#fasta)
@@ -76,39 +78,26 @@ conda activate longreadsum
 make
 ```
 
-If you are using FAST5 files with VBZ compression, you will need to download and install the VBZ plugin corresponding to your architecture:
-https://github.com/nanoporetech/vbz_compression/releases
-
-```
-wget https://github.com/nanoporetech/vbz_compression/releases/download/v1.0.1/ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
-tar -xf ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
-```
-
-Finally, add the plugin to your path:
-```
-export HDF5_PLUGIN_PATH=/full/path/to/ont-vbz-hdf-plugin-1.0.1-Linux/usr/local/hdf5/lib/plugin
-```
-
 
 ## Running
 Activate the conda environment and then run with arguments:
 ```
 conda activate longreadsum
-python longreadsum [arguments]
+longreadsum <FILETYPE> [arguments]
 ```
 
 # General Usage
 
 Specify the filetype followed by parameters:
 ```
-longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+longreadsum <FILETYPE> -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 ```
 
 # Common parameters
 
 To see all parameters for a filetype, run:
 
-```longreadsum [filetype] --help```
+```longreadsum <FILETYPE> --help```
 
 This section describes parameters common to all filetypes:
 
@@ -195,52 +184,116 @@ number) scores from RNA-Seq BAM files.
 
 General usage:
 ```
-longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --genebed $BED_FILE --min-coverage 10 --sample-size 100
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --genebed $BED_FILE --min-coverage <COVERAGE> --sample-size <SIZE>
 ```
 
 Download an example HTML report [here]() (data is Adult GTEx v9 long-read RNA-seq data sequenced with ONT
 cDNA-PCR protocol from https://www.gtexportal.org/home/downloads/adult-gtex/long_read_data)
 
 # PacBio unaligned BAM
+
+This section describes general usage for PacBio BAM files without alignments:
+
+```
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+```
+Download an example HTML report [here]() (data is HG002 sequenced with PacBio
+Revio HiFi long reads obtained from
+https://www.pacb.com/connect/datasets/#WGS-datasets)
+
 # ONT POD5
+
+This section describes parameters for generating a signal and basecalling QC
+report from ONT POD5 (signal) and their corresponding BAM files (basecalls).
+
+> :bulb: **NOTE**: The interactive signal-base correspondence plots in the HTML report use a
+lot of memory (RAM) which can make your web browser slow. Thus by default, we
+randomly sample only a few reads, and the user can specify a list of read IDs as
+well (e.g. from a specific region of interest).
+
+| Parameter	| Description | Default |
+| --- | --- | --- |
+| -b, --basecalls | The basecalled BAM file to use for signal extraction
+| -r, --read_ids | A comma-separated list of read IDs to extract from the file
+| -R, --read-count | Set the number of reads to randomly sample from the file | 3
+
+General usage:
+```
+longreadsum pod5 -i <INPUT_FILE> -o $OUTPUT_DIRECTORY --basecalls $INPUT_BAM [--read-count <COUNT> | --read-ids <IDS>]
+```
+
+Download an example HTML report [here]() (data is HG002 using ONT
+R10.4.1 and LSK114 downloaded from the tutorial https://github.com/epi2me-labs/wf-basecalling)
+
 # ONT FAST5
+
+## Signal QC
+
+This section describes parameters for generating a signal and basecalling QC
+report from ONT FAST5 files with signal and basecall information.
+
+> :bulb: **NOTE**: The interactive signal-base correspondence plots in the HTML report use a
+lot of memory (RAM) which can make your web browser slow. Thus by default, we
+randomly sample only a few reads, and the user can specify a list of read IDs as
+well (e.g. from a specific region of interest).
+
+| Parameter	| Description | Default |
+| --- | --- | --- |
+| -r, --read_ids | A comma-separated list of read IDs to extract from the file
+| -R, --read-count | Set the number of reads to randomly sample from the file | 3
+
+General usage:
+```
+longreadsum f5s -i $INPUT_FILE -o $OUTPUT_DIRECTORY [--read-count <COUNT> | --read-ids <IDS>]
+```
+
+Download an example HTML report [here]() (data is HG002 sequenced with ONT Kit
+V12 Promethion R10.4.1 from https://labs.epi2me.io/gm24385_q20_2021.10/)
+
+## Sequence QC
+
+This section describes how to generate QC reports for sequence data from ONT FAST5 files:
+
+```
+longreadsum f5 -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+```
+
+Download an example HTML report [here]() (data is HG002 sequenced with ONT Kit
+V12 Promethion R10.4.1 from https://labs.epi2me.io/gm24385_q20_2021.10/)
+
 # Basecall summary
+
+This section describes how to generate QC reports for basecall summary files
+(sequencing_summary.txt).
+
+```
+longreadsum seqtxt -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+```
+
+Download an example HTML report [here]() (data is HG002 sequenced with ONT
+PromethION R10.4 from https://labs.epi2me.io/gm24385_q20_2021.10/, filename `gm24385_q20_2021.10/analysis/20210805_1713_5C_PAH79257_0e41e938/guppy_5.0.15_sup/sequencing_summary.txt`)
+
 # FASTQ
+
+This section describes how to generate QC reports for FASTQ files.
+
+```
+longreadsum fq -i $INPUT_FILE -o $OUTPUT_DIRECTORY
+```
+
+Download an example HTML report [here]() (data is HG002 ONT 2D from GIAB
+ [FTP index](https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data_indexes/AshkenazimTrio/sequence.index.AJtrio_HG002_Cornell_Oxford_Nanopore_fasta_fastq_10132015.HG002))
+
 # FASTA
 
-Specifying input files:
+This section describes how to generate QC reports for FASTA files.
 
 ```
-usage: longreadsum [-h] {fa,fq,f5,f5s,seqtxt,bam,rrms} ...
-
-Fast and comprehensive QC for long read sequencing data.
-
-positional arguments:
-  {fa,fq,f5,seqtxt,bam}
-    fa                  FASTA file input
-    fq                  FASTQ file input
-    f5                  FAST5 file input
-    f5s                 FAST5 file input with signal statistics output    
-    seqtxt              sequencing_summary.txt input
-    bam                 BAM file input
-    rrms                RRMS BAM file input
-
-optional arguments:
-  -h, --help            show this help message and exit
-
-Example with single inputs:
-	longreadsum bam -i input.bam -o output_directory -t 12
-
-Example with multiple inputs:
-	longreadsum bam -I input1.bam, input2.bam -o output_directory
-	longreadsum bam -P *.bam -o output_directory
-
-RRMS example:
-  longreadsum rrms --csv rrms_results.csv --input input.bam --output output_directory --threads 12
-
-FAST5 signal mode example:
-  longreadsum f5s --input input.fast5 --output output_directory
+longreadsum fa -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 ```
+
+Download an example HTML report [here]() (data is HG002 ONT 2D from GIAB
+ [FTP index](https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data_indexes/AshkenazimTrio/sequence.index.AJtrio_HG002_Cornell_Oxford_Nanopore_fasta_fastq_10132015.HG002))
 
 
 # Revision history

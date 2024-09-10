@@ -192,17 +192,20 @@ int SeqTxt_Module::generateStatistics( Output_SeqTxt& t_output_SeqTxt_info){
       SeqTxt_Thread_data** thread_data_vector = new SeqTxt_Thread_data*[_input_parameters.threads];
       try{
          for (_i_t=0; _i_t<_input_parameters.threads; _i_t++){
-             std::cout<<"INFO: generate threads "<<_i_t<<std::endl<<std::flush;
+            //  std::cout<<"INFO: generate threads "<<_i_t<<std::endl<<std::flush;
              thread_data_vector[_i_t] = new SeqTxt_Thread_data(_input_parameters, _header_columns, _i_t, SeqTxt_Module::batch_size_of_record);
-             std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
+            //  std::cout<<"INFO: Thread = "<< _i_t+1  <<std::endl<<std::flush;
              m_threads.push_back(std::thread((SeqTxt_Module::SeqTxt_do_thread), input_file_stream, std::ref(_input_parameters), _i_t, std::ref(*(thread_data_vector[_i_t])), std::ref(t_output_SeqTxt_info) ));
          }
 
-         std::cout<<"INFO: join threads"<<std::endl<<std::flush;
+        //  std::cout<<"INFO: join threads"<<std::endl<<std::flush;
+        std::cout << "Joining " << _input_parameters.threads << " threads..." << std::endl;
          for (_i_t=0; _i_t<_input_parameters.threads; _i_t++){
-             std::cout<<"INFO: join threads "<<_i_t<<std::endl<<std::flush;
+            //  std::cout<<"INFO: join threads "<<_i_t<<std::endl<<std::flush;
              m_threads[_i_t].join();
          }
+         std::cout << "All threads joined." << std::endl;
+
       }catch(const std::runtime_error& re){
          std::cerr << "Runtime error: " << re.what() << std::endl;
       }catch(const std::exception& ex){

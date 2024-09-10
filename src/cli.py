@@ -267,6 +267,7 @@ def bam_module(margs):
 
 
 def rrms_module(margs):
+    """RRMS BAM file input module."""
     # Get the filetype-specific parameters
     param_dict = get_common_param(margs)
     if param_dict == {}:
@@ -319,6 +320,7 @@ def rrms_module(margs):
         
 
 def seqtxt_module(margs):
+    """Basecall summary text file input module."""
     # Get the filetype-specific parameters
     param_dict = get_common_param(margs)
     if param_dict == {}:
@@ -330,11 +332,6 @@ def seqtxt_module(margs):
         param_dict["out_prefix"] += "seqtxt"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
-        input_para.other_flags = margs.seq  # Default = 1
-        input_para.other_flags = (input_para.other_flags << 4)
-        input_para.other_flags = (input_para.other_flags << 4)
-        input_para.other_flags += int(margs.sum_type)
-
         input_para.output_folder = str(param_dict["output_folder"])
         input_para.out_prefix = str(param_dict["out_prefix"])
 
@@ -348,14 +345,11 @@ def seqtxt_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(seqtxt_output, param_dict, 'SeqTxt')
 
-            if margs.seq == 0:
-                seqtxt_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "base_quality", "basic_info"],
-                     "sequencing_summary.txt QC", param_dict], plot_filepaths, static=False)
-            else:
-                seqtxt_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_length_bar", "read_length_hist", "basic_info"], "sequencing_summary.txt QC",
-                     param_dict], plot_filepaths, static=False)
+            report_title = "Basecall Summary QC"
+            seqtxt_html_gen = generate_html.ST_HTML_Generator(
+                [["basic_st", "read_length_bar", "read_length_hist", "basic_info"],
+                    report_title, param_dict], plot_filepaths, static=False)
+                
             seqtxt_html_gen.generate_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
         else:
@@ -363,6 +357,7 @@ def seqtxt_module(margs):
 
 
 def fast5_module(margs):
+    """FAST5 file input module."""
     # Get the filetype-specific parameters
     param_dict = get_common_param(margs)
     if param_dict == {}:
@@ -602,13 +597,13 @@ pod5_parser = subparsers.add_parser('pod5',
 set_file_parser_defaults(pod5_parser)
 pod5_parser.set_defaults(func=pod5_module)
 
-# Add an argument for specifying the read names to extract
-pod5_parser.add_argument("-r", "--read_ids", type=str, default=None,
-                            help="A comma-separated list of read IDs to extract from the file.")
-                            
 # Add an argument for specifying the basecalled BAM file
 pod5_parser.add_argument("-b", "--basecalls", type=str, default=None,
                             help="The basecalled BAM file to use for signal extraction.")
+
+# Add an argument for specifying the read names to extract
+pod5_parser.add_argument("-r", "--read_ids", type=str, default=None,
+                            help="A comma-separated list of read IDs to extract from the file.")
 
 # Add an argument for specifying the maximum number of reads to extract
 pod5_parser.add_argument("-R", "--read-count", type=int, default=3,
@@ -617,16 +612,11 @@ pod5_parser.add_argument("-R", "--read-count", type=int, default=3,
 # Sequencing summary text file input
 seqtxt_parser = subparsers.add_parser('seqtxt',
                                        parents=[parent_parser],
-                                       help="sequencing_summary.txt input",
+                                       help="Basecall summary (sequencing_summary.txt) input",
                                        description="For example:\n"
                                                    "python %(prog)s -i sequencing_summary.txt -o /output_directory/",
                                        formatter_class=RawTextHelpFormatter)
 set_file_parser_defaults(seqtxt_parser)
-seqtxt_parser.add_argument("-S", "--seq", type=int, default=1,
-                            help="sequencing_summary.txt only? Default: 1(yes).")
-seqtxt_parser.add_argument("-m", "--sum_type", type=int, default=1, choices=[1, 2, 3],
-                            help="Different fields in sequencing_summary.txt. Default: 1.")
-
 seqtxt_parser.set_defaults(func=seqtxt_module)
 
 # BAM file input

@@ -390,8 +390,8 @@ def base_quality(data, font_size):
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
-# Save the 'Average base quality' plot image.
 def read_avg_base_quality(data, font_size):
+    """Plot the read average base quality distribution."""
     xd = np.arange(MAX_READ_QUALITY)
     yd = np.array(data.read_average_base_quality_distribution)
     fig = go.Figure()
@@ -479,11 +479,11 @@ def plot(output_data, para_dict, file_type):
 
         plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
 
-    if file_type != 'FASTA' and file_type != 'FAST5s':
-        if file_type == 'SeqTxt':
-            seq_quality_info = output_data.all_long_read_info.seq_quality_info
-        else:
-            seq_quality_info = output_data.seq_quality_info
+    if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
+        # if file_type == 'SeqTxt':
+        #     seq_quality_info = output_data.all_long_read_info.seq_quality_info
+        # else:
+        seq_quality_info = output_data.seq_quality_info
 
         # Base quality histogram
         plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
@@ -755,6 +755,9 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     file_type_label = file_type
     if file_type == 'FAST5s':
         file_type_label = 'FAST5'
+    elif file_type == 'SeqTxt':
+        file_type_label = 'Basecall Summary'
+        
     plot_filepaths["basic_st"]['description'] = "{} Basic Statistics".format(file_type_label)
 
     if file_type == 'BAM':
