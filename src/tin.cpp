@@ -174,7 +174,7 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
 
 void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder)
 {
-    std::cout << "Calculating TIN scores with minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
+    std::cout << "Using TIN minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
 
     // Open the BAM file
     htsFile* bam_file = sam_open(bam_filepath.c_str(), "r");
@@ -446,7 +446,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         // std::cout << "TIN median: " << TIN_median << std::endl;
         // std::cout << "TIN standard deviation: " << TIN_stddev << std::endl;
 
-        std::cout << "Writing TIN scores to file" << std::endl;
+        std::cout << "Writing TIN scores to file..." << std::endl;
 
         // Write the TIN scores to a file
         std::string output_tin_tsv = output_folder + "/tin_scores.tsv";

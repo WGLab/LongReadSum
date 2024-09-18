@@ -82,7 +82,7 @@ def multiple_fasta_output():
     default_parameters = lrst.Input_Para()
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("faX2_")
+    default_parameters.out_prefix = str("fa_multi_")
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
@@ -422,7 +422,7 @@ def unmapped_bam_output():
     default_parameters = lrst.Input_Para()
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("bam_")
+    default_parameters.out_prefix = str("ubam_")
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
@@ -489,7 +489,7 @@ def forward_base_mod_output():
     default_parameters = lrst.Input_Para()
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("bam_")
+    default_parameters.out_prefix = str("fwdmod_")
     default_parameters.mod_analysis = True
     default_parameters.base_mod_threshold = -1.0
 
@@ -561,7 +561,7 @@ def reverse_base_mod_output():
     default_parameters = lrst.Input_Para()
     output_folder = os.path.abspath(str("output/"))
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("bam_")
+    default_parameters.out_prefix = str("revmod_")
     default_parameters.mod_analysis = True
     default_parameters.base_mod_threshold = -1.0
 
@@ -701,3 +701,73 @@ class TestSeqTxt:
         output_statistics = seqtxt_output[1]
         passed_n50_read_length = output_statistics.passed_long_read_info.long_read_info.n50_read_length
         assert passed_n50_read_length == 7050
+
+
+@pytest.fixture(scope='class')
+def rnaseq_bam_output():
+    """Run the BAM module on RNASeq inputs."""
+    # Set parameters
+    default_parameters = lrst.Input_Para()
+    output_folder = os.path.abspath(str("output/"))
+    default_parameters.output_folder = output_folder
+    default_parameters.out_prefix = str("rnaseq_")
+    default_parameters.tin_sample_size = 100
+    default_parameters.tin_min_coverage = 2
+
+    # Check if running remotely
+    local_dir = os.path.expanduser('~/github/LongReadSum')
+    if os.getcwd() == local_dir:
+        input_file = os.path.join(local_dir, "SampleData/GTEX-RNASeq-subset.bam")  # Local path
+        default_parameters.gene_bed = os.path.join(local_dir, "SampleData/gencode.v46.basic.subset.bed")
+    else:
+        input_file = os.path.abspath(str("SampleData/GTEX-RNASeq-subset.bam"))  # Remote path
+        default_parameters.gene_bed = os.path.abspath(str("SampleData/gencode.v46.basic.subset.bed"))
+
+    # Add input files
+    default_parameters.add_input_file(input_file)
+
+    # Run the BAM statistics module
+    output = lrst.Output_BAM()
+    exit_code = lrst.callBAMModule(default_parameters, output)
+
+    yield [exit_code, output, input_file]
+
+
+class TestRNASeqBAM:
+    """Tests for RNASeq BAM inputs."""
+
+    # Ensure the module ran successfully
+    @pytest.mark.dependency()
+    def test_success(self, rnaseq_bam_output):
+        exit_code = rnaseq_bam_output[0]
+        assert exit_code == 0
+
+    # Tests
+    @pytest.mark.dependency(depends=["TestRNASeqBAM::test_success"])
+    def test_tin_count(self, rnaseq_bam_output):
+        output_statistics = rnaseq_bam_output[1]
+        input_file = rnaseq_bam_output[2]
+        tin_count = output_statistics.getTINCount(input_file)
+        assert tin_count == 9
+
+    @pytest.mark.dependency(depends=["TestRNASeqBAM::test_success"])
+    def test_tin_mean(self, rnaseq_bam_output):
+        output_statistics = rnaseq_bam_output[1]
+        input_file = rnaseq_bam_output[2]
+        tin_mean = output_statistics.getTINMean(input_file)
+        assert round(tin_mean, 1) == 63.6
+
+    @pytest.mark.dependency(depends=["TestRNASeqBAM::test_success"])
+    def test_tin_median(self, rnaseq_bam_output):
+        output_statistics = rnaseq_bam_output[1]
+        input_file = rnaseq_bam_output[2]
+        tin_median = output_statistics.getTINMedian(input_file)
+        assert round(tin_median, 1) == 83.7
+
+    @pytest.mark.dependency(depends=["TestRNASeqBAM::test_success"])
+    def test_tin_stddev(self, rnaseq_bam_output):
+        output_statistics = rnaseq_bam_output[1]
+        input_file = rnaseq_bam_output[2]
+        tin_stddev = output_statistics.getTINStdDev(input_file)
+        assert round(tin_stddev, 1) == 32.6
+        

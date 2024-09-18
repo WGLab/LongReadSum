@@ -70,7 +70,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         std::cout << "Gene BED file: " << gene_bed << std::endl;
 
         // Calculate TIN scores if the gene BED file is available
-        std::cout << "Calculating TIN scores..." << std::endl;
         int sample_size = input_params.tin_sample_size;
         int min_cov = input_params.tin_min_coverage;
 
@@ -82,10 +81,8 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
             TINStats tin_stats;
             calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder);
-            std::cout << "TIN scores calculated." << std::endl;
 
             // Print the TIN stats
-            std::cout << "TIN score summary:" << std::endl;
             std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;
             std::cout << "Mean TIN: " << tin_stats.mean << std::endl;
             std::cout << "Median TIN: " << tin_stats.median << std::endl;
