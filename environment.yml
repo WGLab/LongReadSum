@@ -1,10 +1,10 @@
 name: longreadsum
 channels:
-  - bioconda
+  - defaults
   - anaconda
   - conda-forge
+  - bioconda
   - jannessp  # for pod5
-  - defaults
 dependencies:
   - python
   - numpy

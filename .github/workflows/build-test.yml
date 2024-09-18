@@ -33,13 +33,22 @@ jobs:
         python-version: 3.9
         auto-activate-base: false
 
+    - name: Check conda environment activation
+      shell: bash --login {0}
+      run: |
+        conda info --envs
+        which python
+        python --version
+
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
       run: |
+        source activate longreadsum
         make
 
     - name: Run tests
       shell: bash --login {0}
       run: |
+        source activate longreadsum
         mkdir output  # Unit test output folder
         python -m pytest
