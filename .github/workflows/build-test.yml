@@ -43,6 +43,7 @@ jobs:
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
       run: |
+        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/share/miniconda/envs/longreadsum/lib
         make
 
     - name: Run tests
