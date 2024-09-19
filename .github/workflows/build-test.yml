@@ -39,11 +39,18 @@ jobs:
         conda info --envs
         which python
         python --version
+        conda list | grep htslib
+        conda list | grep hdf5
 
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
       run: |
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/share/miniconda/envs/longreadsum/lib
+        conda info --envs
+        which python
+        python --version
+        conda list | grep htslib
+        conda list | grep hdf5
         make
 
     - name: Run tests
