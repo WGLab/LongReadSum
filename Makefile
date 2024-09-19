@@ -17,4 +17,3 @@ swig_build:
 compile:
 	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):/usr/share/miniconda/envs/longreadsum/lib \
 	CXXFLAGS="$(INCLUDE_PATHS)" LDFLAGS="$(LIBRARY_PATHS)" python3 setup.py build_ext --build-lib $(LIB_DIR)
-	# python3 setup.py build_ext --build-lib $(LIB_DIR)

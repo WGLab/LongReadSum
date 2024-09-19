@@ -18,7 +18,6 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
     // Set up the region to fetch reads (1-based)
     std::string region = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
     hts_itr_t* iter = sam_itr_querys(idx, header, region.c_str());
-    // hts_itr_t* iter = sam_itr_querys(index, header, region.c_str());
     if (iter == NULL) {
         std::cerr << "Error creating iterator for region " << region << std::endl;
         exit(1);
