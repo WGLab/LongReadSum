@@ -33,30 +33,12 @@ jobs:
         python-version: 3.9
         auto-activate-base: false
 
-    - name: Check conda environment activation
-      shell: bash --login {0}
-      run: |
-        conda info --envs
-        which python
-        python --version
-        conda list | grep htslib
-        conda list | grep hdf5
-
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
-      run: |
-        export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/share/miniconda/envs/longreadsum/lib
-        conda info --envs
-        which python
-        python --version
-        conda list | grep htslib
-        conda list | grep hdf5
-        ls /usr/share/miniconda/envs/longreadsum/lib | grep hts
-        ls /usr/share/miniconda/envs/longreadsum/lib | grep hdf5
-        make
+      run: make
 
     - name: Run tests
       shell: bash --login {0}
       run: |
-        mkdir output  # Unit test output folder
+        mkdir output
         python -m pytest
