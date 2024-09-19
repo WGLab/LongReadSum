@@ -51,6 +51,8 @@ jobs:
         python --version
         conda list | grep htslib
         conda list | grep hdf5
+        ls /usr/share/miniconda/envs/longreadsum/lib | grep hts
+        ls /usr/share/miniconda/envs/longreadsum/lib | grep hdf5
         make
 
     - name: Run tests
