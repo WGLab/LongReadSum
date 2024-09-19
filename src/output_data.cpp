@@ -262,39 +262,6 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
-void Output_BAM::add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand)
-{
-    // Add the modification to the map of reference positions
-    try {
-        this->base_modifications.at(chr);
-    } catch (const std::out_of_range& oor) {
-        this->base_modifications[chr] = std::map<int32_t, Base_Modification>();
-    }
-
-    try {
-        this->base_modifications[chr].at(ref_pos);
-
-        // If the reference position is already in the map, use the modification
-        // type with the highest likelihood
-        double previous_likelihood = std::get<2>(this->base_modifications[chr][ref_pos]);
-        if (likelihood > previous_likelihood){
-            this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
-        }
-    } catch (const std::out_of_range& oor) {
-
-        // If the reference position is not in the map, add the modification
-        this->base_modifications[chr][ref_pos] = std::make_tuple(mod_type, canonical_base, likelihood, strand, false);
-    }
-
-    // Add the modification type to the map of modification types
-    try {
-        this->modification_type_counts.at(mod_type);
-        this->modification_type_counts[mod_type] += 1;
-    } catch (const std::out_of_range& oor) {
-        this->modification_type_counts[mod_type] = 1;
-    }
-}
-
 int Output_BAM::getReadCount()
 {
     return this->read_move_table.size();
@@ -340,11 +307,6 @@ int Output_BAM::getReadSequenceEnd(std::string read_id)
     return this->read_move_table[read_id].getSequenceEnd();
 }
 
-std::map<std::string, std::map<int32_t, Base_Modification>> Output_BAM::get_modifications()
-{
-    return this->base_modifications;
-}
-
 void Output_BAM::add(Output_BAM &output_data)
 {
     this->num_primary_alignment += output_data.num_primary_alignment;
@@ -380,23 +342,10 @@ void Output_BAM::add(Output_BAM &output_data)
     this->long_read_info.add(output_data.mapped_long_read_info);
     this->long_read_info.add(output_data.unmapped_long_read_info);
 
-    // Update the base modification information
-    for (auto const &it : output_data.base_modifications) {
-        std::string chr = it.first;
-        for (auto const &it2 : it.second) {
-            int32_t ref_pos = it2.first;
-            char mod_type = std::get<0>(it2.second);
-            char canonical_base = std::get<1>(it2.second);
-            double likelihood = std::get<2>(it2.second);
-            int strand = std::get<3>(it2.second);
-            this->add_modification(chr, ref_pos, mod_type, canonical_base, likelihood, strand);
-        }
-    }
-
     // Update base modification counts
     this->modified_prediction_count += output_data.modified_prediction_count;
 
-    // Update the map
+    // Update the map of read IDs to base signal data
     for ( auto it = output_data.read_move_table.begin(); it != output_data.read_move_table.end(); ++it ){
         std::string read_id = it->first;
         std::vector<int> signal_index = it->second.getBaseSignalIndex();
@@ -410,7 +359,6 @@ void Output_BAM::add(Output_BAM &output_data)
     this->sample_modified_base_count += output_data.sample_modified_base_count;
     this->sample_modified_base_count_forward += output_data.sample_modified_base_count_forward;
     this->sample_modified_base_count_reverse += output_data.sample_modified_base_count_reverse;
-
     for ( auto it = output_data.sample_c_modified_positions.begin(); it != output_data.sample_c_modified_positions.end(); ++it ){
         std::string chr = it->first;
         std::vector<std::pair<int32_t, int>> positions = it->second;
@@ -420,6 +368,26 @@ void Output_BAM::add(Output_BAM &output_data)
             this->sample_c_modified_positions[chr].insert(this->sample_c_modified_positions[chr].end(), positions.begin(), positions.end());
         }
     }
+}
+
+void Output_BAM::addTINData(std::string &bam_file, TINStats &tin_data) {
+    this->tin_data[bam_file] = tin_data;
+}
+
+double Output_BAM::getTINMean(std::string bam_file) {
+    return this->tin_data[bam_file].mean;
+}
+
+double Output_BAM::getTINMedian(std::string bam_file) {
+    return this->tin_data[bam_file].median;
+}
+
+double Output_BAM::getTINStdDev(std::string bam_file) {
+    return this->tin_data[bam_file].stddev;
+}
+
+int Output_BAM::getTINCount(std::string bam_file) {
+    return this->tin_data[bam_file].num_transcripts;
 }
 
 void Output_BAM::global_sum(){

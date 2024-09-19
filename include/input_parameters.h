@@ -23,8 +23,6 @@ public:
     size_t num_input_files;
     std::string out_prefix;
     int64_t other_flags;
-    int rdm_seed;
-    float downsample_percentage;
     int32_t user_defined_fastq_base_qual_offset;
     std::string output_folder;  // Output folder
     std::string input_files[MAX_INPUT_FILES];  // Input files
@@ -34,6 +32,10 @@ public:
     std::unordered_set<std::string> rrms_read_ids;  // List of read IDs from RRMS CSV file (accepted or rejected)
     std::string ref_genome;  // Reference genome file for BAM base modification analysis
     double base_mod_threshold;  // Base modification threshold for BAM base modification analysis
+    std::string gene_bed;  // Gene BED file for RNA-Seq transcript quantification (TIN)
+    bool mod_analysis;  // Perform base modification analysis on BAM file
+    int tin_sample_size;  // Number of equally spaced samples for TIN calculation
+    int tin_min_coverage;  // Minimum coverage for TIN calculation
 
     // Functions
     std::string add_input_file(const std::string& input_filepath);

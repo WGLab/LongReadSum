@@ -266,7 +266,7 @@ class ST_HTML_Generator:
                 '<h2 id="lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['description'] + '</h2><p>')
 
             # Add the figures
-            if plot_key == "basic_st" or plot_key == "base_mods":
+            if plot_key == "basic_st" or plot_key == "base_mods" or plot_key == "tin":
                 # Add the HTML tables
                 self.html_writer.write(self.plot_filepaths[plot_key]['detail'])
 

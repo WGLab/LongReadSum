@@ -13,6 +13,7 @@ Define the output structures for each module.
 #include <stdint.h>
 
 #include "input_parameters.h"
+#include "tin_stats.h"
 
 #define MAX_READ_LENGTH 10485760
 #define MAX_BASE_QUALITY 100
@@ -182,36 +183,15 @@ public:
    double percent_identity = ZeroDefault;  // Percent identity = (num columns - NM) / num columns
    std::vector<int> accuracy_per_read;
 
-    // Number of modified bases by position in the reference:
-    // chr -> reference position -> (modification type, canonical base, maximum
-    // likelihood, strand)
-   std::map<std::string, std::map<int32_t, Base_Modification>> base_modifications;
-   uint64_t modified_prediction_count = ZeroDefault;  // Total number of modified base predictions
-   uint64_t modified_base_count = ZeroDefault;  // Total number of modified bases mapped to the reference genome
-   uint64_t modified_base_count_forward = ZeroDefault;  // Total number of modified bases in the genome on the forward strand
-   uint64_t modified_base_count_reverse = ZeroDefault;  // Total number of modified bases in the genome on the reverse strand
-   uint64_t cpg_modified_base_count = ZeroDefault;  // Total C modified bases in CpG sites (combined forward and reverse)
-   uint64_t cpg_modified_base_count_forward = ZeroDefault;  // Total C modified bases in CpG sites on the forward strand
-   uint64_t cpg_modified_base_count_reverse = ZeroDefault;  // Total C modified bases in CpG sites on the reverse strand
-   uint64_t cpg_genome_count = ZeroDefault;  // Total number of CpG sites in the genome
-   double percent_modified_cpg = ZeroDefault;  // Percentage of CpG sites with modified bases (forward and reverse)
-
    // Preprint revisions: Remove all counts with unique positions in the
    // reference genome, and only report raw counts
+   uint64_t modified_prediction_count = ZeroDefault;  // Total number of modified base predictions
    uint64_t sample_modified_base_count = ZeroDefault;  // Total number of modified bases passing the threshold
    uint64_t sample_modified_base_count_forward = ZeroDefault;  // Total number of modified bases passing the threshold on the forward strand
    uint64_t sample_modified_base_count_reverse = ZeroDefault;  // Total number of modified bases passing the threshold on the reverse strand
    uint64_t sample_cpg_forward_count = ZeroDefault;  // Total number of modified bases passing the threshold that are in CpG sites and in the forward strand (non-unique)
    uint64_t sample_cpg_reverse_count = ZeroDefault;  // Total number of modified bases passing the threshold that are in CpG sites and in the reverse strand (non-unique)
    std::map<std::string, std::vector<std::pair<int32_t, int>>> sample_c_modified_positions;  // chr -> vector of (position, strand) for modified bases passing the threshold
-
-   // Test counts
-   uint64_t test_count = ZeroDefault;  // Test count
-   uint64_t test_count2 = ZeroDefault;  // Test count 2
-
-   // Counts for each type of modification:
-   // Modification type -> count
-   std::map<char, int> modification_type_counts;
 
     // Signal data section
    int read_count = ZeroDefault;
@@ -222,17 +202,14 @@ public:
    // reference positions to a tuple of (ts, ns, move table vector)
    std::unordered_map<std::string, POD5_Signal_Data> pod5_signal_data;
 
+   // Dictionary of bam filepath to TIN data
+   std::unordered_map<std::string, TINStats> tin_data;
+
    Basic_Seq_Statistics mapped_long_read_info;
    Basic_Seq_Statistics unmapped_long_read_info;
 
    Basic_Seq_Quality_Statistics mapped_seq_quality_info;
    Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
-
-   // Add modified base data
-   void add_modification(std::string chr, int32_t ref_pos, char mod_type, char canonical_base, double likelihood, int strand);
-
-   // Return the modification information
-   std::map<std::string, std::map<int32_t, Base_Modification>> get_modifications();
 
    // POD5 signal data functions
    int getReadCount();
@@ -244,6 +221,21 @@ public:
 
    // Add a batch of records to the output
    void add(Output_BAM &t_output_bam);
+
+   // Add TIN data for a single BAM file
+   void addTINData(std::string &bam_file, TINStats &tin_data);
+
+   // Get the TIN mean for a single BAM file
+   double getTINMean(std::string bam_file);
+
+   // Get the TIN median for a single BAM file
+   double getTINMedian(std::string bam_file);
+
+   // Get the TIN standard deviation for a single BAM file
+   double getTINStdDev(std::string bam_file);
+
+   // Get the TIN count for a single BAM file
+   int getTINCount(std::string bam_file);
 
    // Calculate QC across all records
    void global_sum();

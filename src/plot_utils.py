@@ -390,8 +390,8 @@ def base_quality(data, font_size):
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
-# Save the 'Average base quality' plot image.
 def read_avg_base_quality(data, font_size):
+    """Plot the read average base quality distribution."""
     xd = np.arange(MAX_READ_QUALITY)
     yd = np.array(data.read_average_base_quality_distribution)
     fig = go.Figure()
@@ -437,13 +437,13 @@ def plot(output_data, para_dict, file_type):
     plot_filepaths = getDefaultPlotFilenames()
 
     # Get the font size for plotly plots
-    font_size = para_dict["fontsize"]
+    font_size = 14
 
     # Create the summary table
     create_summary_table(output_data, plot_filepaths, file_type)
 
     # Create the modified base table if available
-    if file_type == 'BAM' and output_data.modified_base_count > 0:
+    if file_type == 'BAM' and para_dict["mod"] > 0:
         base_modification_threshold = para_dict["modprob"]
         create_modified_base_table(output_data, plot_filepaths, base_modification_threshold)
 
@@ -452,6 +452,17 @@ def plot(output_data, para_dict, file_type):
             logging.info("SUCCESS: Modified base table created")
         else:
             logging.warning("WARNING: Modified base table not created")
+
+    # Create the TIN table if available
+    if file_type == 'BAM' and para_dict["genebed"] != "":
+        input_files = para_dict["input_files"]
+        create_tin_table(output_data, input_files, plot_filepaths)
+
+        # Check if the TIN table is available
+        if 'tin' in plot_filepaths:
+            logging.info("SUCCESS: TIN table created")
+        else:
+            logging.warning("WARNING: TIN table not created")
 
     # Generate plots
     plot_filepaths['base_counts']['dynamic'] = plot_base_counts(output_data, file_type)
@@ -468,11 +479,11 @@ def plot(output_data, para_dict, file_type):
 
         plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
 
-    if file_type != 'FASTA' and file_type != 'FAST5s':
-        if file_type == 'SeqTxt':
-            seq_quality_info = output_data.all_long_read_info.seq_quality_info
-        else:
-            seq_quality_info = output_data.seq_quality_info
+    if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
+        # if file_type == 'SeqTxt':
+        #     seq_quality_info = output_data.all_long_read_info.seq_quality_info
+        # else:
+        seq_quality_info = output_data.seq_quality_info
 
         # Base quality histogram
         plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
@@ -496,13 +507,11 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
 
-    font_size = para_dict["fontsize"]
-
     # Create the summary table
     create_pod5_table(pod5_output, plot_filepaths)
 
     # Generate the signal plots
-    marker_size = para_dict["markersize"]
+    marker_size = 10
     read_count_max = para_dict["read_count"]
 
     read_count = len(pod5_output.keys())
@@ -625,8 +634,7 @@ def plot_signal(output_data, para_dict):
     
     # Get input parameters
     output_dir = para_dict["output_folder"]
-    # font_size = para_dict["fontsize"]
-    marker_size = para_dict["markersize"]
+    marker_size = 10
     read_count_max = para_dict["read_count"]
     
     # Get read and base counts
@@ -747,6 +755,9 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     file_type_label = file_type
     if file_type == 'FAST5s':
         file_type_label = 'FAST5'
+    elif file_type == 'SeqTxt':
+        file_type_label = 'Basecall Summary'
+        
     plot_filepaths["basic_st"]['description'] = "{} Basic Statistics".format(file_type_label)
 
     if file_type == 'BAM':
@@ -858,48 +869,65 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     plot_filepaths["base_mods"]['title'] = "Base Modifications"
     plot_filepaths["base_mods"]['description'] = "Base modification statistics"
 
-    # Set up the HTML table with two columns and no header
+    # Create the base modification statistics table
     table_str = "<table>\n<tbody>"
-
-    # Get the base modification statistics
-    total_predictions = output_data.modified_prediction_count
-    total_modifications = output_data.modified_base_count
-    total_forward_modifications = output_data.modified_base_count_forward
-    total_reverse_modifications = output_data.modified_base_count_reverse
-    # total_c_modifications = output_data.c_modified_base_count
-    cpg_modifications = output_data.cpg_modified_base_count
-    cpg_forward_modifications = output_data.cpg_modified_base_count_forward
-    cpg_reverse_modifications = output_data.cpg_modified_base_count_reverse
-    genome_cpg_count = output_data.cpg_genome_count
-    pct_modified_cpg = output_data.percent_modified_cpg
-
-    # # Get the percentage of Cs in CpG sites
-    # cpg_modification_percentage = 0
-    # if total_c_modifications > 0:
-    #     cpg_modification_percentage = (cpg_modifications / total_c_modifications) * 100
-
-    # Add the base modification statistics to the table
-    table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_predictions)
+    table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
     table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
-    # table_str += "<tr><td>Total Modified Bases in the Genome</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_modifications)
-    # table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_forward_modifications)
-    # table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(total_reverse_modifications)
-    # table_str += "<tr><td>Total CpG Sites in the Genome</td><td style=\"text-align:right\">{:,d}</td></tr>".format(genome_cpg_count)
-    # table_str += "<tr><td>Total Modified Cs in CpG Sites (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_forward_modifications)
-    # table_str += "<tr><td>Total Modified Cs in CpG Sites (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_reverse_modifications)
-    # table_str += "<tr><td>Total Modified Cs in CpG Sites (Combined Strands)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(cpg_modifications)
-    # table_str += "<tr><td>Percentage of CpG Sites with Modifications (Combined Strands)</td><td style=\"text-align:right\">{:.2f}%</td></tr>".format(pct_modified_cpg)
-
-    # Preprint revision
     table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
     table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
     table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
     table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
     table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
-
-    # Close the table
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["base_mods"]['detail'] = table_str
+
+def create_tin_table(output_data, input_files, plot_filepaths):
+    """Create a summary table for the RNA-Seq TIN values."""
+    plot_filepaths["tin"] = {}
+    plot_filepaths["tin"]['file'] = ""
+    plot_filepaths["tin"]['title'] = "Transcript Integrity Number (TIN)"
+    plot_filepaths["tin"]['description'] = "RNA-Seq TIN values"
+
+    # Create a table with the first column showing the BAM filepath, and the
+    # following columns showing TIN count, mean, median, and standard deviation
+    table_str = "<table>\n<thead>\n<tr><th>BAM File</th><th>Count</th><th>Mean</th><th>Median</th><th>StdDev</th></tr>\n</thead>"
+    table_str += "\n<tbody>"
+    
+    # Loop through each BAM file
+    for bam_file in input_files:
+        # Format the filepath as filename only
+        bam_filename = os.path.basename(bam_file)
+
+        # Get the file data
+        tin_count = output_data.getTINCount(bam_file)
+        tin_mean = output_data.getTINMean(bam_file)
+        tin_median = output_data.getTINMedian(bam_file)
+        tin_std = output_data.getTINStdDev(bam_file)
+
+        # Add the data to the table
+        table_str += "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td><td style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td></tr>".format(bam_filename, tin_count, tin_mean, tin_median, tin_std)
+
+    table_str += "\n</tbody>\n</table>"
+
+    # Add the table to the plot filepaths
+    plot_filepaths["tin"]['detail'] = table_str
+
+    # plot_filepaths["base_mods"] = {}
+    # plot_filepaths["base_mods"]['file'] = ""
+    # plot_filepaths["base_mods"]['title'] = "Base Modifications"
+    # plot_filepaths["base_mods"]['description'] = "Base modification statistics"
+
+    # # Create the base modification statistics table
+    # table_str = "<table>\n<tbody>"
+    # table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
+    # table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
+    # table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
+    # table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
+    # table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
+    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
+    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
+    # table_str += "\n</tbody>\n</table>"
+    # plot_filepaths["base_mods"]['detail'] = table_str
 
 def create_pod5_table(output_dict, plot_filepaths):
     """Create a summary table for the ONT POD5 signal data."""

@@ -3,6 +3,8 @@ BAM_module.cpp:
 Class for generating BAM file statistics. Records are accessed using multi-threading.
 */
 
+#include "bam_module.h"
+
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -12,16 +14,14 @@ Class for generating BAM file statistics. Records are accessed using multi-threa
 #include <unordered_set>
 #include <algorithm>
 
-#include "bam_module.h"
-
 #include "utils.h"
 #include "ref_query.h"  // For reference genome analysis
+#include "tin_stats.h"  // TIN structure
+#include "tin.h"  // TIN analysis
 
 // Run the BAM module
 int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
 {
-    int exit_code = 0;
-
     // Determine if RRMS read ID filtering is required
     if (input_params.rrms_csv != ""){
         std::cout << "RRMS read ID filtering enabled" << std::endl;
@@ -45,7 +45,7 @@ int BAM_Module::run(Input_Para &input_params, Output_BAM &final_output)
     }
 
     // Calculate statistics
-    exit_code = calculateStatistics(input_params, final_output);
+    int exit_code = calculateStatistics(input_params, final_output);
 
     return exit_code;
 }
@@ -60,13 +60,42 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::mutex output_mutex;
     std::mutex cout_mutex;
 
-    // Get the modified base threshold if available
+    // Get the modified base flag and threshold
+    bool mod_analysis = input_params.mod_analysis;
     double base_mod_threshold = input_params.base_mod_threshold;
+
+    // Get the gene BED file if available
+    std::string gene_bed = input_params.gene_bed;
+    if (gene_bed != ""){
+        std::cout << "Gene BED file: " << gene_bed << std::endl;
+
+        // Calculate TIN scores if the gene BED file is available
+        int sample_size = input_params.tin_sample_size;
+        int min_cov = input_params.tin_min_coverage;
+
+        // Calculate the TIN scores for each BAM file
+        for (int i = 0; i < (int) input_params.num_input_files; i++)
+        {
+            std::string filepath(input_params.input_files[i]);
+            std::cout << "Calculating TIN scores for file: " << filepath << std::endl;
+
+            TINStats tin_stats;
+            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder);
+
+            // Print the TIN stats
+            std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;
+            std::cout << "Mean TIN: " << tin_stats.mean << std::endl;
+            std::cout << "Median TIN: " << tin_stats.median << std::endl;
+            std::cout << "TIN standard deviation: " << tin_stats.stddev << std::endl;
+
+            // Update the final output with the TIN stats
+            final_output.addTINData(filepath, tin_stats);
+        }
+    }
 
     // Loop through the input files
     int file_count = (int) input_params.num_input_files;
-    //std::cout << "Number of input files = " << file_count << std::endl;
-    for (int i=0; i < file_count; i++){
+    for (int i = 0; i < file_count; i++) {
         this->file_index = i;
 
         // Create a BAM reader
@@ -80,9 +109,11 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             thread_count = 1;
         }
 
-        // Get the number of records in the file using the BAM index
+        // Get the number of records in the file using the BAM index, and
+        // process base modifications and TINs if available.
+        // Note: This section utilizes one thread.
         std::cout << "Getting number of records..." << std::endl;
-        int num_records = reader.getNumRecords(filepath, final_output, base_mod_threshold);
+        int num_records = reader.getNumRecords(filepath, final_output, mod_analysis, base_mod_threshold);
         std::cout << "Number of records = " << num_records << std::endl;
 
         // Exit if there are no records
@@ -92,7 +123,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             return exit_code;
         }
 
-        // Determine the batch size if the thread count is greater than 1
+        // Determine the batch sizes if the user-specified thread count is greater than 1
         int batch_size = 0;
         if (thread_count > 1) {
             // If the number of records is less than the number of threads, set the number of threads to the number of records
@@ -145,7 +176,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     }
 
     // Summarize the base modifications
-    if (final_output.get_modifications().size() > 0){
+    if (final_output.modified_prediction_count > 0) {
 
         // Determine CpG modification rate
         // First, read the reference genome
@@ -179,99 +210,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                     }
                 }
             }
-
-            // Loop through the base modifications and find the CpG
-            // modifications
-            double base_mod_threshold = input_params.base_mod_threshold;
-            for (auto const &it : final_output.base_modifications) {
-                std::string chr = it.first;
-                std::map<int32_t, Base_Modification> base_mods = it.second;
-
-                // Loop through the base modifications
-                for (auto const &it2 : base_mods) {
-
-                    // Get the base modification information
-                    //int32_t ref_pos = it2.first;
-                    int64_t ref_pos = (int64_t) it2.first;
-                    Base_Modification mod = it2.second;
-                    char mod_type = std::get<0>(mod);
-                    char canonical_base_char = std::toupper(std::get<1>(mod));
-                    std::string canonical_base(1, canonical_base_char);
-
-                    double probability = std::get<2>(mod);
-                    int strand = std::get<3>(mod);
-                    if (probability >= base_mod_threshold)
-                    {
-                        // Update the modified base count
-                        final_output.modified_base_count++;
-
-                        // Update the strand-specific modified base counts
-                        if (strand == 0) {
-                            final_output.modified_base_count_forward++;
-                        } else if (strand == 1) {
-                            final_output.modified_base_count_reverse++;
-                        }
-
-                        // Get CpG modification information for cytosines
-                        std::string ref_base = ref_query.getBase(chr, ref_pos);
-                        if (canonical_base == "C") {
-
-                            if ((ref_base == "C") && (mod_type == 'm') && (strand == 0))
-                            {
-
-                                // Determine if it resides in a CpG site
-                                std::string next_base = ref_query.getBase(chr, ref_pos + 1);
-                                if (next_base == "G") {
-
-                                    // Update the strand-specific CpG modified base
-                                    // count
-                                    final_output.cpg_modified_base_count_forward++;
-
-                                    // Update the CpG modification flag
-                                    std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
-
-                                    // Add the CpG site modification
-                                    ref_query.addCpGSiteModification(chr, ref_pos, strand);
-                                }
-
-                            } else if ((ref_base == "G") && (mod_type == 'm') && (strand == 1)) {
-
-                                // Determine if it resides in a CpG site
-                                std::string previous_base = ref_query.getBase(chr, ref_pos - 1);
-
-                                if (previous_base == "C")
-                                {
-                                    // Update the strand-specific CpG modified base
-                                    // count
-                                    final_output.cpg_modified_base_count_reverse++;
-
-                                    // Update the CpG modification flag
-                                    std::get<4>(final_output.base_modifications[chr][ref_pos]) = true;
-
-                                    // Add the CpG site modification
-                                    ref_query.addCpGSiteModification(chr, ref_pos, strand);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Calculate CpG site statistics
-            if (final_output.cpg_modified_base_count_forward > 0 || final_output.cpg_modified_base_count_reverse > 0)
-            {
-                // Calculate the number of CpG sites with modifications
-                std::pair<uint64_t, uint64_t> cpg_mod_counts = ref_query.getCpGModificationCounts(0);
-                final_output.cpg_modified_base_count = cpg_mod_counts.first;
-                final_output.cpg_genome_count = cpg_mod_counts.first + cpg_mod_counts.second;
-
-                // Calculate the CpG modification rate
-                double cpg_mod_rate = (double)cpg_mod_counts.first / (double)(cpg_mod_counts.first + cpg_mod_counts.second);
-                final_output.percent_modified_cpg = cpg_mod_rate * 100;
-            }
-
-            std::cout << "Number of CpG modified bases: " << final_output.cpg_modified_base_count << std::endl;
-            std::cout << "Total number of modified bases: " << final_output.modified_base_count << std::endl;
         }
     }
 
@@ -293,7 +231,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::cout << "Saved file: " << summary_filepath << std::endl;
 
     auto relapse_end_time = std::chrono::high_resolution_clock::now();
-    std::cout<<"Elapsed time (seconds) = "<< std::chrono::duration_cast<std::chrono::seconds>(relapse_end_time - relapse_start_time).count() << std::endl;
+    std::cout << "Elapsed time (seconds) = " << std::chrono::duration_cast<std::chrono::seconds>(relapse_end_time - relapse_start_time).count() << std::endl;
 
     return exit_code;
 }
@@ -371,13 +309,6 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         // Store the read ID if the decision matches the pattern
         if (decision == pattern){
             rrms_read_ids.insert(read_id);
-
-            std::string test_id = "65d8befa-eec0-4496-bf2b-aa1a84e6dc5e";
-            if (read_id == test_id){
-                std::cout << "[TEST 1] Found test ID: " << test_id << std::endl;
-            }
-
-            // std::cout << read_id << std::endl;
         }
     }
     
