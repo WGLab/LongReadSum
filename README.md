@@ -126,8 +126,6 @@ Promethion R10.4.1 from https://labs.epi2me.io/askenazi-kit14-2022-12/)
 
 ![image](https://github.com/user-attachments/assets/f74f985a-3c3d-4b00-bf98-d59b128d8722)
 
-
-
 ## General usage
 ```
 longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
@@ -135,8 +133,11 @@ longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 
 # BAM with base modifications
 
-This section describes how to generate QC reports for BAM files with base modification tags (MM,
-ML).
+This section describes how to generate QC reports for BAM files with MM, ML base modification tags (data shown is HG002 sequenced with ONT
+MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
+
+![image](https://github.com/user-attachments/assets/5d97a949-842a-4f41-bfc5-81e9f30c57bc)
+
 
 ## Parameters
 | Parameter	| Description | Default |
@@ -150,13 +151,22 @@ ML).
 longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --ref $REF_GENOME --modprob 0.8
 ```
 
-Download an example HTML report [here]() (data is HG002 sequenced with ONT
-MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
-
 # RRMS BAM
 
 This section describes describes how to generate QC reports for ONT RRMS BAM files and associated CSVs (data shown is HG002 RRMS using ONT
 R9.4.1).
+
+### Accepted reads:
+![image](https://github.com/user-attachments/assets/c0e69e53-0a1e-432d-ad4c-9edfac764514)
+
+![image](https://github.com/user-attachments/assets/105a47ff-7bd8-436e-9d3d-1b112b94fb5e)
+
+
+### Rejected reads:
+![image](https://github.com/user-attachments/assets/7c213975-ec6b-4476-81c9-8853c664b653)
+
+![image](https://github.com/user-attachments/assets/604ca74a-516b-48a7-8b02-931e27255bd8)
+
 
 ## Parameters
 | Parameter	| Description | Default |
@@ -232,6 +242,14 @@ cDNA-PCR protocol from https://www.gtexportal.org/home/downloads/adult-gtex/long
 This section describes how to generate QC reports for PacBio BAM files without alignments (data shown is HG002 sequenced with PacBio
 Revio HiFi long reads obtained from https://www.pacb.com/connect/datasets/#WGS-datasets).
 
+![image](https://github.com/user-attachments/assets/76374274-3671-49d2-984f-0208e9d8e3e7)
+
+![image](https://github.com/user-attachments/assets/15112738-b6cd-4d1d-b0c4-e0bb31464374)
+
+![image](https://github.com/user-attachments/assets/e3935f58-eb53-4f9d-b4b5-7287fcdc3252)
+
+![image](https://github.com/user-attachments/assets/8b17c9e2-8932-45b3-a673-b5b35ae994e6)
+
 ## General usage
 ```
 longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
@@ -239,9 +257,11 @@ longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 
 # ONT POD5
 
-This section describes how to generate QC reports for signal and basecalling QC
-report from ONT POD5 (signal) and their corresponding basecalled BAM files (data shown is HG002 using ONT
+This section describes how to generate QC reports for ONT POD5 (signal) files and their corresponding basecalled BAM files (data shown is HG002 using ONT
 R10.4.1 and LSK114 downloaded from the tutorial https://github.com/epi2me-labs/wf-basecalling).
+
+![image](https://github.com/user-attachments/assets/62c3c810-5c1a-4124-816b-74245af8b57c)
+
 
 ## Parameters
 > [!NOTE]
@@ -258,7 +278,11 @@ well (e.g. from a specific region of interest).
 
 ## General usage
 ```
-longreadsum pod5 -i <INPUT_FILE> -o $OUTPUT_DIRECTORY --basecalls $INPUT_BAM [--read-count <COUNT> | --read-ids <IDS>]
+# Individual file:
+longreadsum pod5 -i $INPUT_FILE -o $OUTPUT_DIRECTORY --basecalls $INPUT_BAM [--read-count <COUNT> | --read-ids <IDS>]
+
+# Directory:
+longreadsum pod5 -P "$INPUT_DIRECTORY/*.fast5" -o $OUTPUT_DIRECTORY --basecalls $INPUT_BAM [--read-count <COUNT> | --read-ids <IDS>]
 ```
 
 # ONT FAST5
@@ -266,8 +290,9 @@ longreadsum pod5 -i <INPUT_FILE> -o $OUTPUT_DIRECTORY --basecalls $INPUT_BAM [--
 ## Signal QC
 
 This section describes how to generate QC reports for generating a signal and basecalling QC
-report from ONT FAST5 files with signal and basecall information (data shown is HG002 sequenced with ONT Kit
-V12 Promethion R10.4.1 from https://labs.epi2me.io/gm24385_q20_2021.10/):
+report from ONT FAST5 files with signal and basecall information (data shown is from Dorado: https://github.com/nanoporetech/dorado/blob/master/tests/data/fast5/single_read.fast5)
+
+
 
 ## Parameters
 > [!NOTE]
@@ -283,7 +308,11 @@ well (e.g. from a specific region of interest).
 
 ## General usage
 ```
+# Individual file:
 longreadsum f5s -i $INPUT_FILE -o $OUTPUT_DIRECTORY [--read-count <COUNT> | --read-ids <IDS>]
+
+# Directory:
+longreadsum f5s -P "$INPUT_DIRECTORY/*.fast5" -o $OUTPUT_DIRECTORY [--read-count <COUNT> | --read-ids <IDS>]
 ```
 
 ## Sequence QC
