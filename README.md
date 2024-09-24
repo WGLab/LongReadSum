@@ -290,7 +290,7 @@ longreadsum pod5 -P "$INPUT_DIRECTORY/*.fast5" -o $OUTPUT_DIRECTORY --basecalls 
 ## Signal QC
 
 This section describes how to generate QC reports for generating a signal and basecalling QC
-report from ONT FAST5 files with signal and basecall information (data shown is from Dorado: https://github.com/nanoporetech/dorado/blob/master/tests/data/fast5/single_read.fast5)
+report from ONT FAST5 files with signal and basecall information (data shown is HG002 sequenced with ONT MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
 
 
 
@@ -328,7 +328,14 @@ longreadsum f5 -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 # Basecall summary
 
 This section describes how to generate QC reports for ONT basecall summary (sequencing_summary.txt) files (data shown is HG002 sequenced with ONT
-PromethION R10.4 from https://labs.epi2me.io/gm24385_q20_2021.10/, filename `gm24385_q20_2021.10/analysis/20210805_1713_5C_PAH79257_0e41e938/guppy_5.0.15_sup/sequencing_summary.txt`).
+PromethION R10.4 from https://labs.epi2me.io/gm24385_q20_2021.10/, filename `gm24385_q20_2021.10/analysis/20210805_1713_5C_PAH79257_0e41e938/guppy_5.0.15_sup/sequencing_summary.txt`)
+
+![image](https://github.com/user-attachments/assets/ad094b0a-7878-4937-840c-ad0d7c09335b)
+
+![image](https://github.com/user-attachments/assets/5e2417e8-74b8-4f39-8c3d-d6481749711d)
+
+![image](https://github.com/user-attachments/assets/f25841bf-8129-41bc-a90f-0196ca14159f)
+
 
 ## General usage
 ```
@@ -340,6 +347,17 @@ longreadsum seqtxt -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 This section describes how to generate QC reports for FASTQ files (data shown is HG002 ONT 2D from GIAB
  [FTP index](https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data_indexes/AshkenazimTrio/sequence.index.AJtrio_HG002_Cornell_Oxford_Nanopore_fasta_fastq_10132015.HG002))
 
+![image](https://github.com/user-attachments/assets/09d80928-bae7-4c64-a21c-8ef21fe9ab60)
+
+![image](https://github.com/user-attachments/assets/d5ee0aa5-9127-447f-b96b-26f3fad7a963)
+
+![image](https://github.com/user-attachments/assets/cea3c23c-44a3-4313-9d31-4c8559073b22)
+
+![image](https://github.com/user-attachments/assets/acb199f6-4529-43ce-9212-f938128b0706)
+
+![image](https://github.com/user-attachments/assets/47e395fc-b33d-45d0-b3ac-c658a84f62cb)
+
+
 ## General usage
 ```
 longreadsum fq -i $INPUT_FILE -o $OUTPUT_DIRECTORY
@@ -349,6 +367,12 @@ longreadsum fq -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 
 This section describes how to generate QC reports for FASTA files (data shown is HG002 ONT 2D from GIAB
  [FTP index](https://ftp-trace.ncbi.nlm.nih.gov/ReferenceSamples/giab/data_indexes/AshkenazimTrio/sequence.index.AJtrio_HG002_Cornell_Oxford_Nanopore_fasta_fastq_10132015.HG002)).
+
+![image](https://github.com/user-attachments/assets/d4862e6d-435e-4317-b331-4af0428a6419)
+
+![image](https://github.com/user-attachments/assets/af3b736b-beb6-44e4-a0d8-df736c288389)
+
+![image](https://github.com/user-attachments/assets/cd4e1f59-0c34-41a6-91ea-08381bdc906a)
 
 ## General usage
 ```
