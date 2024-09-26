@@ -547,7 +547,7 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
 
         # Set up the output CSV
         csv_qc_filepath = os.path.join(out_path, nth_read_name + '_QC.csv')
-        qc_file = open(csv_qc_filepath, 'w')
+        qc_file = open(csv_qc_filepath, 'w', encoding='utf-8')
         qc_writer = csv.writer(qc_file)
         qc_writer.writerow(["Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
         
@@ -613,7 +613,8 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
             title=nth_read_name,
             yaxis_title="Signal",
             showlegend=False,
-            font=dict(size=PLOT_FONT_SIZE)
+            font=dict(size=PLOT_FONT_SIZE),
+            xaxis=dict(range=[0, 100])
         )
         fig.update_traces(marker={'size': marker_size})
         # fig.update_xaxes(title="Index")
@@ -673,7 +674,7 @@ def plot_signal(output_data, para_dict):
 
         # Set up the output CSVs
         csv_qc_filepath = os.path.join(output_dir, nth_read_name + '_QC.csv')
-        qc_file = open(csv_qc_filepath, 'w')
+        qc_file = open(csv_qc_filepath, 'w', encoding='utf-8')
         qc_writer = csv.writer(qc_file)
         qc_writer.writerow(["Base", "Raw_Signal", "Length", "Mean", "Median", "StdDev", "PearsonSkewnessCoeff", "Kurtosis"])
 
@@ -724,7 +725,8 @@ def plot_signal(output_data, para_dict):
             title=nth_read_name,
             yaxis_title="Signal",
             showlegend=False,
-            font=dict(size=PLOT_FONT_SIZE)
+            font=dict(size=PLOT_FONT_SIZE),
+            xaxis=dict(range=[0, 100])
         )
         fig.update_traces(marker={'size': marker_size})
 

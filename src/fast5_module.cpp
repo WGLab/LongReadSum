@@ -104,7 +104,7 @@ std::string getChromosome(H5::H5File f5, std::string read_name)
     H5::Exception::dontPrint();  // Disable HDF5 error printing
     try {
         // Get the alignment start position
-        std::cout << "Opening mapping group..." << std::endl;
+        // std::cout << "Opening mapping group..." << std::endl;
 
         // Get the alignment start position
         H5::Group align_group_obj;
@@ -120,12 +120,12 @@ std::string getChromosome(H5::H5File f5, std::string read_name)
         H5::DataType chrom_datatype= chrom_obj.getDataType();
         std::string chrom_buffer;
         chrom_obj.read(chrom_datatype, chrom_buffer);
-        std::cout << "Chromosome = " << chrom_buffer << std::endl;
+        // std::cout << "Chromosome = " << chrom_buffer << std::endl;
         mapped_chrom = chrom_buffer;
     } catch (FileIException &error) {
-        std::cout << error_msg << std::endl;
+        // std::cout << error_msg << std::endl;
     } catch (AttributeIException &error) {
-        std::cout << error_msg << std::endl;
+        // std::cout << error_msg << std::endl;
     }
 
     return mapped_chrom;
@@ -160,7 +160,7 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
         signal_dataset_str = signal_group_str + "/Signal";
     }
 
-    std::cout << "Opening signal group " << signal_group_str << std::endl;
+    // std::cout << "Opening signal group " << signal_group_str << std::endl;
     H5::Group signal_group = f5.openGroup(signal_group_str);
 
     // Get the signal dataset
@@ -175,17 +175,17 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
     //std::cout << "Getting data dimensions..." << std::endl;
     dataspace.getSimpleExtentDims(dims, NULL); // rank = 1
     int data_count = (int) dims[0];
-    std::cout << "Data count = " << data_count << std::endl;
+    // std::cout << "Data count = " << data_count << std::endl;
 
     // Read the signals if available
     if (data_count == 0) {
-        std::cout << "No signal data found." << std::endl;
+        // std::cout << "No signal data found." << std::endl;
         Base_Signals basecall_obj(read_info, sequence_data_str, basecall_signals);
         return basecall_obj;
     }
 
     // Store the signals in an array
-    std::cout << "Reading data..." << std::endl;
+    // std::cout << "Reading data..." << std::endl;
     int16_t f5signals_16 [data_count];
     signal_ds.read(f5signals_16, mdatatype);
 
@@ -194,7 +194,7 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
     for (int i = 0; i < data_count; i++) { f5signals[i] = (int) f5signals_16[i]; };
 
     // Get the sequence string if available
-    std::cout << "Getting FASTQ..." << std::endl;
+    // std::cout << "Getting FASTQ..." << std::endl;
     std::string analysis_group;
     std::string basecall_group;
     if (single_read) {
@@ -217,7 +217,7 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
                     sequence_data_str = fq[1];
 
                     // Get the block stride (window length) attribute
-                    std::cout << "Opening basecall group..." << std::endl;
+                    // std::cout << "Opening basecall group..." << std::endl;
                     H5::Group group_obj;
                     H5::Attribute block_stride_obj;
                     if (single_read) {
@@ -263,11 +263,11 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
                     H5::DataSet move_dataset_obj;
                     if (single_read) {
                         std::string move_group = "/Analyses/Basecall_1D_000/BaseCalled_template/Move";
-                        std::cout << "Opening move dataset: " << move_group << std::endl;
+                        // std::cout << "Opening move dataset: " << move_group << std::endl;
                         move_dataset_obj = f5.openDataSet(move_group);
                     } else {
                         std::string move_group = "/" + read_name + "/Analyses/Basecall_1D_000/BaseCalled_template/Move";
-                        std::cout << "Opening move dataset: " << move_group << std::endl;
+                        // std::cout << "Opening move dataset: " << move_group << std::endl;
                         move_dataset_obj = f5.openDataSet(move_group);
                     }
 
@@ -377,7 +377,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
         std::string analysis_group = "/Analyses";
         std::string basecall_group = analysis_group + "/Basecall_1D_000";
         if (f5.nameExists("/Raw")) {
-            std::cout << "Single read FAST5" << std::endl;
+            // std::cout << "Single read FAST5" << std::endl;
 
             // Check if the top-level analysis group exists
             if (f5.nameExists(analysis_group)) {
@@ -405,10 +405,10 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
             }
 
         } else {
-            std::cout << "Multi-read FAST5" << std::endl;
+            // std::cout << "Multi-read FAST5" << std::endl;
 
             // Loop through each read
-            std::cout << "Reading all reads" << std::endl;
+            // std::cout << "Reading all reads" << std::endl;
             H5::Group root_group = f5.openGroup("/");
             size_t num_objs = root_group.getNumObjs();
             for (size_t i=0; i < num_objs; i++) {
@@ -416,7 +416,7 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 
                 // First remove the prefix
                 std::string read_id = read_name.substr(5);
-                // std::cout << "Processing read ID: " << read_id << std::endl;
+                std::cout << "Processing sequence for read ID: " << read_id << std::endl;
                 //std::cout << "Read: " << read_name << std::endl;
 
                 // Set up the analysis and basecall group
@@ -486,19 +486,17 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
         std::string signal_group_str;
         std::string read_name;
         if (f5.nameExists("/Raw")) {
-            std::cout << "Single read FAST5" << std::endl;
 
             // Append the basecall signals to the output structure
             signal_group_str = "/Raw/Reads";
             read_name = getFileReadName(f5);
-            std::cout << read_name << std::endl;
+            std::cout << "Processing read ID: " << read_name << std::endl;
             Base_Signals basecall_obj = getReadBaseSignalData(f5, read_name, true);
             output_data.addReadBaseSignals(basecall_obj);
         } else {
-            std::cout << "Multi-read FAST5" << std::endl;
+            std::cout << "Processing multi-read FAST5..." << std::endl;
 
             // Loop through each read
-            std::cout << "Reading all reads" << std::endl;
             H5::Group root_group = f5.openGroup("/");
             size_t num_objs = root_group.getNumObjs();
             for (size_t i=0; i < num_objs; i++) {
@@ -512,7 +510,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
                         //std::cout << "Skipping read ID: " << read_id << std::endl;
                         continue;
                     } else {
-                        // std::cout << "Processing read ID: " << read_id << std::endl;
+                        std::cout << "Processing read ID: " << read_id << std::endl;
                     }
                 }
                 // std::cout << "Read: " << read_name << std::endl;

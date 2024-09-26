@@ -365,7 +365,7 @@ def fast5_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
+        # logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "FAST5"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -400,7 +400,7 @@ def fast5_signal_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
+        # logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "fast5_signal"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
@@ -466,7 +466,7 @@ def pod5_module(margs):
         sys.exit(0)
 
     else:
-        logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
+        # logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
         param_dict["out_prefix"] += "POD5"
         input_para = {}
         input_para['threads'] = param_dict["threads"]
