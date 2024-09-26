@@ -292,6 +292,7 @@ longreadsum pod5 -P "$INPUT_DIRECTORY/*.fast5" -o $OUTPUT_DIRECTORY --basecalls 
 This section describes how to generate QC reports for generating a signal and basecalling QC
 report from ONT FAST5 files with signal and basecall information (data shown is HG002 sequenced with ONT MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
 
+![image](https://github.com/user-attachments/assets/b2a56529-55e3-4678-918a-e5787881643e)
 
 
 ## Parameters
@@ -317,8 +318,18 @@ longreadsum f5s -P "$INPUT_DIRECTORY/*.fast5" -o $OUTPUT_DIRECTORY [--read-count
 
 ## Sequence QC
 
-This section describes how to generate QC reports for sequence data from ONT FAST5 files (data shown is HG002 sequenced with ONT Kit
-V12 Promethion R10.4.1 from https://labs.epi2me.io/gm24385_q20_2021.10/).
+This section describes how to generate QC reports for sequence data from ONT FAST5 files (data shown is HG002 sequenced with ONT MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
+
+![image](https://github.com/user-attachments/assets/97876343-cd34-4bfe-9612-7f6b14a2be0d)
+
+![image](https://github.com/user-attachments/assets/be8415a5-63ee-403b-931a-66d79a3b28a5)
+
+![image](https://github.com/user-attachments/assets/2d822263-d9a4-470f-aa6d-5bccf570edac)
+
+![image](https://github.com/user-attachments/assets/0fd1ee15-1e2f-492a-b072-bfaf768a448a)
+
+![image](https://github.com/user-attachments/assets/aa5b37c8-7c83-418b-b5ea-6e53d557fb93)
+
 
 ## General usage
 ```
