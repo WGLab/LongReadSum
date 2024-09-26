@@ -29,7 +29,7 @@ lrst_mod = Extension("_lrst",
 
 # Set up the module
 setup(name="longreadsum",
-      version='1.0.1',
+      version='1.4.0',
       author="WGLab",
       description="""A fast and flexible QC tool for long read sequencing data""",
       ext_modules=[lrst_mod],

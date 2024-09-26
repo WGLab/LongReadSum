@@ -2,10 +2,11 @@
 
 #include <string.h>
 #include <iostream>
-#include <unordered_map>
-#include <string>
 #include <fstream>
 #include <sstream>
+#include <string>
+#include <string.h>
+#include <unordered_map>
 #include <vector>
 #include <algorithm>
 
@@ -114,7 +115,6 @@ void RefQuery::generateCpGMap()
                 {
                     // Add the CpG site to the map (1-based index)
                     int32_t pos1 = pos + 1;
-//                    this->chr_pos_to_cpg[chr][pos1] = false;  // Initialize as false since no modifications have been found
                     this->cpg_total_count++;
 
                     this->chr_to_cpg[chr].insert(pos1);
@@ -137,10 +137,8 @@ void RefQuery::addCpGSiteModification(std::string chr, int64_t pos, int strand)
     }
 
     // Find the CpG site in the map
-//    if (this->chr_pos_to_cpg[chr].find(pos) != this->chr_pos_to_cpg[chr].end())
     if (this->chr_to_cpg[chr].find(pos) != this->chr_to_cpg[chr].end())
     {
-        this->test_count++;
 
         // Update the CpG site if not already modified
         if (this->chr_to_cpg_mod[chr].find(pos) == this->chr_to_cpg_mod[chr].end())
@@ -148,18 +146,6 @@ void RefQuery::addCpGSiteModification(std::string chr, int64_t pos, int strand)
             this->chr_to_cpg_mod[chr].insert(pos);
             this->cpg_modified_count++;
         }
-
-        // Update the modified count
-//        this->cpg_modified_count++;
-
-        // Update the CpG site if not already modified
-//        if (!this->chr_pos_to_cpg[chr][pos])
-//        {
-//            this->chr_pos_to_cpg[chr][pos] = true;
-//            this->cpg_modified_count++;
-//        }
-//        this->chr_pos_to_cpg[chr][pos] = true;
-//        this->cpg_modified_count++;
     }
 }
 
@@ -205,20 +191,12 @@ std::string RefQuery::getBase(std::string chr, int64_t pos)
 
     // Get the base
     std::string base = sequence.substr(static_cast<std::size_t>(pos), 1);
-//    return str[static_cast<std::size_t>(index)];
-
-    // Get the base
-//    char base = sequence[pos];
 
     // If the base is empty, return empty string
     if (base == "")
     {
         return "N";
     }
-//    if (base == '\0')
-//    {
-//        return 'N';
-//    }
 
     return base;
 }

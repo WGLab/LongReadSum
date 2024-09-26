@@ -1,5 +1,5 @@
 #include <numeric>  // std::accumulate
-#include<algorithm>  // std::foreach
+#include <algorithm>  // std::foreach
 #include <math.h>  // sqrt
 #include <iostream>
 #include <sstream>
