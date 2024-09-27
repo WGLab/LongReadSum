@@ -12,11 +12,9 @@ lib/.nfs*
 src/lrst_wrap.cpp
 
 # Build and dist
-build
-dist
-
-# Conda
-conda
+build/
+dist/
+conda/noarch-build
 
 # Outputs
 output

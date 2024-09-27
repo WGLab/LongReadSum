@@ -1,19 +1,20 @@
 {% set version = "1.4.0" %}
-{% set revision = "13ceda62f64fb78a6852ae7216aec30851c05fe5" %}
+# {% set revision = "b06670513616fd6342233c1c77e6d0bcf138b3bc" %}
 
 package:
   name: longreadsum
   version: {{ version }}
 
 source:
-  git_url: https://github.com/WGLab/LongReadSum.git
-  git_rev: {{ revision }}
+  path: ../
+  # git_url: https://github.com/WGLab/LongReadSum.git
+  # git_rev: {{ revision }}
 
 channels:
   - conda-forge
+  - jannessp  # for pod5
   - bioconda
   - defaults
-  - jannessp  # for pod5
 
 build:
   number: 0
@@ -30,6 +31,8 @@ requirements:
     - swig
     - hdf5
     - htslib=1.20
+    # - jannessp::pod5
+    # - jannessp::lib-pod5
   run:
     - python=3.9
     - numpy
@@ -37,8 +40,9 @@ requirements:
     - ont_vbz_hdf_plugin
     - htslib=1.20
     - plotly
-    - pod5
+    - janessp::pod5
     - pyarrow
+    # - janessp::lib-pod5
 
 test:
     commands:
