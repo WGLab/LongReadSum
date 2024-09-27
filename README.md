@@ -7,7 +7,7 @@
 LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file formats for quick generation of QC data in HTML and text format.
 
 # README Contents
-- [Installation using Anaconda](#installation-using-anaconda)
+- [Installation using Anaconda (recommended)](#installation-using-anaconda)
 - [Installation using Docker](#installation-using-anaconda)
 - [Building from source](#building-from-source)
 - General usage for common filetypes:
@@ -34,14 +34,14 @@ First, install [Anaconda](https://www.anaconda.com/).
 Next, create a new environment. This installation has been tested with Python 3.10, Linux 64-bit.
 
 ```
-conda create -n longreadsum python=3.10
+conda create -n longreadsum python=3.9
 conda activate longreadsum
 ```
 
 LongReadSum and its dependencies can then be installed using the following command:
 
 ```
-conda install -c bioconda -c wglab longreadsum=1.3.1
+conda install -c wglab -c conda-forge -c jannessp -c bioconda longreadsum=1.4.0
 ```
 
 # Installation using Docker
