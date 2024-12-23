@@ -241,7 +241,6 @@ void SeqTxt_Module::SeqTxt_do_thread(std::ifstream& file_stream, Input_Para& ref
 
             if ( read_ss_size < batch_size_of_record ){
                 if ( file_index < ref_input_op.num_input_files ){
-                    // std::cout<< "INFO: Open sequencing_summary.txt file="<< ref_input_op.input_files[file_index] <<std::endl;
                     file_stream.close();
                     file_stream.clear();
 
@@ -253,11 +252,10 @@ void SeqTxt_Module::SeqTxt_do_thread(std::ifstream& file_stream, Input_Para& ref
             }
         }
         if (read_ss_size == 0 ) {
-            printMessage("No records read.");
             continue;
         } else {
             total_read_count += read_ss_size;
-            printMessage("Thread " + std::to_string(thread_id) + " read " + std::to_string(read_ss_size) + " records (total " + std::to_string(total_read_count) + ")");
+            printMessage("Thread " + std::to_string(thread_id+1) + " read " + std::to_string(read_ss_size) + " records (total " + std::to_string(total_read_count) + ")");
         }
 
         // Columns used for statistics: passes_filtering, sequence_length_template, mean_qscore_template
@@ -265,13 +263,6 @@ void SeqTxt_Module::SeqTxt_do_thread(std::ifstream& file_stream, Input_Para& ref
         ref_thread_data.t_output_SeqTxt_.passed_long_read_info.long_read_info.resize();
         ref_thread_data.t_output_SeqTxt_.failed_long_read_info.long_read_info.resize();
         for(read_ss_i=0; read_ss_i<read_ss_size; read_ss_i++){
-            // Basic_SeqTxt_Statistics* seqtxt_statistics = NULL;
-            // bool passes_filtering_value = ref_thread_data.stored_records[read_ss_i].passes_filtering;
-            // if ( passes_filtering_value == true) {
-            //     seqtxt_statistics = &(ref_thread_data.t_output_SeqTxt_.passed_long_read_info);
-            // } else {
-            //     seqtxt_statistics = &(ref_thread_data.t_output_SeqTxt_.failed_long_read_info);
-            // }
             bool passes_filtering_value = ref_thread_data.stored_records[read_ss_i].passes_filtering;
             Basic_SeqTxt_Statistics& seqtxt_statistics = (passes_filtering_value == true) ? ref_thread_data.t_output_SeqTxt_.passed_long_read_info : ref_thread_data.t_output_SeqTxt_.failed_long_read_info;
             
