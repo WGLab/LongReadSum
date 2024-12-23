@@ -34,6 +34,8 @@ def getDefaultPlotFilenames():
         "basic_info": {'title': "Basic Statistics",
                        'description': "Basic Statistics", 'summary': ""},
         "read_length_hist": {'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
+        
+        "gc_content_hist": {'title': "GC Content Histogram", 'description': "GC Content Histogram", 'summary': ""},
 
         "base_quality": {'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
 
@@ -251,9 +253,6 @@ def read_lengths_histogram(data, font_size):
     hist, _ = np.histogram(read_lengths, bins=edges)
 
     # Create a figure with two subplots
-    # fig = make_subplots(
-    #     rows=2, cols=1,
-    #     subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.5)
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.0)
@@ -276,13 +275,11 @@ def read_lengths_histogram(data, font_size):
     # Log histogram
     # Get the log10 histogram of read lengths
     read_lengths_log = np.log10(read_lengths, out=np.zeros_like(read_lengths), where=(read_lengths != 0))
-    # log_hist, log_edges = np.histogram(read_lengths_log, bins=bin_count)
     log_edges = np.linspace(0, np.max(read_lengths_log), num=log_bin_count + 1)
     log_hist, _ = np.histogram(read_lengths_log, bins=log_edges)
 
     xd = log_edges
     log_bindata = np.dstack((np.power(10, log_edges)[:-1], np.power(10, log_edges)[1:], log_hist))[0, :, :]
-    # log_bin_centers = np.round((log_bindata[:, 0] + log_bindata[:, 1]) / 2, 0)
     yd = log_hist
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=log_bindata,
                          hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
@@ -297,17 +294,7 @@ def read_lengths_histogram(data, font_size):
     fig.update_annotations(font=dict(color="white"))
 
     # Set tick value range for the log scale
-    # Use the bin edge centers as the tick values
-    # tick_vals = (log_edges[:-1] + log_edges[1:]) / 2
-    # tick_labels = ['{:,}'.format(int(10 ** x)) for x in tick_vals]
     tick_vals = log_edges
-    # tick_labels = ['{:,}'.format(int(10 ** x)) for x in tick_vals]
-
-    # Format the tick labels to be in kilobases (kb) if the value is greater than
-    # 1000, and in bases (b) otherwise
-    # tick_labels = ['{:,}kb'.format(int(x / 1000)) for x in tick_vals]
-    # tick_labels = ['{:,}kb'.format(int(x) for x in log_bin_centers) if x >
-    # 1000 else '{:,}b'.format(int(x)) for x in log_bin_centers]
     tick_labels = []
     for i in range(len(log_bindata)):
         # Format the tick labels to be in kilobases (kb) if the value is greater
@@ -322,21 +309,7 @@ def read_lengths_histogram(data, font_size):
         tick_labels.append('{}-{}'.format(left_val_str, right_val_str))
 
     fig.update_xaxes(ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=1, col=log_col, tickvals=tick_vals, ticktext=tick_labels, tickangle=45)
-    # fig.update_xaxes(range=[0, np.max(log_edges)], ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
-    # fig.update_xaxes(range=[0, np.max(log_edges)], ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1, tickvals=tick_vals)
-    # tick_vals = list(range(0, 5))
-    # fig.update_xaxes(
-    #     range=[0, np.max(log_edges)],
-    #     tickmode='array',
-    #     tickvals=tick_vals,
-    #     ticktext=['{:,}'.format(10 ** x) for x in tick_vals],
-    #     ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
-
-    # Set the tick value range for the linear scale
-    # tick_vals = (edges[:-1] + edges[1:]) / 2
-    # tick_labels = ['{:,}'.format(int(x)) for x in tick_vals]
     tick_vals = edges
-    # tick_labels = ['{:,}'.format(int(x)) for x in tick_vals]
     
     # Format the tick labels to be the range of the bin centers
     tick_labels = []
@@ -352,25 +325,38 @@ def read_lengths_histogram(data, font_size):
 
         tick_labels.append('{}-{}'.format(left_val_str, right_val_str))
         
-    # tick_labels = ['{:,}kb'.format(int(x / 1000)) for x in tick_vals]
-    # tick_labels = ['{:,}kb'.format(int(x)) if x > 1000 else
-    # '{:,}b'.format(int(x)) for x in linear_bin_centers]
     linear_col=1
     fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=linear_col, tickvals=tick_vals, ticktext=tick_labels, tickangle=45)
-    # fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1, range=[0, np.max(edges)], tickvals=tick_vals)
     fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
 
     # Update the layout
     fig.update_layout(showlegend=False, autosize=True, font=dict(size=PLOT_FONT_SIZE))
-    # Set font sizes
-    # fig.update_layout(showlegend=False, autosize=False)
-    # fig.update_layout(font=dict(size=font_size), autosize=True)
 
     fig.update_annotations(font_size=annotation_size)
-    # html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
     html_obj = fig.to_html(full_html=False, default_height=500, default_width=1200)
                            
     return html_obj
+
+def read_gc_content_histogram(data, font_size):
+    """Plot the per-read GC content histogram."""
+
+    # Get the GC content data
+    gc_content = np.array(data.read_gc_content_count)
+    
+    # Create a histogram of the GC content (0-100% with 1% bins)
+    gc_content_bins = np.linspace(0, 100, 101)
+    gc_hist, _ = np.histogram(gc_content, bins=gc_content_bins)
+
+    # Create the figure
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=gc_content_bins, y=gc_hist, marker_color='#36a5c7'))
+
+    # Update the layout
+    fig.update_xaxes(ticks="outside", dtick=10, title_text='GC Content (%)', title_standoff=0)
+    fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
+    fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
+
+    return fig.to_html(full_html=False, default_height=500, default_width=700)
 
 # Save the 'Base quality' plot image.
 def base_quality(data, font_size):
@@ -479,10 +465,17 @@ def plot(output_data, para_dict, file_type):
 
         plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
 
+    # GC content histogram
+    if file_type != 'FAST5s' and file_type != 'SeqTxt':
+        if file_type == 'BAM':
+            plot_filepaths['gc_content_hist']['dynamic'] = read_gc_content_histogram(output_data.mapped_long_read_info, font_size)
+        elif file_type == 'SeqTxt':
+            plot_filepaths['gc_content_hist']['dynamic'] = read_gc_content_histogram(output_data.passed_long_read_info.long_read_info, font_size)
+        else:
+            plot_filepaths['gc_content_hist']['dynamic'] = read_gc_content_histogram(output_data.long_read_info, font_size)
+
+    # Quality plots
     if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
-        # if file_type == 'SeqTxt':
-        #     seq_quality_info = output_data.all_long_read_info.seq_quality_info
-        # else:
         seq_quality_info = output_data.seq_quality_info
 
         # Base quality histogram

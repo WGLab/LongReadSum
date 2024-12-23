@@ -154,7 +154,7 @@ def fq_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fq_output, param_dict, 'FASTQ')
             fq_html_gen = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "base_quality",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality",
                   "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=False)
             fq_html_gen.generate_html()
 
@@ -192,7 +192,7 @@ def fa_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fa_output, param_dict, 'FASTA')
             fa_html_gen = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts"], "FASTA QC",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts"], "FASTA QC",
                  param_dict], plot_filepaths, static=True)
             fa_html_gen.generate_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
@@ -245,7 +245,7 @@ def bam_module(margs):
             plot_filepaths = plot(bam_output, param_dict, 'BAM')
 
             # Set the list of QC information to display
-            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality"]
+            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality"]
 
             # If base modifications were found, add the base modification plots
             # after the first table
@@ -310,7 +310,7 @@ def rrms_module(margs):
 
                 # Generate the HTML report
                 bam_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
+                    [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info",
                     "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
                 bam_html_gen.generate_html()
                 logging.info("Done. Output files are in %s", param_dict["output_folder"])
@@ -383,7 +383,7 @@ def fast5_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fast5_output, param_dict, 'FAST5')
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality",
                   "read_avg_base_quality"], "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
@@ -429,7 +429,7 @@ def fast5_signal_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fast5_output, param_dict, 'FAST5s')
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality",
                   "read_avg_base_quality", "ont_signal"], "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html(signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
@@ -517,7 +517,7 @@ def pod5_module(margs):
             # plot_filepaths = plot(read_signal_dict, param_dict, 'POD5')
             webpage_title = "POD5 QC"
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality",
                   "read_avg_base_quality", "ont_signal"], webpage_title, param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html(signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
