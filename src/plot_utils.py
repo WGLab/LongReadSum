@@ -339,17 +339,33 @@ def read_lengths_histogram(data, font_size):
 
 def read_gc_content_histogram(data, font_size):
     """Plot the per-read GC content histogram."""
+    bin_size = 1
 
-    # Get the GC content data
+    # Bin the GC content if the bin size is greater than 1
     gc_content = np.array(data.read_gc_content_count)
-    
-    # Create a histogram of the GC content (0-100% with 1% bins)
-    gc_content_bins = np.linspace(0, 100, 101)
-    gc_hist, _ = np.histogram(gc_content, bins=gc_content_bins)
+    if bin_size > 1:
+        gc_content = np.array([np.sum(gc_content[i:i + bin_size]) for i in range(0, 101, bin_size)])
+
+    gc_content_bins = [i for i in range(0, 101, bin_size)]
+
+    # Generate hover text for each bin
+    hover_text = []
+    if bin_size > 1:
+        for i in range(len(gc_content_bins)):
+            hover_text.append('GC content: {}-{}%<br>Counts: {}'.format(gc_content_bins[i], gc_content_bins[i] + bin_size, gc_content[i]))
+    else:
+        for i in range(len(gc_content_bins)):
+            hover_text.append('GC content: {}%<br>Counts: {}'.format(gc_content_bins[i], gc_content[i]))
+
+    # Set the X values to be the center of the bins
+    if bin_size > 1:
+        x_values = [gc_content_bins[i] + bin_size / 2 for i in range(len(gc_content_bins))]
+    else:
+        x_values = gc_content_bins
 
     # Create the figure
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=gc_content_bins, y=gc_hist, marker_color='#36a5c7'))
+    fig.add_trace(go.Bar(x=x_values, y=gc_content, marker_color='#36a5c7', hovertext=hover_text, hoverinfo='text'))
 
     # Update the layout
     fig.update_xaxes(ticks="outside", dtick=10, title_text='GC Content (%)', title_standoff=0)

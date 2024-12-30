@@ -243,9 +243,8 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unorder
     reader.readNextRecords(batch_size, record_output, bam_mutex, read_ids, base_mod_threshold);
 
     // Update the final output
-    output_mutex.lock();
+    std::lock_guard<std::mutex> lock(output_mutex);
     final_output.add(record_output);
-    output_mutex.unlock();
 }
 
 std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_file, bool accepted_reads)

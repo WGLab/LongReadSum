@@ -3,6 +3,7 @@
 #include <math.h>  // sqrt
 #include <iostream>
 #include <sstream>
+#include <cmath>  // std::round
 
 #include "output_data.h"
 #include "utils.h"
@@ -84,9 +85,9 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
         this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
     }
 
-    // Add GC content if not empty
-    if (!basic_qc.read_gc_content_count.empty()) {
-        this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
+    // Update the per-read GC content distribution
+    for (int i = 0; i < 101; i++) {
+        this->read_gc_content_count[i] += basic_qc.read_gc_content_count[i];
     }
 }
 
@@ -190,7 +191,6 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
     pos_quality_distribution.resize(MAX_READ_LENGTH, ZeroDefault);
     pos_quality_distribution_dev.resize(MAX_READ_LENGTH, ZeroDefault);
     pos_quality_distribution_count.resize(MAX_READ_LENGTH, ZeroDefault);
-
     read_average_base_quality_distribution.resize(MAX_READ_QUALITY, ZeroDefault);
     read_quality_distribution.resize(MAX_READ_QUALITY, ZeroDefault);
 }
@@ -544,7 +544,6 @@ void Output_FAST5::addReadBaseSignals(Base_Signals values){
 void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_fp)
 {
     const char * read_name;
-    double gc_content_pct;
 
     // Access the read name
     std::string header_str = fq[0];
@@ -601,21 +600,38 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
         }
         // Get the base quality
         base_quality_value = (uint64_t)base_quality_values[i];
-        seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+        try {
+            seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+        } catch (const std::out_of_range& oor) {
+            printError("Warning: Base quality value " + std::to_string(base_quality_value) + " exceeds maximum value");
+        }
         read_mean_base_qual += (double)base_quality_value;
     }
 
     // Calculate percent guanine & cytosine
-    gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
+    // gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
 
-    // Look into this section
-    long_read_info.read_gc_content_count[(int)(gc_content_pct + 0.5)] += 1;
-    read_mean_base_qual /= (double) base_count;
-    seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-    fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);
+    // Update the per-read GC content distribution
+    double gc_content_pct = (100.0 * gc_count) / static_cast<double>(base_count);
+    int gc_content_int = static_cast<int>(std::round(gc_content_pct));
+    try {
+        long_read_info.read_gc_content_count[gc_content_int] += 1;
+    } catch (const std::out_of_range& oor) {
+        printError("Warning: Invalid GC content value " + std::to_string(gc_content_int));
+    }
 
-    // Update the total number of reads
-    long_read_info.total_num_reads += 1;
+    // Update the per-read base quality distribution
+    double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(base_count);
+    unsigned int read_mean_base_qual_int = static_cast<unsigned int>(std::round(read_mean_base_qual_pct));
+    try {
+        seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int] += 1;
+    } catch (const std::out_of_range& oor) {
+        printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
+    }
+
+    fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);  // Write to file
+
+    long_read_info.total_num_reads += 1;  // Update read count
 }
 
 // Get the read count

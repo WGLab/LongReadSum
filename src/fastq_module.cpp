@@ -1,15 +1,19 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-
 #include "fastq_module.h"
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <algorithm>  // std::sort
+#include <cmath>  // std::round
+
+#include <fstream>
+#include <iostream>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include "utils.h"
 
 int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &output_data, FILE *read_details_fp)
 {
@@ -83,14 +87,33 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
                         long_read_info.total_tu_cnt += 1;
                     }
                     base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
-                    seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+                    try {
+                        seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+                    } catch (const std::out_of_range& oor) {
+                        printError("Warning: Base quality value " + std::to_string(base_quality_value) + " exceeds maximum value");
+                    }
                     read_mean_base_qual += (double) base_quality_value;
                 }
-                read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
-                long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-                read_mean_base_qual /= (double) read_len;
-                seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-                fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name.c_str(), read_len, read_gc_cnt, read_mean_base_qual);
+
+                // Update the per-read GC content distribution
+                double gc_content_pct = (100.0 * read_gc_cnt) / static_cast<double>(read_len);
+                int gc_content_int = static_cast<int>(std::round(gc_content_pct));
+                try {
+                    long_read_info.read_gc_content_count[gc_content_int] += 1;
+                } catch (const std::out_of_range& oor) {
+                    printError("Warning: Invalid GC content value " + std::to_string(gc_content_int));
+                }
+                
+                // Update the per-read base quality distribution
+                double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(read_len);
+                unsigned int read_mean_base_qual_int = static_cast<unsigned int>(std::round(read_mean_base_qual_pct));
+                try {
+                    seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int] += 1;
+                } catch (const std::out_of_range& oor) {
+                    printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
+                }
+
+                fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name.c_str(), read_len, gc_content_pct, read_mean_base_qual);  // Write to file
             }
         }
         input_file_stream.close();
@@ -140,10 +163,7 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     output_data.long_read_info.NXX_read_length.resize(101, 0);
     // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
 
-    //output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
-    // base_quality_distribution[x] means number of bases that quality = x.
-
-    output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
+    output_data.seq_quality_info.read_average_base_quality_distribution.resize(MAX_BASE_QUALITY, 0);
 
     if (_input_data.user_defined_fastq_base_qual_offset > 0) {
         fastq_base_qual_offset = _input_data.user_defined_fastq_base_qual_offset;
