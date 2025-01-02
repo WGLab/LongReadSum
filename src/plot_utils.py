@@ -346,6 +346,12 @@ def read_gc_content_histogram(data, font_size):
     if bin_size > 1:
         gc_content = np.array([np.sum(gc_content[i:i + bin_size]) for i in range(0, 101, bin_size)])
 
+    # # Print the GC content if count > 0
+    # logging.info("[HIST] GC content values:")
+    # for i in range(len(gc_content)):
+    #     if gc_content[i] > 0:
+    #         logging.info("{}-{}%: {}".format(i * bin_size, i * bin_size + bin_size, gc_content[i]))
+
     gc_content_bins = [i for i in range(0, 101, bin_size)]
 
     # Generate hover text for each bin

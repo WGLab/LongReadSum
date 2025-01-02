@@ -35,18 +35,17 @@ HTSReader::~HTSReader(){
 }
 
 // Update read and base counts
-int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& basic_qc, uint64_t* base_quality_distribution) {
-    int exit_code = 0;
+int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& basic_qc, uint64_t* base_quality_distribution, bool is_primary) {
 
-    // Update the total number of reads
-    basic_qc.total_num_reads++;
-
-    // Update read length statistics
+    // Update read QC
+    basic_qc.total_num_reads++;  // Update the total number of reads
     int read_length = (int) record->core.l_qseq;
     basic_qc.total_num_bases += (uint64_t) read_length;  // Update the total number of bases
     basic_qc.read_lengths.push_back(read_length);
 
-    // Loop and count the number of each base
+    // Get base counts, quality, and GC content
+    double read_gc_count = 0.0;  // For GC content calculation
+    double read_base_total = 0.0;  // For GC content calculation
     uint8_t *seq = bam_get_seq(record);
     for (int i = 0; i < read_length; i++) {
         // Get the base quality and update the base quality histogram
@@ -58,28 +57,42 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& bas
         switch (base) {
             case 'A':
                 basic_qc.total_a_cnt++;
+                read_base_total++;
                 break;
             case 'C':
                 basic_qc.total_c_cnt++;
+                read_gc_count++;
+                read_base_total++;
                 break;
             case 'G':
                 basic_qc.total_g_cnt++;
+                read_gc_count++;
+                read_base_total++;
                 break;
             case 'T':
                 basic_qc.total_tu_cnt++;
+                read_base_total++;
                 break;
             case 'N':
                 basic_qc.total_n_cnt++;
                 std::cerr << "Warning: N base found in read " << bam_get_qname(record) << std::endl;
                 break;
             default:
-                std::cerr << "Error reading nucleotide: " << base << std::endl;
-                exit_code = 1;
+                printError("Invalid base: " + std::to_string(base));
                 break;
         }
     }
 
-    return exit_code;
+    // Calculate the read GC content percentage if a primary alignment
+    if (is_primary) {
+        double gc_content = read_gc_count / read_base_total;
+        int gc_content_percent = (int) round(gc_content * 100);
+        std::string query_name = bam_get_qname(record);
+        // printMessage("Read name: " + query_name + ", GC content: " + std::to_string(gc_content) + ", GC count: " + std::to_string(read_gc_count) + ", Total count: " + std::to_string(read_base_total));
+        basic_qc.read_gc_content_count[gc_content_percent]++;
+    }
+
+    return 0;
 }
 
 // Read the next batch of records from the BAM file and store QC in the output_data object
@@ -193,21 +206,14 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             output_data.addReadMoveTable(query_name, seq_str, signal_index_vector, ts, ns);
         }
 
-        // Determine if this is an unmapped read
+        // Unmapped reads
         if (record->core.flag & BAM_FUNMAP) {
             Basic_Seq_Statistics& basic_qc = output_data.unmapped_long_read_info;
-            // Basic_Seq_Statistics *basic_qc = &output_data.unmapped_long_read_info;
-
-            // Update read and base QC
-            this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
+            this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution, false);
 
         } else {
-            // Set up the basic QC object
-            // Basic_Seq_Statistics *basic_qc =
-            // &output_data.mapped_long_read_info;
-            Basic_Seq_Statistics& basic_qc = output_data.mapped_long_read_info;
-
             // Calculate base alignment statistics on non-secondary alignments
+            Basic_Seq_Statistics& basic_qc = output_data.mapped_long_read_info;
             if (!(record->core.flag & BAM_FSECONDARY)) {
 
                 // Determine if this is a forward or reverse read
@@ -261,7 +267,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 output_data.num_mismatched_bases += num_mismatches;
             }
 
-            // Determine if this is a secondary alignment (not included in QC, only read count)
+            // Secondary alignment (not included in QC, only read count)
             if (record->core.flag & BAM_FSECONDARY) {
                 output_data.num_secondary_alignment++;
 
@@ -271,7 +277,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 // Update the read's secondary alignments (count once per read)
                 output_data.reads_with_secondary[query_name] = true;
 
-            // Determine if this is a supplementary alignment (not included in QC, only read count)
+            // Supplementary alignment (not included in QC, only read count)
             } else if (record->core.flag & BAM_FSUPPLEMENTARY) {
                 output_data.num_supplementary_alignment++;
 
@@ -281,7 +287,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 // Update the read's supplementary alignments (count once per read)
                 output_data.reads_with_supplementary[query_name] = true;
 
-            // Determine if this is a primary alignment
+            // Primary alignment
             } else if (!(record->core.flag & BAM_FSECONDARY || record->core.flag & BAM_FSUPPLEMENTARY)) {
                 output_data.num_primary_alignment++;  // Update the number of primary alignments
 
@@ -323,15 +329,10 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                 }
 
                 // Update read and base QC
-                this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution);
-
-                // Calculate the percent GC content
-                int percent_gc = round((basic_qc.total_g_cnt + basic_qc.total_c_cnt) / (double) (basic_qc.total_a_cnt + basic_qc.total_c_cnt + basic_qc.total_g_cnt + basic_qc.total_tu_cnt) * 100);
-                basic_qc.read_gc_content_count[percent_gc]++;  // Update the GC content distribution
+                this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution, true);
 
             } else {
-                std::cerr << "Error: Unknown alignment type" << std::endl;
-                std::cerr << "Flag: " << record->core.flag << std::endl;
+                printError("Error: Unknown alignment type with flag " + std::to_string(record->core.flag));
             }
         }
 
