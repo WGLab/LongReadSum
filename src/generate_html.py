@@ -237,19 +237,39 @@ class ST_HTML_Generator:
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
+        # Define ASCII/Unicode icons for different flags
+        flag_icons = {
+            "PASS": "&#10004;",
+            "WARN": "&#9888;",
+        }
+        # "WARN": "&#9888;",
+        # "PASS": "&#10004;",
+        # "FAIL": "&#10060;",
+        # "INFO": "&#8505;"
+
         # Add links to the right sections
         key_index = 0
         for plot_key in self.image_key_list:
-            self.html_writer.write('<li>')
 
+            # Determine the flag icon
+            # [TEST] Select a random flag for testing
+            flags = ["PASS", "WARN"]
+            flag = flags[key_index % 2]
+            
+            # flag = self.plot_filepaths[plot_key]['flag']
+            flag_icon = flag_icons[flag]
+            self.html_writer.write('<li>')
+            self.html_writer.write(f'{flag_icon} ')
             self.html_writer.write(
                 '<a href="#lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['title'] + '</a>')
+                # f'{flag_icon} <a href="#lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['title'] + '</a>')
+            
             key_index += 1
             self.html_writer.write('</li>')
 
         # Add the input files section link
         self.html_writer.write('<li>')
-        self.html_writer.write('<a href="#lrst' + str(key_index) + '">Input File List</a>')
+        self.html_writer.write('• <a href="#lrst' + str(key_index) + '">Input File List</a>')
         key_index += 1
         self.html_writer.write('</li>')
         

@@ -915,6 +915,7 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
     # Create a plot of read length vs. base modification rate for each
     # modification type
+    fig = go.Figure()
     for mod_type in base_mod_types:
 
         # Format the data
@@ -932,8 +933,6 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
         mod_name = mod_char_to_name[mod_type]
 
-        # Create the figure
-        fig = go.Figure()
         fig.add_trace(go.Scatter(x=x_vals, y=mod_rates, mode='markers', name=mod_name))
 
     # Update the layout
