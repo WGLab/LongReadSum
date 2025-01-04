@@ -37,6 +37,8 @@ def getDefaultPlotFilenames():
         
         "gc_content_hist": {'title': "GC Content Histogram", 'description': "GC Content Histogram", 'summary': ""},
 
+        "read_length_mod_rates": {'title': "Read Length vs. Modification Rates", 'description': "Read Length vs. Modification Rates", 'summary': ""},
+
         "base_quality": {'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
 
         "read_avg_base_quality": {'title': "Read Base Quality Histogram", 'description': "Read Base Quality Histogram"},
@@ -346,12 +348,6 @@ def read_gc_content_histogram(data, font_size):
     if bin_size > 1:
         gc_content = np.array([np.sum(gc_content[i:i + bin_size]) for i in range(0, 101, bin_size)])
 
-    # # Print the GC content if count > 0
-    # logging.info("[HIST] GC content values:")
-    # for i in range(len(gc_content)):
-    #     if gc_content[i] > 0:
-    #         logging.info("{}-{}%: {}".format(i * bin_size, i * bin_size + bin_size, gc_content[i]))
-
     gc_content_bins = [i for i in range(0, 101, bin_size)]
 
     # Generate hover text for each bin
@@ -450,16 +446,21 @@ def plot(output_data, para_dict, file_type):
     # Create the summary table
     create_summary_table(output_data, plot_filepaths, file_type)
 
-    # Create the modified base table if available
+    # Modified base table and plots
     if file_type == 'BAM' and para_dict["mod"] > 0:
+        # Modified base table
         base_modification_threshold = para_dict["modprob"]
         create_modified_base_table(output_data, plot_filepaths, base_modification_threshold)
-
-        # Check if the modified base table is available
-        if 'base_mods' in plot_filepaths:
-            logging.info("SUCCESS: Modified base table created")
-        else:
+        if 'base_mods' not in plot_filepaths:
             logging.warning("WARNING: Modified base table not created")
+
+        # # Print the types of modifications
+        # base_mod_types = output_data.getBaseModTypes()
+        # logging.info("Modification types: ")
+        # for mod_type in base_mod_types:
+        #     logging.info(mod_type)
+
+        
 
     # Create the TIN table if available
     if file_type == 'BAM' and para_dict["genebed"] != "":
@@ -886,6 +887,67 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     plot_filepaths["base_mods"]['title'] = "Base Modifications"
     plot_filepaths["base_mods"]['description'] = "Base modification statistics"
 
+    # Print the types of modifications
+    base_mod_types = output_data.getBaseModTypes()
+    logging.info("Modification types: ")
+    for mod_type in base_mod_types:
+        logging.info(mod_type)
+
+    # Get the read length vs. base modification rate data for each modification type
+    read_mod_data_size = output_data.getReadModDataSize()
+    read_length_mod_rates = {}
+    for i in range(read_mod_data_size):
+        for mod_type in base_mod_types:
+            if mod_type not in read_length_mod_rates:
+                read_length_mod_rates[mod_type] = []
+
+            read_length = output_data.getNthReadModLength(i)
+            mod_rate = output_data.getNthReadModRate(i, mod_type)
+            read_length_mod_rates[mod_type].append((read_length, mod_rate))
+
+    # Dictionary of modification character to full name
+    mod_char_to_name = {'m': '5mC', 'h': '5hmC', 'f': '5fC', 'c': '5caC', \
+                        'g': '5hmU', 'e': '5fu', 'b': '5caU', \
+                        'a': '6mA', 'o': '8oxoG', 'n': 'Xao', \
+                        'C': 'Amb. C', 'A': 'Amb. A', 'T': 'Amb. T', 'G': 'Amb. G',\
+                        'N': 'Amb. N'}
+
+
+    # Create a plot of read length vs. base modification rate for each
+    # modification type
+    for mod_type in base_mod_types:
+
+        # Format the data
+        mod_data = read_length_mod_rates[mod_type]
+        x_vals = [data[0] for data in mod_data]
+        read_lengths = ['{:,}Mb'.format(int(val / 1000000)) if val > 1000000 else '{:,}kb'.format(int(val / 1000)) if val > 1000 else '{:,}bp'.format(int(val)) for val in x_vals]
+        mod_rates = [data[1] * 100 for data in mod_data]
+
+        # Get the modification name
+        try:
+            mod_char_to_name[mod_type]
+        except KeyError:
+            logging.warning("WARNING: Unknown modification type: {}".format(mod_type))
+            mod_name = mod_type
+
+        mod_name = mod_char_to_name[mod_type]
+
+        # Create the figure
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=x_vals, y=mod_rates, mode='markers', name=mod_name))
+
+    # Update the layout
+    fig.update_layout(xaxis_title='Read Length',
+                      yaxis_title='Modification Rate (%)',
+                      showlegend=True,
+                      yaxis=dict(range=[0, 100]),
+                      xaxis=dict(tickvals=x_vals, ticktext=read_lengths),
+                      font=dict(size=PLOT_FONT_SIZE))
+    
+    # Generate the HTML
+    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths["read_length_mod_rates"]["dynamic"] = html_obj
+
     # Create the base modification statistics table
     table_str = "<table>\n<tbody>"
     table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
@@ -895,6 +957,18 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
     table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
     table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
+
+    # Add the modification type data
+    for mod_type in base_mod_types:
+        mod_name = mod_char_to_name[mod_type]
+        mod_count = output_data.getModTypeCount(mod_type)
+        mod_count_fwd = output_data.getModTypeCount(mod_type, 0)
+        mod_count_rev = output_data.getModTypeCount(mod_type, 1)
+        table_str += "<tr><td>Total {} Sites in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count)
+        table_str += "<tr><td>Total {} Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count_fwd)
+        table_str += "<tr><td>Total {} Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count_rev)
+
+    # Finish the table
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["base_mods"]['detail'] = table_str
 
@@ -928,23 +1002,6 @@ def create_tin_table(output_data, input_files, plot_filepaths):
 
     # Add the table to the plot filepaths
     plot_filepaths["tin"]['detail'] = table_str
-
-    # plot_filepaths["base_mods"] = {}
-    # plot_filepaths["base_mods"]['file'] = ""
-    # plot_filepaths["base_mods"]['title'] = "Base Modifications"
-    # plot_filepaths["base_mods"]['description'] = "Base modification statistics"
-
-    # # Create the base modification statistics table
-    # table_str = "<table>\n<tbody>"
-    # table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
-    # table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
-    # table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
-    # table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
-    # table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
-    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
-    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
-    # table_str += "\n</tbody>\n</table>"
-    # plot_filepaths["base_mods"]['detail'] = table_str
 
 def create_pod5_table(output_dict, plot_filepaths):
     """Create a summary table for the ONT POD5 signal data."""

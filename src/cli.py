@@ -97,10 +97,11 @@ def get_common_param(margs):
         # Set up logging to stdout
         logging.basicConfig(stream=sys.stdout,
                             level=get_log_level(margs.log_level),
-                            format="%(asctime)s [%(levelname)s] %(message)s")
+                            format="%(asctime)s %(message)s")
+                            # format="%(asctime)s [%(levelname)s] %(message)s")
     else:
         logging.basicConfig(level=get_log_level(margs.log_level),
-                            format="%(asctime)s [%(levelname)s] %(message)s",
+                            format="%(asctime)s %(message)s",
                             handlers=[
                                 logging.FileHandler(margs.log),
                                 logging.StreamHandler(sys.stdout)
@@ -250,6 +251,7 @@ def bam_module(margs):
             # If base modifications were found, add the base modification plots
             # after the first table
             if bam_output.sample_modified_base_count > 0:
+                qc_info_list.insert(1, "read_length_mod_rates")  # Read length modification rates
                 qc_info_list.insert(1, "base_mods")
 
             # If gene BED file was provided, add the TIN plots

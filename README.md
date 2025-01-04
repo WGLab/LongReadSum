@@ -148,7 +148,7 @@ MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
 
 ## General usage
 ```
-longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --ref $REF_GENOME --modprob 0.8
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --mod --modprob 0.8 --ref $REF_GENOME
 ```
 
 # RRMS BAM

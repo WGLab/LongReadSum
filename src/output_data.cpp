@@ -286,6 +286,61 @@ void Output_BAM::updateReadModRate(int read_length, double read_mod_rate, std::u
     this->read_mod_data.push_back(read_mod_data);
 }
 
+std::vector<char> Output_BAM::getBaseModTypes()
+{
+    std::vector<char> base_mod_types;
+    for (auto it = this->base_mod_counts.begin(); it != this->base_mod_counts.end(); ++it) {
+        base_mod_types.push_back(it->first);
+    }
+    return base_mod_types;
+}
+
+int Output_BAM::getReadModDataSize()
+{
+    return this->read_mod_data.size();
+}
+
+int Output_BAM::getNthReadModLength(int read_index)
+{
+    return this->read_mod_data[read_index].read_length;
+}
+
+double Output_BAM::getNthReadModRate(int read_index)
+{
+    return this->read_mod_data[read_index].mod_rate;
+}
+
+double Output_BAM::getNthReadModRate(int read_index, char mod_type)
+{
+    double mod_rate = 0.0;
+    try {
+        this->read_mod_data.at(read_index);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read index " << read_index << " is out of range." << std::endl;
+    }
+    try {
+        mod_rate = this->read_mod_data[read_index].base_mod_rates.at(mod_type);
+    } catch (const std::out_of_range& oor) {
+        // No modification rate found for the specified type in the read
+        mod_rate = 0.0;
+    }
+    return mod_rate;
+}
+
+uint64_t Output_BAM::getModTypeCount(char mod_type)
+{
+    return this->base_mod_counts[mod_type];
+}
+
+uint64_t Output_BAM::getModTypeCount(char mod_type, int strand)
+{
+    if (strand == 0) {
+        return this->base_mod_counts_forward[mod_type];
+    } else {
+        return this->base_mod_counts_reverse[mod_type];
+    }
+}
+
 int Output_BAM::getReadCount()
 {
     return this->read_move_table.size();

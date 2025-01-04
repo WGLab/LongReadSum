@@ -157,6 +157,14 @@ public:
 };
 
 
+// Structures for storing read length vs. base modification rate data
+struct ReadModData
+{
+   int read_length;
+   double mod_rate;
+   std::unordered_map<char, double> base_mod_rates;  // Type-specific base modification rates
+};
+
 // BAM output
 class Output_BAM : public Output_FQ
 {
@@ -194,16 +202,6 @@ class Output_BAM : public Output_FQ
       uint64_t sample_cpg_reverse_count = ZeroDefault;  // Total number of modified bases passing the threshold that are in CpG sites and in the reverse strand (non-unique)
       std::map<std::string, std::vector<std::pair<int32_t, int>>> sample_c_modified_positions;  // chr -> vector of (position, strand) for modified bases passing the threshold
 
-      // Further revisions
-      // Structures for storing read length vs. base modification rate data
-      struct ReadModData
-      {
-         int read_length;
-         double mod_rate;
-         std::unordered_map<char, double> base_mod_rates;  // Type-specific base modification rates
-      };
-      std::vector<ReadModData> read_mod_data;  // Read length vs. base modification rate
-
       // std::pair<std::vector<int>, std::vector<double>> read_length_mod_rate;  // Read length vs. base modification rate
       // std::unordered_map<char, std::pair<std::vector<int>, std::vector<double>>> read_length_mod_rate;  // Read length vs. base modification rate for each base modification type
       std::unordered_map<char, uint64_t> base_mod_counts;  // Counts for each base modification type exceeding the threshold
@@ -226,6 +224,15 @@ class Output_BAM : public Output_FQ
 
       Basic_Seq_Quality_Statistics mapped_seq_quality_info;
       Basic_Seq_Quality_Statistics unmapped_seq_quality_info;
+
+      std::vector<ReadModData> read_mod_data;  // Read length vs. base modification rate
+      std::vector<char> getBaseModTypes();  // Get the types of base modifications found
+      int getReadModDataSize();  // Get the number of read length vs. base modification rate data points
+      int getNthReadModLength(int read_index);  // Get the read length for the nth read
+      double getNthReadModRate(int read_index);  // Get the base modification rate for the nth read
+      double getNthReadModRate(int read_index, char mod_type);  // Get the base modification rate for the nth read for a specific base modification type
+      uint64_t getModTypeCount(char mod_type);  // Get the count of a specific base modification type
+      uint64_t getModTypeCount(char mod_type, int strand);  // Get the count of a specific base modification type for a specific strand
 
       // POD5 signal data functions
       int getReadCount();
