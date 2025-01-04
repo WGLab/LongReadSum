@@ -355,8 +355,12 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
     samFile* bam_file = sam_open(bam_filename.c_str(), "r");
     bam_hdr_t* bam_header = sam_hdr_read(bam_file);
     bam1_t* bam_record = bam_init1();
-
     int64_t num_reads = 0;
+
+    // Data structure for storing read length vs. base modification rate
+    std::vector<int> read_lengths;  // Read lengths
+    std::vector<double> read_mod_rates;  // Total base modification rate for each read length
+    std::vector<std::unordered_map<char, double>> read_base_mod_rates;  // Type-specific base modification rates for each read length
     while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
         num_reads++;
 
@@ -366,14 +370,13 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
             // Follow here to get base modification tags:
             // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
             // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
+            int read_length = bam_record->core.l_qseq;
             hts_base_mod_state *state = hts_base_mod_state_alloc();
-
-            // Preprint revisions: New data structure that does not require unique
-            // positions for each base modification
-            // chr -> vector of (position, strand) for C modified bases passing the threshold
-            std::vector<std::pair<int32_t, int>> c_modified_positions;
+            std::vector<std::pair<int32_t, int>> c_modified_positions;  // C-modified positions for CpG analysis (chr->(position, strand))
+            std::unordered_map<char, int> base_mod_counts;  // Type-specific base modification counts for the read
 
             // Parse the base modification tags if a primary alignment
+            int read_mod_count = 0;
             int ret = bam_parse_basemod(bam_record, state);
             if (ret >= 0 && !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP)) {
 
@@ -402,8 +405,12 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                 std::vector<int> query_pos;
                 while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
                     for (int i = 0; i < n; i++) {
-                        // Update the prediction count
-                        final_output.modified_prediction_count++;
+                        // Update the modified prediction counts
+                        read_mod_count++;  // Read-specific count
+                        final_output.modified_prediction_count++;  // Cumulative count
+                        char mod_type = mods[i].modified_base;
+                        base_mod_counts[mod_type]++;  // Update the type-specific count
+
 
                         // Note: The modified base value can be a positive char (e.g. 'm',
                         // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
@@ -419,22 +426,13 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                         if (mods[i].qual != -1) {
                             probability = mods[i].qual / 256.0;
 
-                            // If the probability is greater than the threshold,
-                            // update the count
+                            // Update counts for predictions exceeding the threshold
                             if (probability >= base_mod_threshold) {
-                                final_output.sample_modified_base_count++;
+                                final_output.updateBaseModCounts(mod_type, strand);  // Update the base modification counts
 
-                                // Update the modified base count for the strand
-                                if (strand == 0) {
-                                    final_output.sample_modified_base_count_forward++;
-                                } else {
-                                    final_output.sample_modified_base_count_reverse++;
-                                }
-
-                                // Preprint revisions: Store the modified positions
+                                // Store the modified positions for later CpG analysis
                                 char canonical_base_char = std::toupper(mods[i].canonical_base);
-                                char mod_type = mods[i].modified_base;
-                                if (canonical_base_char == 'C' && mod_type == 'm') {
+                                if (canonical_base_char == 'C' && mod_type != 'C') {
 
                                     // Convert the query position to reference position if available
                                     if (alignments_present) {
@@ -465,9 +463,26 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                     }
                 }
             }
+            hts_base_mod_state_free(state);  // Deallocate the base modification state object
 
-            // Deallocate the state object
-            hts_base_mod_state_free(state);
+            // Calculate the base modification rate for the read
+            double read_mod_rate = 0.0;
+            if (read_length > 0) {
+                read_mod_rate = (double) read_mod_count / read_length;
+            }
+
+            // Calculate the type-specific base modification rates for the read
+            std::unordered_map<char, double> base_mod_rates;
+            for (auto const &it : base_mod_counts) {
+                char mod_type = it.first;
+                int mod_count = it.second;
+                double mod_rate = 0.0;
+                if (read_length > 0) {
+                    mod_rate = (double) mod_count / read_length;
+                }
+                base_mod_rates[mod_type] = mod_rate;
+            }
+            final_output.updateReadModRate(read_length, read_mod_rate, base_mod_rates);  // Update the output data
         }
     }
 

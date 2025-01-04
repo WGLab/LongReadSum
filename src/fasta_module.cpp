@@ -172,6 +172,8 @@ static int qc1fasta(const char *input_file, Output_FA &py_output_fa, FILE *read_
                 long_read_info.read_length_count[(int)base_count] += 1;
             }
 
+            long_read_info.total_num_bases += base_count;  // Update the total number of bases
+
             // Update the per-read GC content distribution
             double gc_content_pct = (100.0 * gc_count) / static_cast<double>(base_count);
             int gc_content_int = static_cast<int>(std::round(gc_content_pct));

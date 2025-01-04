@@ -262,6 +262,30 @@ Output_BAM::Output_BAM(){
 Output_BAM::~Output_BAM(){
 }
 
+void Output_BAM::updateBaseModCounts(char mod_type, int strand)
+{
+    // Update the sample modified base count for predictions exceeding the threshold
+    this->sample_modified_base_count++;
+    this->base_mod_counts[mod_type]++;  // Update the type-specific modified base count
+
+    // Update the modified base count for the strand
+    if (strand == 0) {
+        this->sample_modified_base_count_forward++;
+        this->base_mod_counts_forward[mod_type]++;  // Update the type-specific modified base count
+    } else {
+        this->sample_modified_base_count_reverse++;
+        this->base_mod_counts_reverse[mod_type]++;  // Update the type-specific modified base count
+    }
+}
+
+void Output_BAM::updateReadModRate(int read_length, double read_mod_rate, std::unordered_map<char, double> base_mod_rates) {
+    ReadModData read_mod_data;
+    read_mod_data.read_length = read_length;
+    read_mod_data.mod_rate = read_mod_rate;
+    read_mod_data.base_mod_rates = base_mod_rates;
+    this->read_mod_data.push_back(read_mod_data);
+}
+
 int Output_BAM::getReadCount()
 {
     return this->read_move_table.size();
