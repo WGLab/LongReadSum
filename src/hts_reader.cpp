@@ -378,7 +378,8 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
             // Parse the base modification tags if a primary alignment
             int read_mod_count = 0;
             int ret = bam_parse_basemod(bam_record, state);
-            if (ret >= 0 && !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP)) {
+            if (ret >= 0) {
+                bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
 
                 // Get the chromosome if alignments are present
                 bool alignments_present = true;
@@ -397,20 +398,26 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                 // but it always yields 0...)
                 int strand = (bam_record->core.flag & BAM_FREVERSE) ? 1 : 0;
 
+                // Set strand to null (-1) if the read is not primary
+                if (!is_primary) {
+                    strand = -1;
+                }
+
                 // Iterate over the state object to get the base modification tags
                 // using bam_next_basemod
                 hts_base_mod mods[10];
                 int n = 0;
                 int32_t pos = 0;
                 std::vector<int> query_pos;
+                bool first_mod_found = false;
                 while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
+
                     for (int i = 0; i < n; i++) {
                         // Update the modified prediction counts
                         read_mod_count++;  // Read-specific count
                         final_output.modified_prediction_count++;  // Cumulative count
                         char mod_type = mods[i].modified_base;
                         base_mod_counts[mod_type]++;  // Update the type-specific count
-
 
                         // Note: The modified base value can be a positive char (e.g. 'm',
                         // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
@@ -430,9 +437,10 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                             if (probability >= base_mod_threshold) {
                                 final_output.updateBaseModCounts(mod_type, strand);  // Update the base modification counts
 
-                                // Store the modified positions for later CpG analysis
+                                // Store the modified positions for later CpG
+                                // analysis if a C modification on a primary alignment
                                 char canonical_base_char = std::toupper(mods[i].canonical_base);
-                                if (canonical_base_char == 'C' && mod_type != 'C') {
+                                if (is_primary && canonical_base_char == 'C' && mod_type != 'C') {
 
                                     // Convert the query position to reference position if available
                                     if (alignments_present) {
@@ -447,7 +455,7 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
                     }
                 }
 
-                // Preprint revisions: Append the modified positions to the output data
+                // Append the modified positions to the output data
                 if (c_modified_positions.size() > 0) {
                     // Set the atomic flag and print a message if base
                     // modification tags are present in the file

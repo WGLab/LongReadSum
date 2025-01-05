@@ -237,39 +237,34 @@ class ST_HTML_Generator:
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
-        # Define ASCII/Unicode icons for different flags
-        flag_icons = {
-            "PASS": "&#10004;",
-            "WARN": "&#9888;",
+        # Define ASCII/Unicode icons for error flags
+        error_flag_icon = {
+            True: "&#9888;",
+            False: "&#10004;",
         }
-        # "WARN": "&#9888;",
-        # "PASS": "&#10004;",
-        # "FAIL": "&#10060;",
-        # "INFO": "&#8505;"
 
         # Add links to the right sections
         key_index = 0
         for plot_key in self.image_key_list:
 
             # Determine the flag icon
-            # [TEST] Select a random flag for testing
-            flags = ["PASS", "WARN"]
-            flag = flags[key_index % 2]
+            try:
+                flag = self.plot_filepaths[plot_key]['error_flag']
+            except KeyError:
+                flag = False
             
-            # flag = self.plot_filepaths[plot_key]['flag']
-            flag_icon = flag_icons[flag]
+            flag_icon = error_flag_icon[flag]
             self.html_writer.write('<li>')
             self.html_writer.write(f'{flag_icon} ')
             self.html_writer.write(
                 '<a href="#lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['title'] + '</a>')
-                # f'{flag_icon} <a href="#lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['title'] + '</a>')
             
             key_index += 1
             self.html_writer.write('</li>')
 
         # Add the input files section link
-        self.html_writer.write('<li>')
-        self.html_writer.write('• <a href="#lrst' + str(key_index) + '">Input File List</a>')
+        self.html_writer.write('<br><li>')
+        self.html_writer.write('<a href="#lrst' + str(key_index) + '">Input File List</a>')
         key_index += 1
         self.html_writer.write('</li>')
         
@@ -297,7 +292,12 @@ class ST_HTML_Generator:
                     self.html_writer.write(dynamic_plot)
 
                 except KeyError:
-                    logging.error("Missing dynamic plot for %s", plot_key)
+                    # See if an image is available
+                    try:
+                        image_path = self.plot_filepaths[plot_key]['file']
+                        self.html_writer.write(f'<img src="{image_path}" alt="{plot_key}">')
+                    except KeyError:
+                        logging.error("Missing plot for %s", plot_key)
 
             self.html_writer.write('</div>')
 

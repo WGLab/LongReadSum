@@ -268,11 +268,11 @@ void Output_BAM::updateBaseModCounts(char mod_type, int strand)
     this->sample_modified_base_count++;
     this->base_mod_counts[mod_type]++;  // Update the type-specific modified base count
 
-    // Update the modified base count for the strand
+    // Update the modified base count for the strand from primary alignments
     if (strand == 0) {
         this->sample_modified_base_count_forward++;
         this->base_mod_counts_forward[mod_type]++;  // Update the type-specific modified base count
-    } else {
+    } else if (strand == 1) {
         this->sample_modified_base_count_reverse++;
         this->base_mod_counts_reverse[mod_type]++;  // Update the type-specific modified base count
     }
