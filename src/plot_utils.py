@@ -376,8 +376,9 @@ def read_gc_content_histogram(data, font_size):
 
     return fig.to_html(full_html=False, default_height=500, default_width=700)
 
-# Save the 'Base quality' plot image.
-def base_quality(data, font_size):
+
+def base_quality(data, font_size, plot_filepaths):
+    """Plot the base quality distribution."""
     xd = np.arange(MAX_BASE_QUALITY)
     yd = np.array(data.base_quality_distribution)
     fig = go.Figure()
@@ -392,9 +393,19 @@ def base_quality(data, font_size):
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff=0)
     fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
-    return fig.to_html(full_html=False, default_height=500, default_width=700)
+    # return fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['base_quality']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
 
-def read_avg_base_quality(data, font_size):
+    # Set the error flag if the base quality is below 20 for more than 10% of
+    # the bases
+    error_flag = False
+    if np.sum(yd[:20]) / np.sum(yd) > 0.1:
+        error_flag = True
+
+    plot_filepaths['base_quality']['error_flag'] = error_flag
+
+
+def read_avg_base_quality(data, font_size, plot_filepaths):
     """Plot the read average base quality distribution."""
     xd = np.arange(MAX_READ_QUALITY)
     yd = np.array(data.read_average_base_quality_distribution)
@@ -405,7 +416,16 @@ def read_avg_base_quality(data, font_size):
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
     fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
-    return fig.to_html(full_html=False, default_height=500, default_width=700)
+    # return fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['read_avg_base_quality']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    # Set the error flag if the average base quality is below 20 for more than
+    # 10% of the reads
+    error_flag = False
+    if np.sum(yd[:20]) / np.sum(yd) > 0.1:
+        error_flag = True
+
+    plot_filepaths['read_avg_base_quality']['error_flag'] = error_flag
 
 
 def plot_base_modifications(base_modifications):
@@ -499,16 +519,24 @@ def plot(output_data, para_dict, file_type):
         seq_quality_info = output_data.seq_quality_info
 
         # Base quality histogram
-        plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
+        base_quality(seq_quality_info, font_size, plot_filepaths)
+        # plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
 
         # Read quality histogram
-        read_quality_dynamic = read_avg_base_quality(seq_quality_info, font_size)
-        plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
+        # read_quality_dynamic = read_avg_base_quality(seq_quality_info, font_size)
+        # plot_filepaths['read_avg_base_quality']['dynamic'] =
+        # read_quality_dynamic
+        read_avg_base_quality(seq_quality_info, font_size, plot_filepaths)
 
     if file_type == 'BAM':
         # Plot read alignment QC
-        plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data)
-        plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data)
+        plot_alignment_numbers(output_data, plot_filepaths)
+        # plot_filepaths['read_alignments_bar']['dynamic'] =
+        # plot_alignment_numbers(output_data)
+        
+        # Plot base alignment and error QC
+        plot_errors(output_data, plot_filepaths)
+        # plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data)
         
     elif file_type == 'FAST5s':
         plot_filepaths['ont_signal']['dynamic'] = plot_signal(output_data, para_dict)
@@ -988,12 +1016,14 @@ def create_summary_table(output_data, plot_filepaths, file_type):
     plot_filepaths["basic_st"]['detail'] = table_str
     plot_filepaths["basic_st"]['error_flag'] = table_error_flag
 
+
 def create_modified_base_table(output_data, plot_filepaths, base_modification_threshold):
     """Create a summary table for the base modifications."""
     plot_filepaths["base_mods"] = {}
     plot_filepaths["base_mods"]['file'] = ""
     plot_filepaths["base_mods"]['title'] = "Base Modifications"
     plot_filepaths["base_mods"]['description'] = "Base modification statistics"
+    table_error_flag = False
 
     # Print the types of modifications
     logging.info("Getting base modification types")
@@ -1005,7 +1035,6 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
         # Get the read length vs. base modification rate data for each modification type
         read_mod_data_size = output_data.getReadModDataSize()
-        logging.info("[TEST] read_mod_data_size: {}".format(read_mod_data_size))
         read_length_mod_rates = {}
         for i in range(read_mod_data_size):
             for mod_type in base_mod_types:
@@ -1077,13 +1106,41 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
     # Create the base modification statistics table
     table_str = "<table>\n<tbody>"
-    table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
-    table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
-    table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
-    table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
-    table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
-    table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
-    table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
+    row_str, row_flag = format_row("Total Predictions", [output_data.modified_prediction_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Probability Threshold", [base_modification_threshold], 'float', 0)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total Modified Bases in the Sample", [output_data.sample_modified_base_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total in the Forward Strand", [output_data.sample_modified_base_count_forward], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total in the Reverse Strand", [output_data.sample_modified_base_count_reverse], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total modified CpG Sites in the Sample (Forward Strand)", [output_data.sample_cpg_forward_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total modified CpG Sites in the Sample (Reverse Strand)", [output_data.sample_cpg_reverse_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    # table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
+    # table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
+    # table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
+    # table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
+    # table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
+    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
+    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
 
     # Add the modification type data
     for mod_type in base_mod_types:
@@ -1097,13 +1154,26 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         mod_count = output_data.getModTypeCount(mod_type)
         mod_count_fwd = output_data.getModTypeCount(mod_type, 0)
         mod_count_rev = output_data.getModTypeCount(mod_type, 1)
-        table_str += "<tr><td>Total {} Sites in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count)
-        table_str += "<tr><td>Total {} Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count_fwd)
-        table_str += "<tr><td>Total {} Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count_rev)
+
+        row_str, row_flag = format_row("Total {} Sites in the Sample".format(mod_name), [mod_count], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        row_str, row_flag = format_row("Total {} Sites in the Sample (Forward Strand)".format(mod_name), [mod_count_fwd], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        row_str, row_flag = format_row("Total {} Sites in the Sample (Reverse Strand)".format(mod_name), [mod_count_rev], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+        # table_str += "<tr><td>Total {} Sites in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count)
+        # table_str += "<tr><td>Total {} Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count_fwd)
+        # table_str += "<tr><td>Total {} Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(mod_name, mod_count_rev)
 
     # Finish the table
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["base_mods"]['detail'] = table_str
+    plot_filepaths["base_mods"]['error_flag'] = table_error_flag
 
 def create_tin_table(output_data, input_files, plot_filepaths):
     """Create a summary table for the RNA-Seq TIN values."""
@@ -1118,12 +1188,15 @@ def create_tin_table(output_data, input_files, plot_filepaths):
     table_str += "\n<tbody>"
     
     # Loop through each BAM file
+    error_flag = False
     for bam_file in input_files:
         # Format the filepath as filename only
         bam_filename = os.path.basename(bam_file)
 
         # Get the file data
         tin_count = output_data.getTINCount(bam_file)
+        error_flag = error_flag or tin_count == 0
+
         tin_mean = output_data.getTINMean(bam_file)
         tin_median = output_data.getTINMedian(bam_file)
         tin_std = output_data.getTINStdDev(bam_file)
@@ -1135,6 +1208,8 @@ def create_tin_table(output_data, input_files, plot_filepaths):
 
     # Add the table to the plot filepaths
     plot_filepaths["tin"]['detail'] = table_str
+    plot_filepaths["tin"]['error_flag'] = error_flag
+
 
 def create_pod5_table(output_dict, plot_filepaths):
     """Create a summary table for the ONT POD5 signal data."""
@@ -1143,26 +1218,41 @@ def create_pod5_table(output_dict, plot_filepaths):
     plot_filepaths["basic_st"]['title'] = "Summary Table"
     file_type_label = "POD5"
     plot_filepaths["basic_st"]['description'] = f"{file_type_label} Basic Statistics"
+    table_error_flag = False
     
     # Get values
-    read_count = len(output_dict.keys())
 
     # Set up the HTML table
     table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
     table_str += "\n<tbody>"
-    int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
-    table_str += int_str_for_format.format("#Total Reads", read_count)
+    # int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
+    # table_str += int_str_for_format.format("Total Reads", read_count)
+    read_count = len(output_dict.keys())
+    row_str, row_flag = format_row("Total Reads", [read_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
 
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["basic_st"]['detail'] = table_str
+    plot_filepaths["basic_st"]['error_flag'] = table_error_flag
 
 
-def plot_alignment_numbers(data):
+def plot_alignment_numbers(data, plot_filepaths):
     category = ['Primary Alignments', 'Supplementary Alignments', 'Secondary Alignments',
                 'Reads with Supplementary Alignments', 'Reads with Secondary Alignments',
                 'Reads with Secondary and Supplementary Alignments', 'Forward Alignments', 'Reverse Alignments']
     category = [wrap(x) for x in category]
 
+    # Identify null values
+    error_flag = False
+    for value in [data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
+                  data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
+                  data.num_reads_with_both_secondary_supplementary_alignment, data.forward_alignment,
+                  data.reverse_alignment]:
+        if value == 0:
+            error_flag = True
+            break
+    
     # Create a horizontally aligned bar plot trace from the data using plotly
     trace = go.Bar(x=[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
                       data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
@@ -1179,13 +1269,18 @@ def plot_alignment_numbers(data):
     fig = go.Figure(data=[trace], layout=layout)
 
     # Generate the HTML object for the plot
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=1000)
+    # html_obj = fig.to_html(full_html=False, default_height=500,
+    # default_width=1000)
 
-    return html_obj
+    # return html_obj, error_flag
+
+    # Update the HTML data for the plot
+    plot_filepaths['read_alignments_bar']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=1000)
+    plot_filepaths['read_alignments_bar']['error_flag'] = error_flag
 
 
-# Plot base alignment statistics
-def plot_errors(output_data):
+def plot_errors(output_data, plot_filepaths):
+    """Plot the error statistics for the alignment data."""
     category = \
         ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases\n(Primary Alignments)']
     category = [wrap(x) for x in category]
@@ -1204,7 +1299,14 @@ def plot_errors(output_data):
     fig = go.Figure(data=[trace], layout=layout)
 
     # Generate the HTML object for the plot
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+    # html_obj = fig.to_html(full_html=False, default_height=500,
+    # default_width=700)
+    plot_filepaths['base_alignments_bar']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
 
-    return html_obj
+    # Set the error flag if mismatch or clipped bases > matched bases
+    error_flag = output_data.num_mismatched_bases > output_data.num_matched_bases or \
+                 output_data.num_clip_bases > output_data.num_matched_bases
+    plot_filepaths['base_alignments_bar']['error_flag'] = error_flag
+
+    # return html_obj
 
