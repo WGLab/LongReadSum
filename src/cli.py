@@ -246,7 +246,7 @@ def bam_module(margs):
             plot_filepaths = plot(bam_output, param_dict, 'BAM')
 
             # Set the list of QC information to display
-            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality", "read_avg_base_quality"]
+            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality"]
 
             # If base modifications were found, add the base modification plots
             # after the first table
@@ -314,7 +314,7 @@ def rrms_module(margs):
                 # Generate the HTML report
                 bam_html_gen = generate_html.ST_HTML_Generator(
                     [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info",
-                    "base_quality", "read_avg_base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
+                    "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
                 bam_html_gen.generate_html()
                 logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
@@ -386,8 +386,8 @@ def fast5_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fast5_output, param_dict, 'FAST5')
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality",
-                  "read_avg_base_quality"], "FAST5 QC", param_dict], plot_filepaths, static=False)
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "basic_info", "base_quality"], 
+                 "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 

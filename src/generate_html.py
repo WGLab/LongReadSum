@@ -304,10 +304,12 @@ class ST_HTML_Generator:
             key_index += 1
 
         self.html_writer.write('<div class="module">')
-        self.html_writer.write('<h2 id="lrst' + str(key_index) + '">File count = ' + str(
+        self.html_writer.write('<h2 id="lrst' + str(key_index) + '">File Count = ' + str(
             len(self.input_para["input_files"])) + '</h2><p>')
-        for _af in self.input_para["input_files"]:
-            self.html_writer.write("<br/>" + _af)
+        # for _af in self.input_para["input_files"]:
+        #     self.html_writer.write("<br/>" + _af)
+        # Write the input files in format "1.\tfile1\n2.\tfile2\n..."
+        self.html_writer.write("<br/>" + "<br/>".join([f"{i+1}.\t{af}" for i, af in enumerate(self.input_para["input_files"])]))
         self.html_writer.write('</p></div>')
         key_index += 1
 

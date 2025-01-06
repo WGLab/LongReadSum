@@ -139,8 +139,8 @@ def plot_read_length_stats(output_data, file_type, plot_filepaths):
     plot_filepaths['read_length_bar']['error_flag'] = error_flag
 
 
-# Plot the base counts
 def plot_base_counts(output_data, filetype, plot_filepaths):
+    """Plot overall base counts for the reads."""
 
     # Create a bar trace for each base
     error_flag = False
@@ -157,13 +157,14 @@ def plot_base_counts(output_data, filetype, plot_filepaths):
             all_traces.append(trace)
 
             # Set the error flag if the N count is greater than 10% or the A, C,
-            # G, or T/U counts are zero
-            if data.total_num_bases == 0:
-                error_flag = True
-            elif data.total_n_cnt / data.total_num_bases > 0.1:
-                error_flag = True
-            elif data.total_a_cnt == 0 or data.total_c_cnt == 0 or data.total_g_cnt == 0 or data.total_tu_cnt == 0:
-                error_flag = True
+            # G, or T/U counts are zero (except for unmapped reads)
+            if i != 2:
+                if data.total_num_bases == 0:
+                    error_flag = True
+                elif data.total_n_cnt / data.total_num_bases > 0.1:
+                    error_flag = True
+                elif data.total_a_cnt == 0 or data.total_c_cnt == 0 or data.total_g_cnt == 0 or data.total_tu_cnt == 0:
+                    error_flag = True
 
     elif filetype == 'SeqTxt':
         bar_titles = ['All Reads', 'Passed Reads', 'Failed Reads']
@@ -213,8 +214,8 @@ def plot_base_counts(output_data, filetype, plot_filepaths):
     plot_filepaths['base_counts']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
     plot_filepaths['base_counts']['error_flag'] = error_flag
 
-# Plot basic information about the reads in bar chart format
 def plot_basic_info(output_data, file_type, plot_filepaths):
+    """Plot basic information about the reads in bar chart format."""
     html_obj = ''
     if file_type == 'BAM':
 
@@ -235,8 +236,9 @@ def plot_basic_info(output_data, file_type, plot_filepaths):
             # Add the traces for each type of data
             data = [getattr(data_objects[0], key_name), getattr(data_objects[1], key_name), getattr(data_objects[2], key_name)]
 
-            # Set the error flag if any of the values are zero
-            if data[0] == 0 or data[1] == 0 or data[2] == 0:
+            # Set the error flag if any of the values are zero (except for unmapped reads)
+            # if data[0] == 0 or data[1] == 0 or data[2] == 0:
+            if data[0] == 0 or data[1] == 0:
                 error_flag = True
 
             # Create the trace
@@ -410,7 +412,9 @@ def read_gc_content_histogram(data, font_size, plot_filepaths):
     # Set the error flag if the GC content is below 20% for more than 10% of the
     # reads
     error_flag = False
-    if np.sum(gc_content[:20]) / np.sum(gc_content) > 0.1:
+    if np.sum(gc_content) == 0:
+        error_flag = True
+    elif np.sum(gc_content[:20]) / np.sum(gc_content) > 0.1:
         error_flag = True
 
     # Bin the GC content if the bin size is greater than 1
@@ -470,7 +474,9 @@ def base_quality(data, font_size, plot_filepaths):
     # Set the error flag if the base quality is below 20 for more than 10% of
     # the bases
     error_flag = False
-    if np.sum(yd[:20]) / np.sum(yd) > 0.1:
+    if np.sum(yd) == 0:
+        error_flag = True
+    elif np.sum(yd[:20]) / np.sum(yd) > 0.1:
         error_flag = True
 
     plot_filepaths['base_quality']['error_flag'] = error_flag
@@ -493,7 +499,9 @@ def read_avg_base_quality(data, font_size, plot_filepaths):
     # Set the error flag if the average base quality is below 20 for more than
     # 10% of the reads
     error_flag = False
-    if np.sum(yd[:20]) / np.sum(yd) > 0.1:
+    if np.sum(yd) == 0:
+        error_flag = True
+    elif np.sum(yd[:20]) / np.sum(yd) > 0.1:
         error_flag = True
 
     plot_filepaths['read_avg_base_quality']['error_flag'] = error_flag
@@ -599,15 +607,17 @@ def plot(output_data, para_dict, file_type):
             # read_gc_content_histogram(output_data.long_read_info, font_size)
             read_gc_content_histogram(output_data.long_read_info, font_size, plot_filepaths)
 
-    # Quality plots
+    # Base quality histogram
     if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
         seq_quality_info = output_data.seq_quality_info
 
         # Base quality histogram
         base_quality(seq_quality_info, font_size, plot_filepaths)
-        # plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
-
-        # Read quality histogram
+        # plot_filepaths['base_quality']['dynamic'] =
+        # base_quality(seq_quality_info, font_size)
+        
+    # Read average base quality histogram
+    if file_type == 'FASTQ':
         # read_quality_dynamic = read_avg_base_quality(seq_quality_info, font_size)
         # plot_filepaths['read_avg_base_quality']['dynamic'] =
         # read_quality_dynamic
@@ -1126,17 +1136,31 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         # modification type
         logging.info("Getting mod data size")
         read_mod_data_size = output_data.getReadModDataSize()
+        logging.info("Mod data size: {}".format(read_mod_data_size))
+
+        # Choose a maximum of 10,000 reads to randomly sample for the plot
+        max_reads = min(read_mod_data_size, 10000)        
+        # read_indices = set(sample(range(read_mod_data_size), max_reads))
+        read_indices = np.random.choice(read_mod_data_size, max_reads, replace=False)
         read_length_mod_rates = {}
-        for i in range(read_mod_data_size):
+
+        # Get the read length vs. base modification rate data for each
+        # modification type in the sampled reads
+        # for i in range(read_mod_data_size):
+        #     if i not in read_indices:
+        #         continue
+        for i in read_indices:
             for mod_type in base_mod_types:
                 if mod_type not in read_length_mod_rates:
                     read_length_mod_rates[mod_type] = []
 
-                logging.info("Getting read length for read {}".format(i))
-                read_length = output_data.getNthReadModLength(i)
-                logging.info("Getting read length vs. {} modification rate".format(mod_type))
-                mod_rate = output_data.getNthReadModRate(i, mod_type)
-                logging.info("Read length: {}, {} modification rate: {}".format(read_length, mod_type, mod_rate))
+                # logging.info("Getting read length for read {}".format(i))
+                # read_length = output_data.getNthReadModLength(i)
+                read_length = output_data.getNthReadModLength(int(i))
+                # logging.info("Getting read length vs. {} modification rate".format(mod_type))
+                # mod_rate = output_data.getNthReadModRate(i, mod_type)
+                mod_rate = output_data.getNthReadModRate(int(i), mod_type)
+                # logging.info("Read length: {}, {} modification rate: {}".format(read_length, mod_type, mod_rate))
                 read_length_mod_rates[mod_type].append((read_length, mod_rate))
 
         # Dictionary of modification character to full name
@@ -1146,7 +1170,6 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                             'C': 'Amb. C', 'A': 'Amb. A', 'T': 'Amb. T', 'G': 'Amb. G',\
                             'N': 'Amb. N', \
                             'v': 'pseU'}
-
 
         # Create a plot of read length vs. base modification rate for each
         # modification type
@@ -1159,13 +1182,19 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
             # Format the data
             mod_data = read_length_mod_rates[mod_type]
-            x_vals = [data[0] for data in mod_data]
-            read_lengths = ['{:,}Mb'.format(int(val / 1000000)) if val > 1000000 else '{:,}kb'.format(int(val / 1000)) if val > 1000 else '{:,}bp'.format(int(val)) for val in x_vals]
             mod_rates = [data[1] * 100 for data in mod_data]
+            x_vals = [data[0] for data in mod_data]
+
+            # Generate evenly-spaced x values and labels (10 ticks across the
+            # range) with the read lengths being a multiple of 1000
+            x_tick_values = np.linspace(0, max(x_vals), num=10)
+            read_lengths = ['{:,}Mb'.format(int(val / 1000000)) if val > 1000000 else '{:,}kb'.format(int(val / 1000)) if val > 1000 else '{:,}bp'.format(int(val)) for val in x_tick_values]
+
+            # read_lengths = ['{:,}Mb'.format(int(val / 1000000)) if val > 1000000 else '{:,}kb'.format(int(val / 1000)) if val > 1000 else '{:,}bp'.format(int(val)) for val in x_vals]
 
             # Update the min and max x values
-            min_x = min(min_x, min(x_vals))
-            max_x = max(max_x, max(x_vals))
+            # min_x = min(min_x, *x_vals)
+            # max_x = max(max_x, *x_vals)
 
             # Get the modification name
             try:
@@ -1177,23 +1206,36 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
             fig.add_trace(go.Scattergl(x=x_vals, y=mod_rates, mode='markers', name=mod_name), row=i + 1, col=1)
 
             # Update the layout
-            max_x_range = min(max_x, 10000)  # To improve the plot performance
             fig.update_layout(title='Read Length vs. {} Modification Rate'.format(mod_name),
                             xaxis_title='Read Length',
                             yaxis_title='Modification Rate (%)',
                             showlegend=False,
                             yaxis=dict(range=[0, 100]),
-                            xaxis=dict(tickvals=x_vals, ticktext=read_lengths, range=[0, max_x_range]),
+                            xaxis=dict(tickvals=x_tick_values, ticktext=read_lengths, range=[0, max(x_vals)]),
                             font=dict(size=PLOT_FONT_SIZE))
             
+            # Get the X tick values generated by Plotly and format the read lengths
+            # x_tick_values = fig.layout.x
+            # if x_tick_values:
+            #     read_lengths = ['{:,}Mb'.format(int(val / 1000000)) if val > 1000000 else '{:,}kb'.format(int(val / 1000)) if val > 1000 else '{:,}bp'.format(int(val)) for val in x_tick_values]
+
+            # # Update the X tick labels
+            # fig.update_xaxes(tickvals=x_tick_values, ticktext=read_lengths, row=i + 1, col=1)
+            
+            # xaxis=dict(tickvals=x_vals, ticktext=read_lengths, range=[0, max_x_range]),
+
         # Save the plot image
-        if len(base_mod_types) > 0:
-            fig_file = plot_filepaths["read_length_mod_rates"]['file']
-            logging.info("Saving the read length vs. modification rates plot to: {}".format(fig_file))
-            fig.write_image(fig_file, format='png', width=700, height=500)
+        # if len(base_mod_types) > 0:
+        #     fig_file = plot_filepaths["read_length_mod_rates"]['file']
+        #     logging.info("Saving the read length vs. modification rates plot to: {}".format(fig_file))
+        #     fig.write_image(fig_file, format='png', width=700, height=500)
             
         # Generate the HTML
-        # html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+        # html_obj = fig.to_html(full_html=False, default_height=500,
+        # default_width=700)
+        if len(base_mod_types) > 0:
+            logging.info("Saving the read length vs. modification rates plot")
+            plot_filepaths["read_length_mod_rates"]['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
         # plot_filepaths["read_length_mod_rates"]["dynamic"] = html_obj
     else:
         logging.warning("WARNING: No modification types found")
@@ -1337,16 +1379,9 @@ def plot_alignment_numbers(data, plot_filepaths):
                 'Reads with Secondary and Supplementary Alignments', 'Forward Alignments', 'Reverse Alignments']
     category = [wrap(x) for x in category]
 
-    # Identify null values
-    error_flag = False
-    for value in [data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
-                  data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
-                  data.num_reads_with_both_secondary_supplementary_alignment, data.forward_alignment,
-                  data.reverse_alignment]:
-        if value == 0:
-            error_flag = True
-            break
-    
+    # Set the error flag if primary alignments equal 0
+    error_flag = data.num_primary_alignment == 0
+
     # Create a horizontally aligned bar plot trace from the data using plotly
     trace = go.Bar(x=[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
                       data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
