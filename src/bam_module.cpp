@@ -146,6 +146,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         }
 
          // Calculate statistics in batches
+         printMemoryUsage("Before batch processing");
          while (reader.hasNextRecord()){
             std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
@@ -169,6 +170,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                 if (t.joinable()){
                     t.join();
                 }
+                printMemoryUsage("After thread " + std::to_string(thread_index));
                 thread_index++;
             }
             std::cout << "All threads joined." << std::endl;
@@ -245,6 +247,7 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unorder
     // Update the final output
     std::lock_guard<std::mutex> lock(output_mutex);
     final_output.add(record_output);
+    printMemoryUsage("After record processing");
 }
 
 std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_file, bool accepted_reads)
@@ -262,7 +265,10 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
     std::stringstream ss(header);
     std::string field;
     // std::cout << "RRMS CSV header:" << std::endl;
-    while (std::getline(ss, field, ',')){
+
+    // Split the header fields
+    char delimiter = ',';
+    while (std::getline(ss, field, delimiter)){
         header_fields.push_back(field);
         // std::cout << field << std::endl;
     }
@@ -297,7 +303,7 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         std::vector<std::string> fields;
         std::string field;
         std::stringstream ss(line);
-        while (std::getline(ss, field, ',')){
+        while (std::getline(ss, field, delimiter)){
             fields.push_back(field);
         }
 

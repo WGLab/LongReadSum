@@ -161,7 +161,6 @@ public:
 struct ReadModData
 {
    int read_length;
-   double mod_rate;
    std::unordered_map<char, double> base_mod_rates;  // Type-specific base modification rates
 };
 
@@ -229,7 +228,6 @@ class Output_BAM : public Output_FQ
       std::vector<char> getBaseModTypes();  // Get the types of base modifications found
       int getReadModDataSize();  // Get the number of read length vs. base modification rate data points
       int getNthReadModLength(int read_index);  // Get the read length for the nth read
-      double getNthReadModRate(int read_index);  // Get the base modification rate for the nth read
       double getNthReadModRate(int read_index, char mod_type);  // Get the base modification rate for the nth read for a specific base modification type
       uint64_t getModTypeCount(char mod_type);  // Get the count of a specific base modification type
       uint64_t getModTypeCount(char mod_type, int strand);  // Get the count of a specific base modification type for a specific strand
@@ -243,7 +241,7 @@ class Output_BAM : public Output_FQ
       int getReadSequenceEnd(std::string read_id);
 
       void updateBaseModCounts(char mod_type, int strand);  // Update base modification counts for predictions exceeding the threshold
-      void updateReadModRate(int read_length, double read_mod_rate, std::unordered_map<char, double> base_mod_rates);  // Update read length vs. base modification rate data
+      void updateReadModRate(int read_length, const std::unordered_map<char, double>& base_mod_rates);  // Update read length vs. base modification rate data
 
       // Add TIN data for a single BAM file
       void addTINData(std::string &bam_file, TINStats &tin_data);

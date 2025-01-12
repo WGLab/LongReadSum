@@ -257,6 +257,18 @@ void Basic_Seq_Quality_Statistics::global_sum(){
 
 // BAM output constructor
 Output_BAM::Output_BAM(){
+    this->num_primary_alignment = 0;
+    this->num_secondary_alignment = 0;
+    this->num_supplementary_alignment = 0;
+    this->num_clip_bases = 0;
+    this->sample_modified_base_count = 0;
+    this->sample_modified_base_count_forward = 0;
+    this->sample_modified_base_count_reverse = 0;
+    this->forward_alignment = 0;
+    this->reverse_alignment = 0;
+    this->base_mod_counts = std::unordered_map<char, uint64_t>();
+    this->base_mod_counts_forward = std::unordered_map<char, uint64_t>();
+    this->base_mod_counts_reverse = std::unordered_map<char, uint64_t>();
 }
 
 Output_BAM::~Output_BAM(){
@@ -278,20 +290,29 @@ void Output_BAM::updateBaseModCounts(char mod_type, int strand)
     }
 }
 
-void Output_BAM::updateReadModRate(int read_length, double read_mod_rate, std::unordered_map<char, double> base_mod_rates) {
+void Output_BAM::updateReadModRate(int read_length, const std::unordered_map<char, double>& base_mod_rates) {
     ReadModData read_mod_data;
     read_mod_data.read_length = read_length;
-    read_mod_data.mod_rate = read_mod_rate;
     read_mod_data.base_mod_rates = base_mod_rates;
     this->read_mod_data.push_back(read_mod_data);
 }
 
 std::vector<char> Output_BAM::getBaseModTypes()
 {
+    printMessage("[TEST] Getting base modification types.");
     std::vector<char> base_mod_types;
-    for (auto it = this->base_mod_counts.begin(); it != this->base_mod_counts.end(); ++it) {
-        base_mod_types.push_back(it->first);
+    if (this->base_mod_counts.empty()) {
+        printError("No base modification counts found.");
+        return base_mod_types;
     }
+
+    printMessage("[TEST2] Getting base modification types.");
+    for (const auto& it : this->base_mod_counts) {
+        base_mod_types.push_back(it.first);
+    }
+    // for (auto it = this->base_mod_counts.begin(); it != this->base_mod_counts.end(); ++it) {
+    //     base_mod_types.push_back(it->first);
+    // }
     return base_mod_types;
 }
 
@@ -303,11 +324,6 @@ int Output_BAM::getReadModDataSize()
 int Output_BAM::getNthReadModLength(int read_index)
 {
     return this->read_mod_data[read_index].read_length;
-}
-
-double Output_BAM::getNthReadModRate(int read_index)
-{
-    return this->read_mod_data[read_index].mod_rate;
 }
 
 double Output_BAM::getNthReadModRate(int read_index, char mod_type)
