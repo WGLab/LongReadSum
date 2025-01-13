@@ -211,8 +211,8 @@ def plot_base_counts(output_data, filetype, plot_filepaths):
     plot_filepaths['base_counts']['error_flag'] = error_flag
 
 
-# Plot the read length histograms
 def read_lengths_histogram(data, font_size, plot_filepaths):
+    """Plot the read length histogram."""
     linear_bin_count = 10
     log_bin_count = 10
 
@@ -319,6 +319,22 @@ def read_gc_content_histogram(data, font_size, plot_filepaths):
     bin_size = 1
     gc_content = np.array(data.read_gc_content_count)
 
+    # Calculate the percentage of reads with a GC content of <30%
+    gc_content_below_30 = np.sum(gc_content[:30])
+    logging.info("[TEST] Percentage of reads with GC content <30%: {}".format(gc_content_below_30 / np.sum(gc_content)))
+
+    # Calculate the percentage of reads with a GC content of >70%
+    gc_content_above_70 = np.sum(gc_content[70:])
+    logging.info("[TEST] Percentage of reads with GC content >70%: {}".format(gc_content_above_70 / np.sum(gc_content)))
+
+    # Calculate the percentage of reads with a GC content of <20%
+    gc_content_below_20 = np.sum(gc_content[:20])
+    logging.info("[TEST] Percentage of reads with GC content <20%: {}".format(gc_content_below_20 / np.sum(gc_content)))
+
+    # Calculate the percentage of reads with a GC content of >60%
+    gc_content_above_60 = np.sum(gc_content[60:])
+    logging.info("[TEST] Percentage of reads with GC content >60%: {}".format(gc_content_above_60 / np.sum(gc_content)))
+
     # Set the error flag if the GC content is below 20% for more than 10% of the
     # reads
     error_flag = False
@@ -357,7 +373,6 @@ def read_gc_content_histogram(data, font_size, plot_filepaths):
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
     fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
-    # return fig.to_html(full_html=False, default_height=500, default_width=700)
     plot_filepaths['gc_content_hist']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
     plot_filepaths['gc_content_hist']['error_flag'] = error_flag
 
@@ -447,6 +462,7 @@ def plot_base_modifications(base_modifications):
 
 def plot(output_data, para_dict, file_type):
     """Generate the plots for the output data."""
+    logging.info("Generating plots for file type: {}".format(file_type))
     plot_filepaths = getDefaultPlotFilenames()
     font_size = 14  # Font size for the plots
     create_summary_table(output_data, plot_filepaths, file_type)  # Create the summary table
@@ -498,12 +514,12 @@ def plot(output_data, para_dict, file_type):
         plot_read_length_stats(output_data, file_type, plot_filepaths)
 
     # GC content histogram
-    if file_type != 'FAST5s' and file_type != 'SeqTxt':
-            read_gc_content_histogram(output_data.mapped_long_read_info, font_size, plot_filepaths)
-        elif file_type == 'SeqTxt':
-            read_gc_content_histogram(output_data.passed_long_read_info.long_read_info, font_size, plot_filepaths)
-        else:
-            read_gc_content_histogram(output_data.long_read_info, font_size, plot_filepaths)
+    if file_type == 'BAM':
+        read_gc_content_histogram(output_data.mapped_long_read_info, font_size, plot_filepaths)
+    elif file_type == 'SeqTxt':
+        read_gc_content_histogram(output_data.passed_long_read_info.long_read_info, font_size, plot_filepaths)
+    elif file_type == 'FASTQ' or file_type == 'FASTA':
+        read_gc_content_histogram(output_data.long_read_info, font_size, plot_filepaths)
 
     # Base quality histogram
     if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
@@ -1000,6 +1016,12 @@ def create_summary_table(output_data, plot_filepaths, file_type):
         table_error_flag = table_error_flag or row_flag
         
     table_str += "\n</tbody>\n</table>"
+    # table_str += """
+    #     <div class="help-icon">
+    #         💡
+    #         <div class="tooltip">This is your help text explaining the feature!</div>
+    #     </div>
+    #     """
     plot_filepaths["basic_st"]['detail'] = table_str
     plot_filepaths["basic_st"]['error_flag'] = table_error_flag
 
@@ -1012,6 +1034,13 @@ def get_axis_name(row, axis_type='x'):
 
 def create_modified_base_table(output_data, plot_filepaths, base_modification_threshold):
     """Create a summary table for the base modifications."""
+    help_text = "Total unfiltered predictions are all predictions prior to applying the base modification probability threshold.\n" \
+                "This threshold is set by the user (default: 0.5) and is used to filter out low-confidence base modifications.\n" \
+                "Total modification counts are the number of base modifications that pass the threshold.\n" \
+                "These counts are also separated by forward and reverse strand predictions.\n" \
+                "CpG modification counts are the total CpG modifications that pass the threshold.\n" \
+                "These are total counts and not site-specific counts." \
+                
     plot_filepaths["base_mods"] = {}
     plot_filepaths["base_mods"]['file'] = ""
     plot_filepaths["base_mods"]['title'] = "Base Modifications"
@@ -1101,11 +1130,13 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                 # Filter the data to remove outliers
                 filtered_data = [(x, y) for x, y in zip(x_vals, mod_rates) if lower_bound <= x <= upper_bound]
                 x_vals, mod_rates = zip(*filtered_data)
+
+            # Normalize the read lengths to the maximum read length (0-100)
+            x_vals = [100 * x / max(x_vals) for x in x_vals]
             
-            # Generate evenly-spaced x values and labels (10 ticks across the
-            # range) with the read lengths being a multiple of 1000
-            x_tick_values = np.linspace(0, max(x_vals), num=10)
-            read_lengths = ['{:,}Mb'.format(int(val / 1000000)) if val > 1000000 else '{:,}kb'.format(int(val / 1000)) if val > 1000 else '{:,}bp'.format(int(val)) for val in x_tick_values]
+            # Use 0-100 for the x-axis ticks and labels
+            x_tick_values = np.arange(0, 101, 10)
+            x_tick_labels = ['{:,}%'.format(int(val)) for val in x_tick_values]
 
             # Get the modification name
             try:
@@ -1114,7 +1145,10 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                 logging.warning("WARNING: Unknown modification type: {}".format(mod_type))
                 mod_name = mod_type
 
-            fig.add_trace(go.Scattergl(x=x_vals, y=mod_rates, mode='markers', name=mod_name, showlegend=False), row=i + 1, col=1)
+            # fig.add_trace(go.Scattergl(x=x_vals, y=mod_rates, mode='markers', name=mod_name, showlegend=False), row=i + 1, col=1)
+
+            # Create a heatmap plot
+            fig.add_trace(go.Histogram2dContour(x=x_vals, y=mod_rates, colorscale='Viridis', showlegend=False), row=i + 1, col=1)
 
             # Update the layout
             x_axis_name = get_axis_name(i)
@@ -1123,25 +1157,21 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
             
             # Auto range the axes
             fig.update_layout(
-                **{f"{x_axis_name}_title": 'Read Length (bp)',
-                    f"{y_axis_name}_title": 'Modification Rate (%)'})
+                **{f"{x_axis_name}_title": 'Normalized Read Length (%)',
+                    f"{y_axis_name}_title": 'Modification Rate (%)'},
+                **{f"{x_axis_name}_tickmode": 'array',
+                    f"{x_axis_name}_tickvals": x_tick_values,
+                    f"{x_axis_name}_ticktext": x_tick_labels},
+                **{f"{y_axis_name}_range": [0, 100]}
+            )
             
         fig.update_layout(font=dict(size=PLOT_FONT_SIZE))
-
-        # Save the plot image
-        # if len(base_mod_types) > 0:
-        #     fig_file = plot_filepaths["read_length_mod_rates"]['file']
-        #     logging.info("Saving the read length vs. modification rates plot to: {}".format(fig_file))
-        #     fig.write_image(fig_file, format='png', width=700, height=500)
             
         # Generate the HTML
-        # html_obj = fig.to_html(full_html=False, default_height=500,
-        # default_width=700)
         if len(base_mod_types) > 0:
             plot_height = 500 * len(base_mod_types)
             logging.info("Saving the read length vs. modification rates plot")
             plot_filepaths["read_length_mod_rates"]['dynamic'] = fig.to_html(full_html=False, default_height=plot_height, default_width=700)
-        # plot_filepaths["read_length_mod_rates"]["dynamic"] = html_obj
     else:
         logging.warning("WARNING: No modification types found")
 
@@ -1155,23 +1185,23 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     table_str += row_str
     table_error_flag = table_error_flag or row_flag
 
-    row_str, row_flag = format_row("Total Modified Bases in the Sample", [output_data.sample_modified_base_count], 'int', None)
+    row_str, row_flag = format_row("Total Modification Counts", [output_data.sample_modified_base_count], 'int', None)
     table_str += row_str
     table_error_flag = table_error_flag or row_flag
 
-    row_str, row_flag = format_row("Total in the Forward Strand", [output_data.sample_modified_base_count_forward], 'int', None)
+    row_str, row_flag = format_row("Total Modification Counts (Forward Strand Only)", [output_data.sample_modified_base_count_forward], 'int', None)
     table_str += row_str
     table_error_flag = table_error_flag or row_flag
 
-    row_str, row_flag = format_row("Total in the Reverse Strand", [output_data.sample_modified_base_count_reverse], 'int', None)
+    row_str, row_flag = format_row("Total Modification Counts (Reverse Strand Only)", [output_data.sample_modified_base_count_reverse], 'int', None)
     table_str += row_str
     table_error_flag = table_error_flag or row_flag
 
-    row_str, row_flag = format_row("Total modified CpG Counts in the Sample (Forward Strand)", [output_data.sample_cpg_forward_count], 'int', None)
+    row_str, row_flag = format_row("Total CpG Modification Counts (Forward Strand Only)", [output_data.sample_cpg_forward_count], 'int', None)
     table_str += row_str
     table_error_flag = table_error_flag or row_flag
 
-    row_str, row_flag = format_row("Total modified CpG Counts in the Sample (Reverse Strand)", [output_data.sample_cpg_reverse_count], 'int', None)
+    row_str, row_flag = format_row("Total CpG Modification Counts (Reverse Strand Only)", [output_data.sample_cpg_reverse_count], 'int', None)
     table_str += row_str
     table_error_flag = table_error_flag or row_flag
 
@@ -1202,6 +1232,21 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
     # Finish the table
     table_str += "\n</tbody>\n</table>"
+
+    # Add the help text
+    table_str += """
+        <div class="help-icon">
+            💡
+            <div class="tooltip">{}</div>
+        </div>
+        """.format(help_text)
+    
+    # Add text below the table suggesting the user to use Modkit for more
+    # detailed analysis on per-site modification rates
+    table_str += "<p><i>For per-site modification rates, please use \
+        <a href=\"https://github.com/nanoporetech/modkit\">Modkit</a> by Oxford Nanopore Technologies..</i></p>"
+
+
     plot_filepaths["base_mods"]['detail'] = table_str
     plot_filepaths["base_mods"]['error_flag'] = table_error_flag
 
@@ -1276,6 +1321,9 @@ def plot_alignment_numbers(data, plot_filepaths):
     # Set the error flag if primary alignments equal 0
     error_flag = data.num_primary_alignment == 0
 
+    logging.info("[TEST] Number of reverse alignments: {}".format(data.reverse_alignment))
+    logging.info("[TEST] Number of forward alignments: {}".format(data.forward_alignment))
+
     # Create a horizontally aligned bar plot trace from the data using plotly
     trace = go.Bar(x=[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
                       data.num_reads_with_supplementary_alignment, data.num_reads_with_secondary_alignment,
@@ -1290,12 +1338,6 @@ def plot_alignment_numbers(data, plot_filepaths):
 
     # Create the figure object
     fig = go.Figure(data=[trace], layout=layout)
-
-    # Generate the HTML object for the plot
-    # html_obj = fig.to_html(full_html=False, default_height=500,
-    # default_width=1000)
-
-    # return html_obj, error_flag
 
     # Update the HTML data for the plot
     plot_filepaths['read_alignments_bar']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=1000)

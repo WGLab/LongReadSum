@@ -218,6 +218,48 @@ class ST_HTML_Generator:
   li {
   margin: 10px 0;
   }
+.help-icon {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    color: #555;
+    font-size: 18px; /* Adjust size of the icon */
+    margin-top: 10px; /* Adjust spacing if needed */
+}
+
+.help-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 14px;
+    position: absolute;
+    top: 50%; /* Position the tooltip */
+    left: 120%; /* Position the tooltip */
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+
+.tooltip::after {
+    content: '';
+    position: absolute;
+    top: 50%; /* Position the arrow in the middle of the tooltip */
+    left: 0; /* Position the arrow on the left edge of the tooltip */
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
       </style>''')
 
         self.html_writer.write("</head>")
@@ -306,9 +348,6 @@ class ST_HTML_Generator:
         self.html_writer.write('<div class="module">')
         self.html_writer.write('<h2 id="lrst' + str(key_index) + '">File Count = ' + str(
             len(self.input_para["input_files"])) + '</h2><p>')
-        # for _af in self.input_para["input_files"]:
-        #     self.html_writer.write("<br/>" + _af)
-        # Write the input files in format "1.\tfile1\n2.\tfile2\n..."
         self.html_writer.write("<br/>" + "<br/>".join([f"{i+1}.\t{af}" for i, af in enumerate(self.input_para["input_files"])]))
         self.html_writer.write('</p></div>')
         key_index += 1

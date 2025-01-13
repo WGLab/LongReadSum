@@ -218,9 +218,9 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
 
                 // Determine if this is a forward or reverse read
                 if (record->core.flag & BAM_FREVERSE) {
-                    output_data.forward_alignment++;
-                } else {
                     output_data.reverse_alignment++;
+                } else {
+                    output_data.forward_alignment++;
                 }
 
                 // Loop through the cigar string and count the number of insertions, deletions, and matches
