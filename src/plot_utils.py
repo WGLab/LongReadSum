@@ -1059,33 +1059,32 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         logging.info("Getting base modification statistics")
 
         # Get the read length vs. base modification rate data for each
-        # modification type
-        logging.info("Getting mod data size")
-        read_mod_data_size = output_data.getReadModDataSize()
-        logging.info("Mod data size: {}".format(read_mod_data_size))
+        # # modification type
+        # logging.info("Getting mod data size")
+        # read_mod_data_size = output_data.getReadModDataSize()
+        # logging.info("Mod data size: {}".format(read_mod_data_size))
 
-        # Choose a maximum of 10,000 reads to randomly sample for the plot
-        max_reads = min(read_mod_data_size, 10000)        
-        # read_indices = set(sample(range(read_mod_data_size), max_reads))
-        read_indices = np.random.choice(read_mod_data_size, max_reads, replace=False)
-        read_length_mod_rates = {}
+        # # Choose a maximum of 10,000 reads to randomly sample for the plot
+        # max_reads = min(read_mod_data_size, 10000)        
+        # # read_indices = set(sample(range(read_mod_data_size), max_reads))
+        # read_indices = np.random.choice(read_mod_data_size, max_reads, replace=False)
+        # read_length_mod_rates = {}
 
-        # Get the read length vs. base modification rate data for each
-        # modification type in the sampled reads
-        for i in read_indices:
-            for mod_type in base_mod_types:
-                if mod_type not in read_length_mod_rates:
-                    read_length_mod_rates[mod_type] = []
-
-                # logging.info("Getting read length for read {}".format(i))
-                # read_length = output_data.getNthReadModLength(i)
-                read_length = output_data.getNthReadModLength(int(i))
-                # logging.info("Getting read length vs. {} modification rate".format(mod_type))
-                # mod_rate = output_data.getNthReadModRate(i, mod_type)
-                mod_rate = output_data.getNthReadModRate(int(i), mod_type)
-                # logging.info("Read length: {}, {} modification rate: {}".format(read_length, mod_type, mod_rate))
-                read_length_mod_rates[mod_type].append((read_length, mod_rate))
-
+        # Get the read length (%) vs. base modification probability data for
+        # each sampled read
+        sample_count = 10000
+        read_len_pct = []
+        mod_prob = []
+        for mod_type in base_mod_types:
+            for i in range(sample_count):
+                try:
+                    pct = output_data.getNthReadLenPct(i, mod_type)
+                    prob = output_data.getNthReadModProb(i, mod_type)
+                    read_len_pct.append(pct)
+                    mod_prob.append(prob)
+                except Exception as e:
+                    logging.error(f"Error getting read length vs. base modification probability data: {e}")
+        
         # Dictionary of modification character to full name
         mod_char_to_name = {'m': '5mC', 'h': '5hmC', 'f': '5fC', 'c': '5caC', \
                             'g': '5hmU', 'e': '5fu', 'b': '5caU', \
@@ -1094,78 +1093,46 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                             'N': 'Amb. N', \
                             'v': 'pseU'}
 
-        # Create a plot of read length vs. base modification rate for each
-        # modification type
-        # Make subplots vertically for each modification type
-        subplot_titles = []
-        for mod_type in base_mod_types:
-            try:
-                mod_name = mod_char_to_name[mod_type]
-            except KeyError:
-                logging.warning("WARNING: Unknown modification type: {}".format(mod_type))
-                mod_name = mod_type
+        # Create a plot of pct read length vs. base modification probability for
+        # each modification type, as well as a histogram of the average base
+        # modification probability for 100 bins of the read length
 
-            subplot_titles.append('Read Length vs. {} Modification Rate'.format(mod_name))
-            
-            
-        fig = make_subplots(rows=len(base_mod_types), cols=1, shared_xaxes=False, shared_yaxes=False, vertical_spacing=0.1, subplot_titles=subplot_titles)
-        min_x = float('inf')
-        max_x = 0
+        # Make a subplot of two columns for the read length vs. base
+        # modification probability and the histogram of the average base
+        # modification probability for each modification type
+        fig = make_subplots(rows=len(base_mod_types), cols=2, shared_xaxes=False, shared_yaxes=False, vertical_spacing=0.1, subplot_titles=[f"{mod_char_to_name[mod_type]} Modification Probability" for mod_type in base_mod_types])
+
         for i, mod_type in enumerate(base_mod_types):
+            logging.info(f"Creating trace for modification type: {mod_type} at row: {i + 1}")
 
-            # Format the data
-            mod_data = read_length_mod_rates[mod_type]
-            mod_rates = [data[1] * 100 for data in mod_data]
-            x_vals = [data[0] for data in mod_data]
-
-            # Remove outlier read lengths using the IQR method
-            if len(x_vals) > 1:
-                x_vals_np = np.array(x_vals)
-                q1 = np.percentile(x_vals_np, 25)
-                q3 = np.percentile(x_vals_np, 75)
-                iqr = q3 - q1
-                lower_bound = q1 - 1.5 * iqr
-                upper_bound = q3 + 1.5 * iqr
-
-                # Filter the data to remove outliers
-                filtered_data = [(x, y) for x, y in zip(x_vals, mod_rates) if lower_bound <= x <= upper_bound]
-                x_vals, mod_rates = zip(*filtered_data)
-
-            # Normalize the read lengths to the maximum read length (0-100)
-            x_vals = [100 * x / max(x_vals) for x in x_vals]
+            # Add the trace for the read length vs. base modification
+            # probability scatter plot
+            fig.add_trace(go.Scatter
+                (x=read_len_pct, y=mod_prob, mode='markers', name=mod_char_to_name[mod_type], marker=dict(size=5), showlegend=False),
+                row=i + 1, col=1)
             
-            # Use 0-100 for the x-axis ticks and labels
-            x_tick_values = np.arange(0, 101, 10)
-            x_tick_labels = ['{:,}%'.format(int(val)) for val in x_tick_values]
+            # Add a bar plot of the average base modification probability for
+            # 100 bins of the read length
+            bins = np.linspace(0, 100, 101)
+            bin_indices = np.digitize(read_len_pct, bins)
+            avg_prob_per_bin = np.zeros(100)
+            bin_centers = (bins[:-1] + bins[1:]) / 2
 
-            # Get the modification name
-            try:
-                mod_name = mod_char_to_name[mod_type]
-            except KeyError:
-                logging.warning("WARNING: Unknown modification type: {}".format(mod_type))
-                mod_name = mod_type
+            for j in range(100):
+                bin_mask = bin_indices == j
+                avg_prob_per_bin[j] = np.mean([mod_prob[k] for k in range(len(read_len_pct)) if bin_mask[k]])
 
-            # fig.add_trace(go.Scattergl(x=x_vals, y=mod_rates, mode='markers', name=mod_name, showlegend=False), row=i + 1, col=1)
+            # Create the bar plot
+            fig.add_trace(go.Bar(x=bin_centers, y=avg_prob_per_bin, name=mod_char_to_name[mod_type], showlegend=False), row=i + 1, col=2)
 
-            # Create a heatmap plot
-            fig.add_trace(go.Histogram2dContour(x=x_vals, y=mod_rates, colorscale='Viridis', showlegend=False), row=i + 1, col=1)
+            # Update the plot style
+            fig.update_xaxes(title="Read Length (%)", row=i + 1, col=1)
+            fig.update_yaxes(title="Modification Probability", row=i + 1, col=1)
+            fig.update_xaxes(title="Read Length (%)", row=i + 1, col=2)
+            fig.update_yaxes(title="Average Modification Probability", row=i + 1, col=2)
 
-            # Update the layout
-            x_axis_name = get_axis_name(i)
-            y_axis_name = get_axis_name(i, 'y')
-            logging.info("Index: {}, Y index: {}".format(i, y_axis_name))
-            
-            # Auto range the axes
-            fig.update_layout(
-                **{f"{x_axis_name}_title": 'Normalized Read Length (%)',
-                    f"{y_axis_name}_title": 'Modification Rate (%)'},
-                **{f"{x_axis_name}_tickmode": 'array',
-                    f"{x_axis_name}_tickvals": x_tick_values,
-                    f"{x_axis_name}_ticktext": x_tick_labels},
-                **{f"{y_axis_name}_range": [0, 100]}
-            )
-            
-        fig.update_layout(font=dict(size=PLOT_FONT_SIZE))
+        # Update the plot layout
+        fig.update_layout(title="Read Length vs. Base Modification Probability", font=dict(size=PLOT_FONT_SIZE))
             
         # Generate the HTML
         if len(base_mod_types) > 0:

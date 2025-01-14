@@ -351,16 +351,40 @@ bool HTSReader::hasNextRecord(){
 }
 
 // Return the number of records in the BAM file using the BAM index
-int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &final_output, bool mod_analysis, double base_mod_threshold) {
+int HTSReader::getNumRecords(const std::string& bam_filename, int thread_count) {
     samFile* bam_file = sam_open(bam_filename.c_str(), "r");
+    hts_set_threads(bam_file, thread_count);  // Enable multi-threading
+    bam_hdr_t* bam_header = sam_hdr_read(bam_file);
+    bam1_t* bam_record = bam_init1();
+    int num_reads = 0;
+    while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
+        num_reads++;
+    }
+
+    return num_reads;
+}
+
+void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Output_BAM &final_output, double base_mod_threshold, int read_count, int sample_count, int thread_count)
+{
+    samFile* bam_file = sam_open(bam_filename.c_str(), "r");
+    hts_set_threads(bam_file, thread_count);  // Enable multi-threading
     bam_hdr_t* bam_header = sam_hdr_read(bam_file);
     bam1_t* bam_record = bam_init1();
     int64_t num_reads = 0;
 
-    // Data structure for storing read length vs. base modification rate
-    std::vector<int> read_lengths;  // Read lengths
-    std::vector<double> read_mod_rates;  // Total base modification rate for each read length
-    std::vector<std::unordered_map<char, double>> read_base_mod_rates;  // Type-specific base modification rates for each read length
+    // Create a list of read indices to sample, and only keep the first
+    // sample_count reads
+    std::vector<int> read_indices;
+    for (int i = 0; i < read_count; i++) {
+        read_indices.push_back(i);
+    }
+    std::random_shuffle(read_indices.begin(), read_indices.end());
+    read_indices.resize(sample_count);
+
+    // Convert to a set for fast lookup
+    std::unordered_set<int> read_indices_set(read_indices.begin(), read_indices.end());
+
+    std::cout << "Number of sampled reads = " << read_indices_set.size() << std::endl;
 
     // Keep track of number of modified bases on the primary alignment vs other
     // alignments (secondary, supplementary, unmapped)
@@ -370,207 +394,214 @@ int64_t HTSReader::getNumRecords(const std::string & bam_filename, Output_BAM &f
     int num_modified_bases_supplementary = 0;
 
     while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
+
+        if (read_indices_set.find(num_reads) == read_indices_set.end()) {
+            num_reads++;
+            continue;
+        }
         num_reads++;
 
-        if (mod_analysis) {
+        // Base modification tag analysis
+        // Follow here to get base modification tags:
+        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
+        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
+        int read_length = bam_record->core.l_qseq;
+        hts_base_mod_state *state = hts_base_mod_state_alloc();
+        std::vector<std::pair<int32_t, int>> c_modified_positions;  // C-modified positions for CpG analysis (chr->(position, strand))
+        // std::unordered_map<char, int> base_mod_counts;  // Type-specific
+        // base modification counts for the alignment
+        // std::unordered_map<char, std::unordered_map<char, int>>
+        // base_mod_counts;  // Type-specific base modification counts
+        // (canonical base -> modified base -> count)
+        std::unordered_map<char, std::unordered_map<char, int>> base_mod_counts;  // Type-specific base modification probabilities (canonical base -> modified base -> [read length %, probability])
+        std::unordered_map<char, int> base_primary_count;  // Total base counts for the alignment
 
-            // Base modification tag analysis
-            // Follow here to get base modification tags:
-            // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/sam_mods.c
-            // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2274
-            int read_length = bam_record->core.l_qseq;
-            hts_base_mod_state *state = hts_base_mod_state_alloc();
-            std::vector<std::pair<int32_t, int>> c_modified_positions;  // C-modified positions for CpG analysis (chr->(position, strand))
-            // std::unordered_map<char, int> base_mod_counts;  // Type-specific
-            // base modification counts for the alignment
-            std::unordered_map<char, std::unordered_map<char, int>> base_mod_counts;  // Type-specific base modification counts (canonical base -> modified base -> count)
-            std::unordered_map<char, int> base_primary_count;  // Total base counts for the alignment
+        // Parse the base modification tags if a primary alignment
+        int read_mod_count = 0;
+        int ret = bam_parse_basemod(bam_record, state);
+        bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
 
-            // Parse the base modification tags if a primary alignment
-            int read_mod_count = 0;
-            int ret = bam_parse_basemod(bam_record, state);
-            bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
+        // Update the number of reads with base modifications for the
+        // primary alignment vs other alignments
+        if (ret >= 0) {
+            if (is_primary) {
+                num_modified_bases_primary++;
+            } else if (bam_record->core.flag & BAM_FUNMAP) {
+                num_modified_bases_unmapped++;
+            } else if (bam_record->core.flag & BAM_FSECONDARY) {
+                num_modified_bases_secondary++;
+            } else if (bam_record->core.flag & BAM_FSUPPLEMENTARY) {
+                num_modified_bases_supplementary++;
+            }
+        }
 
-            // Update the number of reads with base modifications for the
-            // primary alignment vs other alignments
-            if (ret >= 0) {
-                if (is_primary) {
-                    num_modified_bases_primary++;
-                } else if (bam_record->core.flag & BAM_FUNMAP) {
-                    num_modified_bases_unmapped++;
-                } else if (bam_record->core.flag & BAM_FSECONDARY) {
-                    num_modified_bases_secondary++;
-                } else if (bam_record->core.flag & BAM_FSUPPLEMENTARY) {
-                    num_modified_bases_supplementary++;
-                }
+        if (ret >= 0 && is_primary) {
+            // bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
+
+            // Get the chromosome if alignments are present
+            bool alignments_present = true;
+            std::string chr;
+            std::map<int, int> query_to_ref_map;
+            if (bam_record->core.tid < 0) {
+                alignments_present = false;
+            } else {
+                chr = bam_header->target_name[bam_record->core.tid];
+
+                // Get the query to reference position mapping
+                query_to_ref_map = this->getQueryToRefMap(bam_record);
             }
 
-            if (ret >= 0 && is_primary) {
-                // bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
+            // Get the strand from the alignment flag (hts_base_mod uses 0 for positive and 1 for negative,
+            // but it always yields 0...)
+            int strand = (bam_record->core.flag & BAM_FREVERSE) ? 1 : 0;
 
-                // Get the chromosome if alignments are present
-                bool alignments_present = true;
-                std::string chr;
-                std::map<int, int> query_to_ref_map;
-                if (bam_record->core.tid < 0) {
-                    alignments_present = false;
-                } else {
-                    chr = bam_header->target_name[bam_record->core.tid];
+            // Get the number of each type of base for the read
+            uint8_t *seq = bam_get_seq(bam_record);
+            for (int i = 0; i < read_length; i++) {
+                char base = seq_nt16_str[bam_seqi(seq, i)];
+                base_primary_count[std::toupper(base)]++;
+            }
 
-                    // Get the query to reference position mapping
-                    query_to_ref_map = this->getQueryToRefMap(bam_record);
-                }
+            // Iterate over the state object to get the base modification tags
+            // using bam_next_basemod
+            hts_base_mod mods[10];
+            int n = 0;
+            int32_t pos = 0;
+            std::vector<int> query_pos;
+            bool first_mod_found = false;
+            while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
 
-                // Get the strand from the alignment flag (hts_base_mod uses 0 for positive and 1 for negative,
-                // but it always yields 0...)
-                int strand = (bam_record->core.flag & BAM_FREVERSE) ? 1 : 0;
+                for (int i = 0; i < n; i++) {
+                    // Update the modified prediction counts
+                    read_mod_count++;  // Read-specific count
+                    final_output.modified_prediction_count++;  // Cumulative count
+                    char canonical_base_char = std::toupper(mods[i].canonical_base);
+                    char mod_type = mods[i].modified_base;
+                    // base_mod_counts[mod_type]++;  // Update the type-specific count
 
-                // Get the number of each type of base for the read
-                uint8_t *seq = bam_get_seq(bam_record);
-                for (int i = 0; i < read_length; i++) {
-                    char base = seq_nt16_str[bam_seqi(seq, i)];
-                    base_primary_count[std::toupper(base)]++;
-                }
+                    // Note: The modified base value can be a positive char (e.g. 'm',
+                    // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
+                    // https://github.com/samtools/hts-specs/issues/741
+                    // DNA Mods: https://dnamod.hoffmanlab.org/
+                    // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
+                    // Header line:
+                    // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
 
-                // Iterate over the state object to get the base modification tags
-                // using bam_next_basemod
-                hts_base_mod mods[10];
-                int n = 0;
-                int32_t pos = 0;
-                std::vector<int> query_pos;
-                bool first_mod_found = false;
-                while ((n=bam_next_basemod(bam_record, state, mods, 10, &pos)) > 0) {
+                    // Determine the probability of the modification (-1 if
+                    // unknown)
+                    double probability = -1;
+                    if (mods[i].qual != -1) {
+                        probability = mods[i].qual / 256.0;
 
-                    for (int i = 0; i < n; i++) {
-                        // Update the modified prediction counts
-                        read_mod_count++;  // Read-specific count
-                        final_output.modified_prediction_count++;  // Cumulative count
-                        char canonical_base_char = std::toupper(mods[i].canonical_base);
-                        char mod_type = mods[i].modified_base;
-                        // base_mod_counts[mod_type]++;  // Update the type-specific count
+                        // Update the read length % and probability for the
+                        // modification
+                        double read_len_pct = (double) (pos + 1) / read_length;
+                        std::cout << "Read length %: " << read_len_pct << ", probability: " << probability << std::endl;
+                        final_output.updateBaseModProbabilities(mod_type, read_len_pct, probability);  // Update the base modification probabilities
 
-                        // Note: The modified base value can be a positive char (e.g. 'm',
-                        // 'h') (DNA Mods DB) or negative integer (ChEBI ID):
-                        // https://github.com/samtools/hts-specs/issues/741
-                        // DNA Mods: https://dnamod.hoffmanlab.org/
-                        // ChEBI: https://www.ebi.ac.uk/chebi/searchId.do?chebiId=CHEBI:21839
-                        // Header line:
-                        // https://github.com/samtools/htslib/blob/11205a9ba5e4fc39cc8bb9844d73db2a63fb8119/htslib/sam.h#L2215
+                        // Update counts for predictions exceeding the threshold
+                        if (probability >= base_mod_threshold) {
+                            final_output.updateBaseModCounts(mod_type, strand);  // Update the base modification counts
+                            // base_mod_counts[mod_type]++;  // Update the
+                            // type-specific count
+                            // base_mod_counts[canonical_base_char][mod_type]++;  // Update the type-specific count
 
-                        // Determine the probability of the modification (-1 if
-                        // unknown)
-                        double probability = -1;
-                        if (mods[i].qual != -1) {
-                            probability = mods[i].qual / 256.0;
+                            // Store the modified positions for later CpG
+                            // analysis if a C modification on a primary alignment
+                            if (canonical_base_char == 'C' && mod_type != 'C') {
 
-                            // Update counts for predictions exceeding the threshold
-                            if (probability >= base_mod_threshold) {
-                                final_output.updateBaseModCounts(mod_type, strand);  // Update the base modification counts
-                                // base_mod_counts[mod_type]++;  // Update the
-                                // type-specific count
-                                base_mod_counts[canonical_base_char][mod_type]++;  // Update the type-specific count
-
-                                // Store the modified positions for later CpG
-                                // analysis if a C modification on a primary alignment
-                                if (canonical_base_char == 'C' && mod_type != 'C') {
-
-                                    // Convert the query position to reference position if available
-                                    if (alignments_present) {
-                                        if (query_to_ref_map.find(pos) != query_to_ref_map.end()) {
-                                            int32_t ref_pos = query_to_ref_map[pos];
-                                            c_modified_positions.push_back(std::make_pair(ref_pos, strand));
-                                        }
+                                // Convert the query position to reference position if available
+                                if (alignments_present) {
+                                    if (query_to_ref_map.find(pos) != query_to_ref_map.end()) {
+                                        int32_t ref_pos = query_to_ref_map[pos];
+                                        c_modified_positions.push_back(std::make_pair(ref_pos, strand));
                                     }
                                 }
                             }
-                            // } else {
-                            //     base_primary_count[mod_type]++;  // Update the type-specific unmodified count
-                            // }
                         }
-                    }
-                }
-
-                // Append the modified positions to the output data
-                if (c_modified_positions.size() > 0) {
-                    // Set the atomic flag and print a message if base
-                    // modification tags are present in the file
-                    if (!this->has_mm_ml_tags.test_and_set()) {
-                        printMessage("Base modification data found (MM, ML tags)");
-                    }
-
-                    // Add the modified positions to the output data
-                    if (final_output.sample_c_modified_positions.find(chr) == final_output.sample_c_modified_positions.end()) {
-                        final_output.sample_c_modified_positions[chr] = c_modified_positions;
-                    } else {
-                        final_output.sample_c_modified_positions[chr].insert(final_output.sample_c_modified_positions[chr].end(), c_modified_positions.begin(), c_modified_positions.end());
+                        // } else {
+                        //     base_primary_count[mod_type]++;  // Update the type-specific unmodified count
+                        // }
                     }
                 }
             }
-            hts_base_mod_state_free(state);  // Deallocate the base modification state object
 
-            // Calculate the base modification rate for the read
-            // double read_mod_rate = 0.0;
-            // if (read_length > 0) {
-            //     read_mod_rate = (double) read_mod_count / read_length;
-            // }
-
-            // Calculate the type-specific base modification rates for the read
-            std::unordered_map<char, double> base_mod_rates;
-            for (auto const &it : base_mod_counts) {
-                char canonical_base = it.first;
-                std::unordered_map<char, int> mod_counts = it.second;
-                double mod_rate = 0.0;
-                int total_base_count = base_primary_count[canonical_base];
-
-                // Calculate the modification rate for each modification type
-                for (auto const &it2 : mod_counts) {
-                    char mod_type = it2.first;
-                    int mod_count = it2.second;
-                    double mod_rate = 0.0;
-                    if (mod_count + total_base_count > 0) {
-                        mod_rate = (double) mod_count / total_base_count;
-                    }
-                    base_mod_rates[mod_type] = mod_rate;
+            // Append the modified positions to the output data
+            if (c_modified_positions.size() > 0) {
+                // Set the atomic flag and print a message if base
+                // modification tags are present in the file
+                if (!this->has_mm_ml_tags.test_and_set()) {
+                    printMessage("Base modification data found (MM, ML tags)");
                 }
-                // for (auto const &it2 : mod_counts) {
-                //     total_mod_count += it2.second;
-                // }
-                // if (total_mod_count + total_base_count > 0) {
-                //     mod_rate = (double) total_mod_count / (total_mod_count + total_base_count);
-                // }
-                // base_mod_rates[canonical_base] = mod_rate;
+
+                // Add the modified positions to the output data
+                if (final_output.sample_c_modified_positions.find(chr) == final_output.sample_c_modified_positions.end()) {
+                    final_output.sample_c_modified_positions[chr] = c_modified_positions;
+                } else {
+                    final_output.sample_c_modified_positions[chr].insert(final_output.sample_c_modified_positions[chr].end(), c_modified_positions.begin(), c_modified_positions.end());
+                }
             }
-            // for (auto const &it : base_mod_counts) {
-            //     char mod_type = it.first;
-            //     int mod_count = it.second;
-            //     double mod_rate = 0.0;
-            //     int total_base_count = base_primary_count[mod_type];
-            //     if (mod_count + unmod_count > 0) {
-            //         mod_rate = (double) mod_count / (mod_count + unmod_count);
-            //     }
-            //     // if (read_length > 0) {
-            //     //     mod_rate = (double) mod_count / read_length;
-            //     // }
-            //     base_mod_rates[mod_type] = mod_rate;
-            // }
-            final_output.updateReadModRate(read_length, base_mod_rates);  // Update the output data
         }
+        hts_base_mod_state_free(state);  // Deallocate the base modification state object
+
+        // Calculate the base modification rate for the read
+        // double read_mod_rate = 0.0;
+        // if (read_length > 0) {
+        //     read_mod_rate = (double) read_mod_count / read_length;
+        // }
+
+        // Calculate the type-specific base modification rates for the read
+        // std::unordered_map<char, double> base_mod_rates;
+        // for (auto const &it : base_mod_counts) {
+        //     char canonical_base = it.first;
+        //     std::unordered_map<char, int> mod_counts = it.second;
+        //     double mod_rate = 0.0;
+        //     int total_base_count = base_primary_count[canonical_base];
+
+        //     // Calculate the modification rate for each modification type
+        //     for (auto const &it2 : mod_counts) {
+        //         char mod_type = it2.first;
+        //         int mod_count = it2.second;
+        //         double mod_rate = 0.0;
+        //         if (mod_count + total_base_count > 0) {
+        //             mod_rate = (double) mod_count / total_base_count;
+        //         }
+        //         base_mod_rates[mod_type] = mod_rate;
+        //     }
+        //     // for (auto const &it2 : mod_counts) {
+        //     //     total_mod_count += it2.second;
+        //     // }
+        //     // if (total_mod_count + total_base_count > 0) {
+        //     //     mod_rate = (double) total_mod_count / (total_mod_count + total_base_count);
+        //     // }
+        //     // base_mod_rates[canonical_base] = mod_rate;
+        // }
+        // for (auto const &it : base_mod_counts) {
+        //     char mod_type = it.first;
+        //     int mod_count = it.second;
+        //     double mod_rate = 0.0;
+        //     int total_base_count = base_primary_count[mod_type];
+        //     if (mod_count + unmod_count > 0) {
+        //         mod_rate = (double) mod_count / (mod_count + unmod_count);
+        //     }
+        //     // if (read_length > 0) {
+        //     //     mod_rate = (double) mod_count / read_length;
+        //     // }
+        //     base_mod_rates[mod_type] = mod_rate;
+        // }
+        // final_output.updateReadModRate(read_length, base_mod_rates);  // Update the output data
     }
 
     // Summary of base modification counts
-    if (mod_analysis) {
-        printMessage("Base modification counts:");
-        printMessage("Primary alignment: " + std::to_string(num_modified_bases_primary));
-        printMessage("Unmapped alignment: " + std::to_string(num_modified_bases_unmapped));
-        printMessage("Secondary alignment: " + std::to_string(num_modified_bases_secondary));
-        printMessage("Supplementary alignment: " + std::to_string(num_modified_bases_supplementary));
-    }
+    printMessage("Base modification counts:");
+    printMessage("Primary alignment: " + std::to_string(num_modified_bases_primary));
+    printMessage("Unmapped alignment: " + std::to_string(num_modified_bases_unmapped));
+    printMessage("Secondary alignment: " + std::to_string(num_modified_bases_secondary));
+    printMessage("Supplementary alignment: " + std::to_string(num_modified_bases_supplementary));
 
     bam_destroy1(bam_record);
     bam_hdr_destroy(bam_header);
     sam_close(bam_file);
-
-    return num_reads;
 }
 
 // Get the mapping of query positions to reference positions for a given alignment record

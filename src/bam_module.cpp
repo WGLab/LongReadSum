@@ -80,7 +80,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cout << "Calculating TIN scores for file: " << filepath << std::endl;
 
             TINStats tin_stats;
-            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder);
+            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder, input_params.threads);
 
             // Print the TIN stats
             std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;
@@ -113,7 +113,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         // process base modifications and TINs if available.
         // Note: This section utilizes one thread.
         std::cout << "Getting number of records..." << std::endl;
-        int num_records = reader.getNumRecords(filepath, final_output, mod_analysis, base_mod_threshold);
+        int num_records = reader.getNumRecords(filepath, thread_count);
         std::cout << "Number of records = " << num_records << std::endl;
 
         // Exit if there are no records
@@ -121,6 +121,13 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cerr << "No records found in file: " << filepath << std::endl;
             exit_code = 1;
             return exit_code;
+        }
+
+        // Run base modification analysis if the flag is set
+        if (mod_analysis){
+            std::cout << "Running base modification analysis..." << std::endl;
+            int sample_count = 10000;
+            reader.runBaseModificationAnalysis(filepath, final_output, base_mod_threshold, num_records, sample_count, thread_count);
         }
 
         // Determine the batch sizes if the user-specified thread count is greater than 1
@@ -147,7 +154,14 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
          // Calculate statistics in batches
          printMemoryUsage("Before batch processing");
+
+        // TEST
+        // int max_reads = 10;
+        // int current_reads = 0;
+         
          while (reader.hasNextRecord()){
+        // while (current_reads < max_reads && reader.hasNextRecord()){
+            // Read the next batch of records
             std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
@@ -172,6 +186,9 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
                 }
                 printMemoryUsage("After thread " + std::to_string(thread_index));
                 thread_index++;
+
+                // TEST - Increment the current reads
+                // current_reads += batch_size;
             }
             std::cout << "All threads joined." << std::endl;
         }
@@ -219,15 +236,13 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::cout << "Calculating summary QC..." << std::endl;
     final_output.global_sum();
     std::cout << "QC complete" << std::endl;
-
-    // Save the summary statistics to a file
     std::cout << "Saving summary statistics to file..." << std::endl;
 
     // If in RRMS mode, append RRMS accepted/rejected to the output prefix
     std::string output_prefix = "bam";
     if (input_params.rrms_csv != ""){
         output_prefix += input_params.rrms_filter ? "_rrms_accepted" : "_rrms_rejected";
-    } 
+    }
     std::string summary_filepath = input_params.output_folder + "/" + output_prefix + "_summary.txt";
     final_output.save_summary(summary_filepath, input_params, final_output);
     std::cout << "Saved file: " << summary_filepath << std::endl;

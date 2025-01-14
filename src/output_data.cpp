@@ -290,6 +290,12 @@ void Output_BAM::updateBaseModCounts(char mod_type, int strand)
     }
 }
 
+void Output_BAM::updateBaseModProbabilities(char mod_type, double pct_len, double probability)
+{
+    // Update the base modification probabilities
+    this->read_pct_len_vs_mod_prob[mod_type].push_back(std::make_pair(pct_len, probability));
+}
+
 void Output_BAM::updateReadModRate(int read_length, const std::unordered_map<char, double>& base_mod_rates) {
     ReadModData read_mod_data;
     read_mod_data.read_length = read_length;
@@ -355,6 +361,40 @@ uint64_t Output_BAM::getModTypeCount(char mod_type, int strand)
     } else {
         return this->base_mod_counts_reverse[mod_type];
     }
+}
+
+double Output_BAM::getNthReadLenPct(int read_index, char mod_type)
+{
+    double read_len_pct = 0.0;
+    try {
+        this->read_pct_len_vs_mod_prob.at(mod_type);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read length percentage not found for type " << mod_type << std::endl;
+    }
+    try {
+        read_len_pct = this->read_pct_len_vs_mod_prob[mod_type].at(read_index).first;
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read length percentage not found for read index " << read_index << " and type " << mod_type << std::endl;
+        return 0.0;
+    }
+    return read_len_pct;
+}
+
+double Output_BAM::getNthReadModProb(int read_index, char mod_type)
+{
+    double mod_prob = 0.0;
+    try {
+        this->read_pct_len_vs_mod_prob.at(mod_type);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Modification probability not found for type " << mod_type << std::endl;
+    }
+    try {
+        mod_prob = this->read_pct_len_vs_mod_prob[mod_type].at(read_index).second;
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Modification probability not found for read index " << read_index << " and type " << mod_type << std::endl;
+        return 0.0;
+    }
+    return mod_prob;
 }
 
 int Output_BAM::getReadCount()

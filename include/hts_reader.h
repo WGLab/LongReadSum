@@ -47,7 +47,10 @@ class HTSReader {
         bool hasNextRecord();
 
         // Return the number of records in the BAM file using the BAM index
-        int64_t getNumRecords(const std::string &bam_file_name, Output_BAM &final_output, bool mod_analysis, double base_mod_threshold);
+        int getNumRecords(const std::string &bam_file_name, int thread_count);
+
+        // Run base modification analysis
+        void runBaseModificationAnalysis(const std::string &bam_filename, Output_BAM& final_output, double base_mod_threshold, int read_count, int sample_count, int thread_count);
 
         std::map<int, int> getQueryToRefMap(bam1_t* record);
 

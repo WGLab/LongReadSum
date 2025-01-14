@@ -171,7 +171,7 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     return min_reads_met;
 }
 
-void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder)
+void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder, int thread_count)
 {
     std::cout << "Using TIN minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
 
@@ -181,6 +181,9 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         std::cerr << "Error opening BAM file" << std::endl;
         exit(1);
     }
+
+    // Enable multi-threading
+    hts_set_threads(bam_file, thread_count);
 
     // Read the BAM header
     bam_hdr_t* header = sam_hdr_read(bam_file);
@@ -206,6 +209,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
 
     // Loop through the gene BED file and calculate the TIN score for each
     // transcript
+    std::cout << "Calculating TIN scores for each transcript..." << std::endl;
     std::vector<double> TIN_scores;
     std::vector<std::string> gene_ids;
     std::string line;
@@ -396,6 +400,11 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
 
         // Store the TIN score for the transcript
         tin_map[name] = std::make_tuple(chrom, start, end, TIN);
+
+        // Log every 1000 transcripts
+        if (gene_ids.size() % 1000 == 0) {
+            std::cout << "Processed " << gene_ids.size() << " transcripts" << std::endl;
+        }
     }
 
     // Close the BAM file
@@ -413,6 +422,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
     if (TIN_scores.size() == 0) {
         std::cerr << "No TIN scores calculated" << std::endl;
     } else {
+        std::cout << "Calculating TIN summary for " << TIN_scores.size() << " transcripts..." << std::endl;
 
         // Print the TIN mean, median, and standard deviation
         double TIN_sum = 0;

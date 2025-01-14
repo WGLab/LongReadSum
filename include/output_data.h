@@ -207,6 +207,8 @@ class Output_BAM : public Output_FQ
       std::unordered_map<char, uint64_t> base_mod_counts_forward;  // Counts for each base modification type exceeding the threshold on the forward strand
       std::unordered_map<char, uint64_t> base_mod_counts_reverse;  // Counts for each base modification type exceeding the threshold on the reverse strand
 
+      std::unordered_map<char, std::vector<std::pair<double, double>>> read_pct_len_vs_mod_prob;  // Read length (%) vs. base modification probability for each base modification type
+
       // Signal data section
       int read_count = ZeroDefault;
       int base_count = ZeroDefault;
@@ -231,6 +233,8 @@ class Output_BAM : public Output_FQ
       double getNthReadModRate(int read_index, char mod_type);  // Get the base modification rate for the nth read for a specific base modification type
       uint64_t getModTypeCount(char mod_type);  // Get the count of a specific base modification type
       uint64_t getModTypeCount(char mod_type, int strand);  // Get the count of a specific base modification type for a specific strand
+      double getNthReadLenPct(int read_index, char mod_type);  // Get the read length percentage for the nth read for a specific base modification type
+      double getNthReadModProb(int read_index, char mod_type);  // Get the base modification probability for the nth read for a specific base modification type
 
       // POD5 signal data functions
       int getReadCount();
@@ -241,6 +245,7 @@ class Output_BAM : public Output_FQ
       int getReadSequenceEnd(std::string read_id);
 
       void updateBaseModCounts(char mod_type, int strand);  // Update base modification counts for predictions exceeding the threshold
+      void updateBaseModProbabilities(char mod_type, double pct_len, double probability);  // Update base modification probabilities
       void updateReadModRate(int read_length, const std::unordered_map<char, double>& base_mod_rates);  // Update read length vs. base modification rate data
 
       // Add TIN data for a single BAM file
