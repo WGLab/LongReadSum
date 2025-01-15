@@ -1084,6 +1084,10 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                     mod_prob.append(prob)
                 except Exception as e:
                     logging.error(f"Error getting read length vs. base modification probability data: {e}")
+
+        # Convert the lists to numpy arrays
+        read_len_pct = np.array(read_len_pct) * 100  # Convert to percentage
+        mod_prob = np.array(mod_prob)
         
         # Dictionary of modification character to full name
         mod_char_to_name = {'m': '5mC', 'h': '5hmC', 'f': '5fC', 'c': '5caC', \
@@ -1111,25 +1115,53 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                 (x=read_len_pct, y=mod_prob, mode='markers', name=mod_char_to_name[mod_type], marker=dict(size=5), showlegend=False),
                 row=i + 1, col=1)
             
+            # Print the first 50 pairs sorted by read length for debugging
+            # read_len_pct, mod_prob = zip(*sorted(zip(read_len_pct, mod_prob)))
+            # if i == 0:
+            #     for j in range(50):
+            #         logging.info(f"Read length: {read_len_pct[j]}, Modification probability: {mod_prob[j]}")
+            
+            # # Create a histogram of the base modification probabilities
+            # base_mod_prob_hist = go.Histogram(x=mod_prob, name=mod_char_to_name[mod_type], showlegend=False, nbinsx=20)
+            # fig.add_trace(base_mod_prob_hist, row=i + 1, col=2)
+            
             # Add a bar plot of the average base modification probability for
             # 100 bins of the read length
-            bins = np.linspace(0, 100, 101)
-            bin_indices = np.digitize(read_len_pct, bins)
-            avg_prob_per_bin = np.zeros(100)
-            bin_centers = (bins[:-1] + bins[1:]) / 2
+            # bins = np.linspace(0, 100, 11)  # 10 bins (0-10%, 10-20%, ..., 90-100%)
+            # bin_centers = (bins[:-1] + bins[1:]) / 2  # Bin centers for plotting
 
-            for j in range(100):
-                bin_mask = bin_indices == j
-                avg_prob_per_bin[j] = np.mean([mod_prob[k] for k in range(len(read_len_pct)) if bin_mask[k]])
+            # # Get the average probability per bin
+            # avg_prob_per_bin = np.zeros(10)
+            # bin_indices = np.digitize(read_len_pct, bins) - 1
+            # for j in range(10):  # Loop over bins
+            #     bin_mask = (bin_indices == j)
+            #     if np.any(bin_mask):
+            #         avg_prob_per_bin[j] = np.mean(mod_prob[bin_mask])
+            #         logging.info(f"Bin {j}: {avg_prob_per_bin[j]}")
 
-            # Create the bar plot
-            fig.add_trace(go.Bar(x=bin_centers, y=avg_prob_per_bin, name=mod_char_to_name[mod_type], showlegend=False), row=i + 1, col=2)
+            # # Create the bar plot
+
+            # # Print the bins and read length percentages for the first 10 reads
+            # # for debugging
+            # if i == 0:
+            #     logging.info("Bins: {}".format(bins))
+            #     logging.info("Bin indices: {}".format(bin_indices[:10]))
+            #     logging.info("Read length percentages: {}".format(read_len_pct[:10]))
+
+            # # Create the bar plot
+            # fig.add_trace(go.Bar(x=bin_centers, y=avg_prob_per_bin, name=mod_char_to_name[mod_type], showlegend=False), row=i + 1, col=2)
 
             # Update the plot style
             fig.update_xaxes(title="Read Length (%)", row=i + 1, col=1)
             fig.update_yaxes(title="Modification Probability", row=i + 1, col=1)
-            fig.update_xaxes(title="Read Length (%)", row=i + 1, col=2)
-            fig.update_yaxes(title="Average Modification Probability", row=i + 1, col=2)
+            fig.update_xaxes(title="Modification Probability", row=i + 1, col=2)
+            fig.update_yaxes(title="Frequency", row=i + 1, col=2)
+            # fig.update_xaxes(title="Read Length (%)", row=i + 1, col=2)
+            # fig.update_yaxes(title="Average Modification Probability", row=i + 1, col=2)
+
+            # Set the range of the y-axis to 0-1
+            fig.update_yaxes(range=[0, 1], row=i + 1, col=1)
+            # fig.update_yaxes(range=[0, 1], row=i + 1, col=2)
 
         # Update the plot layout
         fig.update_layout(title="Read Length vs. Base Modification Probability", font=dict(size=PLOT_FONT_SIZE))
@@ -1137,12 +1169,14 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         # Generate the HTML
         if len(base_mod_types) > 0:
             plot_height = 500 * len(base_mod_types)
+            plot_width = 700 * 2
             logging.info("Saving the read length vs. modification rates plot")
-            plot_filepaths["read_length_mod_rates"]['dynamic'] = fig.to_html(full_html=False, default_height=plot_height, default_width=700)
+            plot_filepaths["read_length_mod_rates"]['dynamic'] = fig.to_html(full_html=False, default_height=plot_height, default_width=plot_width)
     else:
         logging.warning("WARNING: No modification types found")
 
-    # Create the base modification statistics table
+    # Create the base modification statistics table'
+    logging.info("Creating the base modification statistics table")
     table_str = "<table>\n<tbody>"
     row_str, row_flag = format_row("Total Unfiltered Predictions", [output_data.modified_prediction_count], 'int', None)
     table_str += row_str

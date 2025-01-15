@@ -12,6 +12,7 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include <fstream>
 #include <math.h>
 #include <algorithm>  // std::find
+#include <random>
 #include <htslib/sam.h>
 
 #include "utils.h"
@@ -361,6 +362,11 @@ int HTSReader::getNumRecords(const std::string& bam_filename, int thread_count) 
         num_reads++;
     }
 
+    // Close the BAM file
+    bam_destroy1(bam_record);
+    bam_hdr_destroy(bam_header);
+    sam_close(bam_file);
+
     return num_reads;
 }
 
@@ -372,14 +378,25 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
     bam1_t* bam_record = bam_init1();
     int64_t num_reads = 0;
 
+    // Create a random number generator and seed it with the current time
+    unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator(seed);
+
     // Create a list of read indices to sample, and only keep the first
     // sample_count reads
     std::vector<int> read_indices;
     for (int i = 0; i < read_count; i++) {
         read_indices.push_back(i);
     }
-    std::random_shuffle(read_indices.begin(), read_indices.end());
+    std::shuffle(read_indices.begin(), read_indices.end(), generator);
     read_indices.resize(sample_count);
+
+    // Print first 100 read indices sorted
+    // std::sort(read_indices.begin(), read_indices.end());
+    // std::cout << "First 100 read indices: " << std::endl;
+    // for (int i = 0; i < 100; i++) {
+    //     std::cout << read_indices[i] << std::endl;
+    // }
 
     // Convert to a set for fast lookup
     std::unordered_set<int> read_indices_set(read_indices.begin(), read_indices.end());
@@ -496,7 +513,7 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
                         // Update the read length % and probability for the
                         // modification
                         double read_len_pct = (double) (pos + 1) / read_length;
-                        std::cout << "Read length %: " << read_len_pct << ", probability: " << probability << std::endl;
+                        // std::cout << "Read length %: " << read_len_pct << ", probability: " << probability << std::endl;
                         final_output.updateBaseModProbabilities(mod_type, read_len_pct, probability);  // Update the base modification probabilities
 
                         // Update counts for predictions exceeding the threshold
