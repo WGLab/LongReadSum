@@ -1121,9 +1121,9 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
             #     for j in range(50):
             #         logging.info(f"Read length: {read_len_pct[j]}, Modification probability: {mod_prob[j]}")
             
-            # # Create a histogram of the base modification probabilities
-            # base_mod_prob_hist = go.Histogram(x=mod_prob, name=mod_char_to_name[mod_type], showlegend=False, nbinsx=20)
-            # fig.add_trace(base_mod_prob_hist, row=i + 1, col=2)
+            # Create a histogram of the base modification probabilities
+            base_mod_prob_hist = go.Histogram(x=mod_prob, name=mod_char_to_name[mod_type], showlegend=False, nbinsx=20)
+            fig.add_trace(base_mod_prob_hist, row=i + 1, col=2)
             
             # Add a bar plot of the average base modification probability for
             # 100 bins of the read length

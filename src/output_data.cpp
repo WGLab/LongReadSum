@@ -707,11 +707,17 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
         base_quality_values.push_back(base_quality_value);
     }
 
+    // Ensure the base quality values match the sequence length
+    if (base_quality_values.size() != base_count) {
+        printError("Warning: Base quality values do not match the sequence length for read ID " + std::string(read_name));
+    }
+
     // Update the base quality and GC content information
     int gc_count = 0;
-    double read_mean_base_qual = 0;
+    // double read_mean_base_qual = 0;
+    double cumulative_base_prob = 0;  // Read cumulative base quality probability
     char current_base;
-    uint64_t base_quality_value;
+    int base_quality_value;
     for (int i = 0; i < base_count; i++)
     {
         current_base = sequence_data_str[i];
@@ -733,15 +739,29 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
         {
             long_read_info.total_tu_cnt += 1;
         }
-        // Get the base quality
-        base_quality_value = (uint64_t)base_quality_values[i];
+        // Get the base quality (Phred) value
+        base_quality_value = base_quality_values[i];
+
+        // Update the per-base quality distribution
         try {
             seq_quality_info.base_quality_distribution[base_quality_value] += 1;
         } catch (const std::out_of_range& oor) {
             printError("Warning: Base quality value " + std::to_string(base_quality_value) + " exceeds maximum value");
         }
-        read_mean_base_qual += (double)base_quality_value;
+
+        // Convert the Phred quality value to a probability
+        double base_quality_prob = pow(10, -base_quality_value / 10.0);
+        // read_mean_base_qual += (double)base_quality_value;
+        cumulative_base_prob += base_quality_prob;
     }
+
+    // Calculate the mean base quality probability
+    cumulative_base_prob /= (double)base_count;
+
+    // Convert the mean base quality probability to a Phred quality value
+    double read_mean_base_qual = -10.0 * log10(cumulative_base_prob);
+
+    // printMessage("Mean Q Score for read ID " + std::string(read_name) + " is " + std::to_string(read_mean_base_qual));
 
     // Calculate percent guanine & cytosine
     // gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
@@ -756,10 +776,17 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
     }
 
     // Update the per-read base quality distribution
-    double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(base_count);
-    unsigned int read_mean_base_qual_int = static_cast<unsigned int>(std::round(read_mean_base_qual_pct));
+    // double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(base_count);
+    // unsigned int read_mean_base_qual_int = static_cast<unsigned
+    // int>(std::round(read_mean_base_qual_pct));
+    int read_mean_base_qual_int = static_cast<int>(std::round(read_mean_base_qual));
+
+    // printMessage("Rounded Mean Q Score for read ID " + std::string(read_name) + " is " + std::to_string(read_mean_base_qual_int));
+
     try {
-        seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int] += 1;
+        // seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int]
+        // += 1;
+        seq_quality_info.read_quality_distribution[read_mean_base_qual_int] += 1;
     } catch (const std::out_of_range& oor) {
         printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
     }

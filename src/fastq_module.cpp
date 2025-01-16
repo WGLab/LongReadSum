@@ -9,6 +9,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <sstream>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -20,7 +21,7 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
     int exit_code = 0;
     int read_len;
     double read_gc_cnt;
-    double read_mean_base_qual;
+    // double read_mean_base_qual;
     Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
     Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
     long_read_info.total_num_reads = ZeroDefault; // total number of long reads
@@ -62,10 +63,33 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
                 // Store the read length
                 long_read_info.read_lengths.push_back(read_len);
 
+                // Access base quality data
+                // printMessage("[TEST1] Base quality string: " + raw_read_qual);
+                char value;
+                std::vector<int> base_quality_values;
+                // std::string base_quality_str = raw_read_qual;
+                std::istringstream iss(raw_read_qual);
+                while (iss >> value)
+                {
+                    int base_quality_value = value - '!';
+                    base_quality_values.push_back(base_quality_value);
+                    // printMessage("[TEST1] Base quality value: " + std::to_string(base_quality_value));
+                }
+
+                // Ensure that the base quality string has the same length as
+                // the read sequence
+                if (base_quality_values.size() != read_len)
+                {
+                    printError("Error: Base quality string length does not match read sequence length");
+                    exit_code = 1;
+                    break;
+                }
+
                 // Process base and quality information
                 read_gc_cnt = 0;
-                read_mean_base_qual = 0;
-                uint64_t base_quality_value;
+                // read_mean_base_qual = 0;
+                int base_quality_value;
+                double cumulative_base_prob = 0;  // Read cumulative base quality probability
                 for (int i = 0; i < read_len; i++)
                 {
                     if (read_seq[i] == 'A' || read_seq[i] == 'a')
@@ -86,14 +110,29 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
                     {
                         long_read_info.total_tu_cnt += 1;
                     }
-                    base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
+
+                    // Get the base quality (Phred) value
+                    base_quality_value = base_quality_values[i];
+                    // base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
                     try {
                         seq_quality_info.base_quality_distribution[base_quality_value] += 1;
                     } catch (const std::out_of_range& oor) {
                         printError("Warning: Base quality value " + std::to_string(base_quality_value) + " exceeds maximum value");
                     }
-                    read_mean_base_qual += (double) base_quality_value;
+                    // read_mean_base_qual += (double) base_quality_value;
+
+                    // Convert the Phred quality value to a probability
+                    double base_quality_prob = pow(10, -base_quality_value / 10.0);
+                    cumulative_base_prob += base_quality_prob;
                 }
+
+                // Calculate the mean base quality probability
+                cumulative_base_prob /= (double)read_len;
+
+                // Convert the mean base quality probability to a Phred quality
+                // value
+                double read_mean_base_qual = -10.0 * log10(cumulative_base_prob);
+                // printMessage("Mean Q Score for read ID " + read_name + " is " + std::to_string(read_mean_base_qual));
 
                 // Update the per-read GC content distribution
                 double gc_content_pct = (100.0 * read_gc_cnt) / static_cast<double>(read_len);
@@ -105,13 +144,24 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
                 }
                 
                 // Update the per-read base quality distribution
-                double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(read_len);
-                unsigned int read_mean_base_qual_int = static_cast<unsigned int>(std::round(read_mean_base_qual_pct));
+                // double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(read_len);
+                // unsigned int read_mean_base_qual_int = static_cast<unsigned
+                // int>(std::round(read_mean_base_qual_pct));
+                int read_mean_base_qual_int = static_cast<int>(std::round(read_mean_base_qual));
+
+                // printMessage("Rounded Mean Q Score for read ID " + read_name + " is " + std::to_string(read_mean_base_qual_int));
+
                 try {
-                    seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int] += 1;
+                    seq_quality_info.read_quality_distribution[read_mean_base_qual_int] += 1;
                 } catch (const std::out_of_range& oor) {
                     printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
                 }
+                
+                // try {
+                //     seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int] += 1;
+                // } catch (const std::out_of_range& oor) {
+                //     printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
+                // }
 
                 fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name.c_str(), read_len, gc_content_pct, read_mean_base_qual);  // Write to file
             }
