@@ -154,41 +154,27 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
 
          // Calculate statistics in batches
          printMemoryUsage("Before batch processing");
-
-        // TEST
-        // int max_reads = 10;
-        // int current_reads = 0;
          
          while (reader.hasNextRecord()){
-        // while (current_reads < max_reads && reader.hasNextRecord()){
             // Read the next batch of records
-            std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
+            // std::cout << "Generating " << thread_count << " thread(s)..." <<
+            // std::endl;
+            printMessage("Generating " + std::to_string(thread_count) + " thread(s)...");
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
-
-                // Copy the input read IDs to a new vector
                 std::unordered_set<std::string> rrms_read_ids_copy = input_params.rrms_read_ids;
-
-                // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, rrms_read_ids_copy,std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex), base_mod_threshold);
-
-                // Add the thread to the vector
                 thread_vector.push_back(std::move(t));
             }
 
             // Join the threads in thread_vector
-            std::cout<<"Joining threads..."<<std::endl;
+            // std::cout<<"Joining threads..."<<std::endl;
             int thread_index = 0;
             for (auto& t : thread_vector){
-                // Join the thread if it is joinable
                 if (t.joinable()){
                     t.join();
                 }
-                printMemoryUsage("After thread " + std::to_string(thread_index));
                 thread_index++;
-
-                // TEST - Increment the current reads
-                // current_reads += batch_size;
             }
             std::cout << "All threads joined." << std::endl;
         }
@@ -257,6 +243,7 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unorder
 {
     // Read the next N records
     Output_BAM record_output;
+    printMessage("Reading next batch of records... " + std::to_string(batch_size));
     reader.readNextRecords(batch_size, record_output, bam_mutex, read_ids, base_mod_threshold);
 
     // Update the final output

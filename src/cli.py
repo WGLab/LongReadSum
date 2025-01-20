@@ -165,7 +165,7 @@ def fq_module(margs):
 
 
 def fa_module(margs):
-    # Run the FASTA filetype module.
+    """FASTA file input module."""
 
     # Get the filetype-specific parameters
     param_dict = get_common_param(margs)
@@ -253,7 +253,7 @@ def bam_module(margs):
             plot_filepaths = plot(bam_output, param_dict, 'BAM')
 
             # Set the list of QC information to display
-            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality"]
+            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality", "read_avg_base_quality"]
 
             # If base modifications were found, add the base modification plots
             # after the first table

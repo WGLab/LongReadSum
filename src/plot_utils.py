@@ -320,20 +320,20 @@ def read_gc_content_histogram(data, font_size, plot_filepaths):
     gc_content = np.array(data.read_gc_content_count)
 
     # Calculate the percentage of reads with a GC content of <30%
-    gc_content_below_30 = np.sum(gc_content[:30])
-    logging.info("[TEST] Percentage of reads with GC content <30%: {}".format(gc_content_below_30 / np.sum(gc_content)))
+    # gc_content_below_30 = np.sum(gc_content[:30])
+    # logging.info("[TEST] Percentage of reads with GC content <30%: {}".format(gc_content_below_30 / np.sum(gc_content)))
 
-    # Calculate the percentage of reads with a GC content of >70%
-    gc_content_above_70 = np.sum(gc_content[70:])
-    logging.info("[TEST] Percentage of reads with GC content >70%: {}".format(gc_content_above_70 / np.sum(gc_content)))
+    # # Calculate the percentage of reads with a GC content of >70%
+    # gc_content_above_70 = np.sum(gc_content[70:])
+    # logging.info("[TEST] Percentage of reads with GC content >70%: {}".format(gc_content_above_70 / np.sum(gc_content)))
 
-    # Calculate the percentage of reads with a GC content of <20%
-    gc_content_below_20 = np.sum(gc_content[:20])
-    logging.info("[TEST] Percentage of reads with GC content <20%: {}".format(gc_content_below_20 / np.sum(gc_content)))
+    # # Calculate the percentage of reads with a GC content of <20%
+    # gc_content_below_20 = np.sum(gc_content[:20])
+    # logging.info("[TEST] Percentage of reads with GC content <20%: {}".format(gc_content_below_20 / np.sum(gc_content)))
 
-    # Calculate the percentage of reads with a GC content of >60%
-    gc_content_above_60 = np.sum(gc_content[60:])
-    logging.info("[TEST] Percentage of reads with GC content >60%: {}".format(gc_content_above_60 / np.sum(gc_content)))
+    # # Calculate the percentage of reads with a GC content of >60%
+    # gc_content_above_60 = np.sum(gc_content[60:])
+    # logging.info("[TEST] Percentage of reads with GC content >60%: {}".format(gc_content_above_60 / np.sum(gc_content)))
 
     # Set the error flag if the GC content is below 20% for more than 10% of the
     # reads
@@ -381,6 +381,8 @@ def base_quality(data, font_size, plot_filepaths):
     """Plot the base quality distribution."""
     xd = np.arange(MAX_BASE_QUALITY)
     yd = np.array(data.base_quality_distribution)
+    xd = xd[:60]
+    yd = yd[:60]
     fig = go.Figure()
 
     customdata = np.dstack((xd, yd))[0, :, :]
@@ -411,9 +413,10 @@ def read_avg_base_quality(data, font_size, plot_filepaths):
     """Plot the read average base quality distribution."""
     xd = np.arange(MAX_READ_QUALITY)
     yd = np.array(data.read_average_base_quality_distribution)
+    xd = xd[:60]
+    yd = yd[:60]
     fig = go.Figure()
     fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
-
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
     fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
@@ -524,19 +527,15 @@ def plot(output_data, para_dict, file_type):
     # Base quality histogram
     if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
         seq_quality_info = output_data.seq_quality_info
-
-        # Base quality histogram
         base_quality(seq_quality_info, font_size, plot_filepaths)
         
     # Read average base quality histogram
-    if file_type == 'FASTQ':
+    if file_type == 'FASTQ' or file_type == 'FAST5' or file_type == 'BAM':
         read_avg_base_quality(seq_quality_info, font_size, plot_filepaths)
 
+    # Plot the read alignments and base alignments if the file type is BAM
     if file_type == 'BAM':
-        # Plot read alignment QC
         plot_alignment_numbers(output_data, plot_filepaths)
-        
-        # Plot base alignment and error QC
         plot_errors(output_data, plot_filepaths)
         
     elif file_type == 'FAST5s':
@@ -659,7 +658,6 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
             xaxis=dict(range=[0, 100])
         )
         fig.update_traces(marker={'size': marker_size})
-        # fig.update_xaxes(title="Index")
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)
@@ -1048,27 +1046,13 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     table_error_flag = False
 
     # Print the types of modifications
-    logging.info("Getting base modification types")
     base_mod_types = output_data.getBaseModTypes()
-    logging.info("[TEST] Modification types: ")
     if base_mod_types:
         logging.info("Modification types: ")
         for mod_type in base_mod_types:
             logging.info(mod_type)
 
         logging.info("Getting base modification statistics")
-
-        # Get the read length vs. base modification rate data for each
-        # # modification type
-        # logging.info("Getting mod data size")
-        # read_mod_data_size = output_data.getReadModDataSize()
-        # logging.info("Mod data size: {}".format(read_mod_data_size))
-
-        # # Choose a maximum of 10,000 reads to randomly sample for the plot
-        # max_reads = min(read_mod_data_size, 10000)        
-        # # read_indices = set(sample(range(read_mod_data_size), max_reads))
-        # read_indices = np.random.choice(read_mod_data_size, max_reads, replace=False)
-        # read_length_mod_rates = {}
 
         # Get the read length (%) vs. base modification probability data for
         # each sampled read
@@ -1078,8 +1062,11 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         for mod_type in base_mod_types:
             for i in range(sample_count):
                 try:
-                    pct = output_data.getNthReadLenPct(i, mod_type)
                     prob = output_data.getNthReadModProb(i, mod_type)
+                    if prob == -1:  # Skip if no modifications for the read
+                        continue
+
+                    pct = output_data.getNthReadLenPct(i, mod_type)
                     read_len_pct.append(pct)
                     mod_prob.append(prob)
                 except Exception as e:
@@ -1097,73 +1084,28 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
                             'N': 'Amb. N', \
                             'v': 'pseU'}
 
-        # Create a plot of pct read length vs. base modification probability for
-        # each modification type, as well as a histogram of the average base
-        # modification probability for 100 bins of the read length
-
-        # Make a subplot of two columns for the read length vs. base
-        # modification probability and the histogram of the average base
-        # modification probability for each modification type
         fig = make_subplots(rows=len(base_mod_types), cols=2, shared_xaxes=False, shared_yaxes=False, vertical_spacing=0.1, subplot_titles=[f"{mod_char_to_name[mod_type]} Modification Probability" for mod_type in base_mod_types])
 
         for i, mod_type in enumerate(base_mod_types):
             logging.info(f"Creating trace for modification type: {mod_type} at row: {i + 1}")
 
-            # Add the trace for the read length vs. base modification
+            # Add the trace for the read length (%) vs. base modification
             # probability scatter plot
             fig.add_trace(go.Scatter
                 (x=read_len_pct, y=mod_prob, mode='markers', name=mod_char_to_name[mod_type], marker=dict(size=5), showlegend=False),
                 row=i + 1, col=1)
             
-            # Print the first 50 pairs sorted by read length for debugging
-            # read_len_pct, mod_prob = zip(*sorted(zip(read_len_pct, mod_prob)))
-            # if i == 0:
-            #     for j in range(50):
-            #         logging.info(f"Read length: {read_len_pct[j]}, Modification probability: {mod_prob[j]}")
-            
             # Create a histogram of the base modification probabilities
             base_mod_prob_hist = go.Histogram(x=mod_prob, name=mod_char_to_name[mod_type], showlegend=False, nbinsx=20)
             fig.add_trace(base_mod_prob_hist, row=i + 1, col=2)
-            
-            # Add a bar plot of the average base modification probability for
-            # 100 bins of the read length
-            # bins = np.linspace(0, 100, 11)  # 10 bins (0-10%, 10-20%, ..., 90-100%)
-            # bin_centers = (bins[:-1] + bins[1:]) / 2  # Bin centers for plotting
-
-            # # Get the average probability per bin
-            # avg_prob_per_bin = np.zeros(10)
-            # bin_indices = np.digitize(read_len_pct, bins) - 1
-            # for j in range(10):  # Loop over bins
-            #     bin_mask = (bin_indices == j)
-            #     if np.any(bin_mask):
-            #         avg_prob_per_bin[j] = np.mean(mod_prob[bin_mask])
-            #         logging.info(f"Bin {j}: {avg_prob_per_bin[j]}")
-
-            # # Create the bar plot
-
-            # # Print the bins and read length percentages for the first 10 reads
-            # # for debugging
-            # if i == 0:
-            #     logging.info("Bins: {}".format(bins))
-            #     logging.info("Bin indices: {}".format(bin_indices[:10]))
-            #     logging.info("Read length percentages: {}".format(read_len_pct[:10]))
-
-            # # Create the bar plot
-            # fig.add_trace(go.Bar(x=bin_centers, y=avg_prob_per_bin, name=mod_char_to_name[mod_type], showlegend=False), row=i + 1, col=2)
 
             # Update the plot style
             fig.update_xaxes(title="Read Length (%)", row=i + 1, col=1)
             fig.update_yaxes(title="Modification Probability", row=i + 1, col=1)
             fig.update_xaxes(title="Modification Probability", row=i + 1, col=2)
             fig.update_yaxes(title="Frequency", row=i + 1, col=2)
-            # fig.update_xaxes(title="Read Length (%)", row=i + 1, col=2)
-            # fig.update_yaxes(title="Average Modification Probability", row=i + 1, col=2)
-
-            # Set the range of the y-axis to 0-1
             fig.update_yaxes(range=[0, 1], row=i + 1, col=1)
-            # fig.update_yaxes(range=[0, 1], row=i + 1, col=2)
 
-        # Update the plot layout
         fig.update_layout(title="Read Length vs. Base Modification Probability", font=dict(size=PLOT_FONT_SIZE))
             
         # Generate the HTML
@@ -1175,7 +1117,7 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     else:
         logging.warning("WARNING: No modification types found")
 
-    # Create the base modification statistics table'
+    # Create the base modification statistics table
     logging.info("Creating the base modification statistics table")
     table_str = "<table>\n<tbody>"
     row_str, row_flag = format_row("Total Unfiltered Predictions", [output_data.modified_prediction_count], 'int', None)
@@ -1208,7 +1150,6 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
 
     # Add the modification type data
     for mod_type in base_mod_types:
-        # mod_name = mod_char_to_name[mod_type]
         try:
             mod_name = mod_char_to_name[mod_type]
         except KeyError:
@@ -1234,13 +1175,13 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     # Finish the table
     table_str += "\n</tbody>\n</table>"
 
-    # Add the help text
-    table_str += """
-        <div class="help-icon">
-            💡
-            <div class="tooltip">{}</div>
-        </div>
-        """.format(help_text)
+    # # Add the help text
+    # table_str += """
+    #     <div class="help-icon">
+    #         💡
+    #         <div class="tooltip">{}</div>
+    #     </div>
+    #     """.format(help_text)
     
     # Add text below the table suggesting the user to use Modkit for more
     # detailed analysis on per-site modification rates
@@ -1321,9 +1262,6 @@ def plot_alignment_numbers(data, plot_filepaths):
 
     # Set the error flag if primary alignments equal 0
     error_flag = data.num_primary_alignment == 0
-
-    logging.info("[TEST] Number of reverse alignments: {}".format(data.reverse_alignment))
-    logging.info("[TEST] Number of forward alignments: {}".format(data.forward_alignment))
 
     # Create a horizontally aligned bar plot trace from the data using plotly
     trace = go.Bar(x=[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,

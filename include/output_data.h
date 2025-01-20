@@ -79,7 +79,7 @@ public:
    //std::vector<uint64_t> base_quality_distribution;
    // Array of base quality distribution initialized to 0
    uint64_t base_quality_distribution[MAX_BASE_QUALITY] = {ZeroDefault};
-   std::vector<int> read_average_base_quality_distribution;
+   std::vector<int> read_average_base_quality_distribution;  // Read average base quality distribution
    int min_base_quality = MoneDefault; // minimum base quality;
    int max_base_quality = MoneDefault; // maximum base quality;
    std::vector<int> pos_quality_distribution;

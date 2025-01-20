@@ -470,12 +470,6 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
 {
     int exit_code = 0;
 
-//    // Open the CSV files
-//    std::ofstream raw_csv;
-//    raw_csv.open(signal_raw_csv);
-//    std::ofstream qc_csv;
-//    qc_csv.open(signal_qc_csv);
-
     // Run QC on the HDF5 file
     //H5::Exception::dontPrint();  // Disable error printing
     try {
@@ -554,11 +548,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
     catch (std::exception& e) {
         std::cerr << "Exception caught : " << e.what() << std::endl;
     }
-
-//    // Close the CSV files
-//    raw_csv.close();
-//    qc_csv.close();
-
+    
     return exit_code;
 }
 

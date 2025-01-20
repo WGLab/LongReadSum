@@ -305,20 +305,16 @@ void Output_BAM::updateReadModRate(int read_length, const std::unordered_map<cha
 
 std::vector<char> Output_BAM::getBaseModTypes()
 {
-    printMessage("[TEST] Getting base modification types.");
     std::vector<char> base_mod_types;
     if (this->base_mod_counts.empty()) {
         printError("No base modification counts found.");
         return base_mod_types;
     }
 
-    printMessage("[TEST2] Getting base modification types.");
     for (const auto& it : this->base_mod_counts) {
         base_mod_types.push_back(it.first);
     }
-    // for (auto it = this->base_mod_counts.begin(); it != this->base_mod_counts.end(); ++it) {
-    //     base_mod_types.push_back(it->first);
-    // }
+    
     return base_mod_types;
 }
 
@@ -382,17 +378,17 @@ double Output_BAM::getNthReadLenPct(int read_index, char mod_type)
 
 double Output_BAM::getNthReadModProb(int read_index, char mod_type)
 {
-    double mod_prob = 0.0;
+    double mod_prob = -1.0;
     try {
         this->read_pct_len_vs_mod_prob.at(mod_type);
     } catch (const std::out_of_range& oor) {
-        std::cerr << "Error: Modification probability not found for type " << mod_type << std::endl;
+        return mod_prob;
     }
     try {
         mod_prob = this->read_pct_len_vs_mod_prob[mod_type].at(read_index).second;
     } catch (const std::out_of_range& oor) {
-        std::cerr << "Error: Modification probability not found for read index " << read_index << " and type " << mod_type << std::endl;
-        return 0.0;
+        // std::cerr << "Error: Modification probability not found for read index " << read_index << " and type " << mod_type << std::endl;
+        return -1.0;
     }
     return mod_prob;
 }
@@ -463,6 +459,11 @@ void Output_BAM::add(Output_BAM &output_data)
     // Update the base quality vector if it is not empty
     for (int i=0; i<MAX_READ_QUALITY; i++){
         this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
+    }
+
+    // Update the read average base quality vector if it is not empty
+    for (int i=0; i<MAX_READ_QUALITY; i++){
+        this->seq_quality_info.read_average_base_quality_distribution[i] += output_data.seq_quality_info.read_average_base_quality_distribution[i];
     }
 
     this->num_matched_bases += output_data.num_matched_bases;
@@ -686,9 +687,7 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
     std::string read_name_str;
     std::getline( iss_header, read_name_str, ' ' );
     read_name = read_name_str.c_str();
-
-    // Access the sequence data
-    std::string sequence_data_str = fq[1];
+    std::string sequence_data_str = fq[1];  // Access the sequence data
 
     // Update the total number of bases
     int base_count = sequence_data_str.length();
@@ -714,7 +713,6 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
 
     // Update the base quality and GC content information
     int gc_count = 0;
-    // double read_mean_base_qual = 0;
     double cumulative_base_prob = 0;  // Read cumulative base quality probability
     char current_base;
     int base_quality_value;
@@ -751,7 +749,6 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
 
         // Convert the Phred quality value to a probability
         double base_quality_prob = pow(10, -base_quality_value / 10.0);
-        // read_mean_base_qual += (double)base_quality_value;
         cumulative_base_prob += base_quality_prob;
     }
 
@@ -760,11 +757,6 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
 
     // Convert the mean base quality probability to a Phred quality value
     double read_mean_base_qual = -10.0 * log10(cumulative_base_prob);
-
-    // printMessage("Mean Q Score for read ID " + std::string(read_name) + " is " + std::to_string(read_mean_base_qual));
-
-    // Calculate percent guanine & cytosine
-    // gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
 
     // Update the per-read GC content distribution
     double gc_content_pct = (100.0 * gc_count) / static_cast<double>(base_count);
@@ -776,16 +768,9 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
     }
 
     // Update the per-read base quality distribution
-    // double read_mean_base_qual_pct = read_mean_base_qual / static_cast<double>(base_count);
-    // unsigned int read_mean_base_qual_int = static_cast<unsigned
-    // int>(std::round(read_mean_base_qual_pct));
     int read_mean_base_qual_int = static_cast<int>(std::round(read_mean_base_qual));
 
-    // printMessage("Rounded Mean Q Score for read ID " + std::string(read_name) + " is " + std::to_string(read_mean_base_qual_int));
-
     try {
-        // seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int]
-        // += 1;
         seq_quality_info.read_quality_distribution[read_mean_base_qual_int] += 1;
     } catch (const std::out_of_range& oor) {
         printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");

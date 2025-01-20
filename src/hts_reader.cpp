@@ -36,7 +36,7 @@ HTSReader::~HTSReader(){
 }
 
 // Update read and base counts
-int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& basic_qc, uint64_t* base_quality_distribution, bool is_primary) {
+int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& basic_qc, Basic_Seq_Quality_Statistics& seq_quality_info, bool is_primary) {
 
     // Update read QC
     basic_qc.total_num_reads++;  // Update the total number of reads
@@ -47,11 +47,16 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& bas
     // Get base counts, quality, and GC content
     double read_gc_count = 0.0;  // For GC content calculation
     double read_base_total = 0.0;  // For GC content calculation
+    double cumulative_base_prob = 0.0;  // For mean base quality probability calculation
     uint8_t *seq = bam_get_seq(record);
     for (int i = 0; i < read_length; i++) {
         // Get the base quality and update the base quality histogram
-        uint64_t base_quality = (uint64_t)bam_get_qual(record)[i];
-        base_quality_distribution[base_quality]++;
+        int base_quality = (int)bam_get_qual(record)[i];
+        seq_quality_info.base_quality_distribution[(uint64_t)base_quality]++;
+
+        // Convert the Phred quality value to a probability
+        double base_quality_prob = pow(10, -base_quality / 10.0);
+        cumulative_base_prob += base_quality_prob;
 
         // Get the base and update the base count
         char base = seq_nt16_str[bam_seqi(seq, i)];
@@ -82,6 +87,20 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& bas
                 printError("Invalid base: " + std::to_string(base));
                 break;
         }
+    }
+
+    // Calculate the mean base quality probability
+    cumulative_base_prob /= (double)read_length;
+
+    // Convert the mean base quality probability to a Phred quality value
+    double read_mean_base_qual = -10.0 * log10(cumulative_base_prob);
+
+    // Update the per-read mean base quality distribution
+    int read_mean_base_qual_int = static_cast<int>(std::round(read_mean_base_qual));
+    try {
+        seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int]++;
+    } catch (const std::out_of_range& oor) {
+        printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
     }
 
     // Calculate the read GC content percentage if a primary alignment
@@ -116,9 +135,6 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             return 1;
         }
     }
-
-    // Access the base quality histogram from the output_data object
-    uint64_t *base_quality_distribution = output_data.seq_quality_info.base_quality_distribution;
 
     // Do QC on each record and store the results in the output_data object
     while ((record_count < batch_size) && (exit_code >= 0)) {
@@ -210,11 +226,13 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
         // Unmapped reads
         if (record->core.flag & BAM_FUNMAP) {
             Basic_Seq_Statistics& basic_qc = output_data.unmapped_long_read_info;
-            this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution, false);
+            Basic_Seq_Quality_Statistics& seq_quality_info = output_data.unmapped_seq_quality_info;
+            this->updateReadAndBaseCounts(record, basic_qc, seq_quality_info, false);
 
         } else {
             // Calculate base alignment statistics on non-secondary alignments
             Basic_Seq_Statistics& basic_qc = output_data.mapped_long_read_info;
+            Basic_Seq_Quality_Statistics& seq_quality_info = output_data.seq_quality_info;
             if (!(record->core.flag & BAM_FSECONDARY)) {
 
                 // Determine if this is a forward or reverse read
@@ -328,9 +346,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
                             break;
                     }
                 }
-
-                // Update read and base QC
-                this->updateReadAndBaseCounts(record, basic_qc, base_quality_distribution, true);
+                this->updateReadAndBaseCounts(record, basic_qc, seq_quality_info, true);
 
             } else {
                 printError("Error: Unknown alignment type with flag " + std::to_string(record->core.flag));
@@ -376,7 +392,7 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
     hts_set_threads(bam_file, thread_count);  // Enable multi-threading
     bam_hdr_t* bam_header = sam_hdr_read(bam_file);
     bam1_t* bam_record = bam_init1();
-    int64_t num_reads = 0;
+    int64_t read_index = 0;
 
     // Create a random number generator and seed it with the current time
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -390,33 +406,15 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
     }
     std::shuffle(read_indices.begin(), read_indices.end(), generator);
     read_indices.resize(sample_count);
-
-    // Print first 100 read indices sorted
-    // std::sort(read_indices.begin(), read_indices.end());
-    // std::cout << "First 100 read indices: " << std::endl;
-    // for (int i = 0; i < 100; i++) {
-    //     std::cout << read_indices[i] << std::endl;
-    // }
-
-    // Convert to a set for fast lookup
     std::unordered_set<int> read_indices_set(read_indices.begin(), read_indices.end());
-
-    std::cout << "Number of sampled reads = " << read_indices_set.size() << std::endl;
-
-    // Keep track of number of modified bases on the primary alignment vs other
-    // alignments (secondary, supplementary, unmapped)
-    int num_modified_bases_primary = 0;
-    int num_modified_bases_unmapped = 0;
-    int num_modified_bases_secondary = 0;
-    int num_modified_bases_supplementary = 0;
+    printMessage("Number of sampled reads for base modification analysis = " + std::to_string(read_indices_set.size()));
 
     while (sam_read1(bam_file, bam_header, bam_record) >= 0) {
 
-        if (read_indices_set.find(num_reads) == read_indices_set.end()) {
-            num_reads++;
-            continue;
-        }
-        num_reads++;
+        // if (read_indices_set.find(read_index) == read_indices_set.end()) {
+        //     read_index++;
+        //     continue;
+        // }
 
         // Base modification tag analysis
         // Follow here to get base modification tags:
@@ -425,11 +423,6 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
         int read_length = bam_record->core.l_qseq;
         hts_base_mod_state *state = hts_base_mod_state_alloc();
         std::vector<std::pair<int32_t, int>> c_modified_positions;  // C-modified positions for CpG analysis (chr->(position, strand))
-        // std::unordered_map<char, int> base_mod_counts;  // Type-specific
-        // base modification counts for the alignment
-        // std::unordered_map<char, std::unordered_map<char, int>>
-        // base_mod_counts;  // Type-specific base modification counts
-        // (canonical base -> modified base -> count)
         std::unordered_map<char, std::unordered_map<char, int>> base_mod_counts;  // Type-specific base modification probabilities (canonical base -> modified base -> [read length %, probability])
         std::unordered_map<char, int> base_primary_count;  // Total base counts for the alignment
 
@@ -438,23 +431,7 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
         int ret = bam_parse_basemod(bam_record, state);
         bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
 
-        // Update the number of reads with base modifications for the
-        // primary alignment vs other alignments
-        if (ret >= 0) {
-            if (is_primary) {
-                num_modified_bases_primary++;
-            } else if (bam_record->core.flag & BAM_FUNMAP) {
-                num_modified_bases_unmapped++;
-            } else if (bam_record->core.flag & BAM_FSECONDARY) {
-                num_modified_bases_secondary++;
-            } else if (bam_record->core.flag & BAM_FSUPPLEMENTARY) {
-                num_modified_bases_supplementary++;
-            }
-        }
-
         if (ret >= 0 && is_primary) {
-            // bool is_primary = !(bam_record->core.flag & BAM_FSECONDARY) && !(bam_record->core.flag & BAM_FSUPPLEMENTARY) && !(bam_record->core.flag & BAM_FUNMAP);
-
             // Get the chromosome if alignments are present
             bool alignments_present = true;
             std::string chr;
@@ -513,15 +490,18 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
                         // Update the read length % and probability for the
                         // modification
                         double read_len_pct = (double) (pos + 1) / read_length;
-                        // std::cout << "Read length %: " << read_len_pct << ", probability: " << probability << std::endl;
-                        final_output.updateBaseModProbabilities(mod_type, read_len_pct, probability);  // Update the base modification probabilities
+                        // std::cout << "Read length %: " << read_len_pct << ",
+                        // probability: " << probability << std::endl;
+                        
+                        // Update the base modification probabilities for
+                        // sampled reads only (10,000 maximum)
+                        if (read_indices_set.find(read_index) != read_indices_set.end()) {
+                            final_output.updateBaseModProbabilities(mod_type, read_len_pct, probability);  // Update the base modification probabilities
+                        }
 
                         // Update counts for predictions exceeding the threshold
                         if (probability >= base_mod_threshold) {
                             final_output.updateBaseModCounts(mod_type, strand);  // Update the base modification counts
-                            // base_mod_counts[mod_type]++;  // Update the
-                            // type-specific count
-                            // base_mod_counts[canonical_base_char][mod_type]++;  // Update the type-specific count
 
                             // Store the modified positions for later CpG
                             // analysis if a C modification on a primary alignment
@@ -536,9 +516,6 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
                                 }
                             }
                         }
-                        // } else {
-                        //     base_primary_count[mod_type]++;  // Update the type-specific unmodified count
-                        // }
                     }
                 }
             }
@@ -561,60 +538,8 @@ void HTSReader::runBaseModificationAnalysis(const std::string &bam_filename, Out
         }
         hts_base_mod_state_free(state);  // Deallocate the base modification state object
 
-        // Calculate the base modification rate for the read
-        // double read_mod_rate = 0.0;
-        // if (read_length > 0) {
-        //     read_mod_rate = (double) read_mod_count / read_length;
-        // }
-
-        // Calculate the type-specific base modification rates for the read
-        // std::unordered_map<char, double> base_mod_rates;
-        // for (auto const &it : base_mod_counts) {
-        //     char canonical_base = it.first;
-        //     std::unordered_map<char, int> mod_counts = it.second;
-        //     double mod_rate = 0.0;
-        //     int total_base_count = base_primary_count[canonical_base];
-
-        //     // Calculate the modification rate for each modification type
-        //     for (auto const &it2 : mod_counts) {
-        //         char mod_type = it2.first;
-        //         int mod_count = it2.second;
-        //         double mod_rate = 0.0;
-        //         if (mod_count + total_base_count > 0) {
-        //             mod_rate = (double) mod_count / total_base_count;
-        //         }
-        //         base_mod_rates[mod_type] = mod_rate;
-        //     }
-        //     // for (auto const &it2 : mod_counts) {
-        //     //     total_mod_count += it2.second;
-        //     // }
-        //     // if (total_mod_count + total_base_count > 0) {
-        //     //     mod_rate = (double) total_mod_count / (total_mod_count + total_base_count);
-        //     // }
-        //     // base_mod_rates[canonical_base] = mod_rate;
-        // }
-        // for (auto const &it : base_mod_counts) {
-        //     char mod_type = it.first;
-        //     int mod_count = it.second;
-        //     double mod_rate = 0.0;
-        //     int total_base_count = base_primary_count[mod_type];
-        //     if (mod_count + unmod_count > 0) {
-        //         mod_rate = (double) mod_count / (mod_count + unmod_count);
-        //     }
-        //     // if (read_length > 0) {
-        //     //     mod_rate = (double) mod_count / read_length;
-        //     // }
-        //     base_mod_rates[mod_type] = mod_rate;
-        // }
-        // final_output.updateReadModRate(read_length, base_mod_rates);  // Update the output data
+        read_index++;  // Update the read index
     }
-
-    // Summary of base modification counts
-    printMessage("Base modification counts:");
-    printMessage("Primary alignment: " + std::to_string(num_modified_bases_primary));
-    printMessage("Unmapped alignment: " + std::to_string(num_modified_bases_unmapped));
-    printMessage("Secondary alignment: " + std::to_string(num_modified_bases_secondary));
-    printMessage("Supplementary alignment: " + std::to_string(num_modified_bases_supplementary));
 
     bam_destroy1(bam_record);
     bam_hdr_destroy(bam_header);
@@ -648,7 +573,6 @@ std::map<int, int> HTSReader::getQueryToRefMap(bam1_t *record)
                     query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
                     current_ref_pos++;
                     current_query_pos++;
-                    // query_to_ref_map[current_query_pos] = current_ref_pos + 1;  // Use 1-indexed positions
                 }
                 break;
             case BAM_CINS:
