@@ -14,10 +14,8 @@ all: swig_build compile
 
 # Generate the SWIG Python/C++ wrappers
 swig_build:
-	swig -c++ -python -outdir $(LIB_DIR) -I$(INCL_DIR) -o $(SRC_DIR)/lrst_wrap.cpp $(SRC_DIR)/lrst.i
-
-# Create the lib directory if it doesn't exist
 	mkdir -p $(LIB_DIR)
+	swig -c++ -python -outdir $(LIB_DIR) -I$(INCL_DIR) -o $(SRC_DIR)/lrst_wrap.cpp $(SRC_DIR)/lrst.i
 
 # Compile the C++ shared libraries into lib/
 compile:
@@ -27,5 +25,3 @@ compile:
 # Clean the build directory
 clean:
 	$(RM) -r $(LIB_DIR)/*.so $(LIB_DIR)/*.py $(SRC_DIR)/lrst_wrap.cpp build/
-
-# LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(CONDA_PREFIX)/lib \
