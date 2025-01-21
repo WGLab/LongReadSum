@@ -35,7 +35,7 @@ jobs:
 
     - name: Build LongReadSum
       shell: bash --login {0}  # --login enables PATH variable access
-      run: make
+      run: make -d
 
     - name: Run tests
       shell: bash --login {0}
