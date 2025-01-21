@@ -184,7 +184,7 @@ int HTSReader::readNextRecords(int batch_size, Output_BAM & output_data, std::mu
             // Set the atomic flag and print a message if the POD5 tags are
             // present
             if (!this->has_pod5_tags.test_and_set()) {
-                printMessage("POD5 tags found (ts, ns, mv)");
+                printMessage("POD5 basecall move table tags found (ts, ns, mv)");
             }
 
             // Get the ts and ns tags

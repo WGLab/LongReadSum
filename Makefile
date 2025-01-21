@@ -14,6 +14,9 @@ all: swig_build compile
 swig_build:
 	swig -c++ -python -outdir $(LIB_DIR) -I$(INCL_DIR) -o $(SRC_DIR)/lrst_wrap.cpp $(SRC_DIR)/lrst.i
 
+# Create the lib directory if it doesn't exist
+	mkdir -p $(LIB_DIR)
+
 # Compile the C++ shared libraries into lib/
 compile:
 	LD_LIBRARY_PATH=$(LD_LIBRARY_PATH):$(CONDA_PREFIX)/lib \

@@ -437,27 +437,16 @@ def read_avg_base_quality(data, font_size, plot_filepaths):
 
 def plot_base_modifications(base_modifications):
     """Plot the base modifications per location."""
-    # Get the modification types
-    modification_types = list(base_modifications.keys())
 
-    # Create the figure
+    # Add a plot for each modification type
     fig = go.Figure()
-
-    # Add a trace for each modification type
+    modification_types = list(base_modifications.keys())
     for mod_type in modification_types:
-        # Get the modification data
         mod_data = base_modifications[mod_type]
-
-        # Create the trace
         trace = go.Scattergl(x=mod_data['positions'], y=mod_data['counts'], mode='markers', name=mod_type)
-
-        # Add the trace to the figure
         fig.add_trace(trace)
 
-    # Update the layout
     fig.update_layout(title='Base Modifications', xaxis_title='Position', yaxis_title='Counts', showlegend=True, font=dict(size=PLOT_FONT_SIZE))
-
-    # Generate the HTML
     html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
 
     return html_obj
@@ -545,10 +534,9 @@ def plot(output_data, para_dict, file_type):
 
 def plot_pod5(pod5_output, para_dict, bam_output=None):
     """Plot the ONT POD5 signal data for a random sample of reads."""
+    
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
-
-    # Create the summary table
     create_pod5_table(pod5_output, plot_filepaths)
 
     # Generate the signal plots
