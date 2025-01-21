@@ -38,7 +38,7 @@ class HTSReader {
         bool reading_complete = false;
 
         // Update read and base counts
-        int updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics* basic_qc, uint64_t *base_quality_distribution);
+        int updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& basic_qc, Basic_Seq_Quality_Statistics& seq_quality_info, bool is_primary);
 
         // Read the next batch of records from the BAM file
         int readNextRecords(int batch_size, Output_BAM & output_data, std::mutex & read_mutex, std::unordered_set<std::string>& read_ids, double base_mod_threshold);
@@ -47,9 +47,12 @@ class HTSReader {
         bool hasNextRecord();
 
         // Return the number of records in the BAM file using the BAM index
-        int64_t getNumRecords(const std::string &bam_file_name, Output_BAM &final_output, bool mod_analysis, double base_mod_threshold);
+        int getNumRecords(const std::string &bam_file_name, int thread_count);
 
-        std::map<int, int> getQueryToRefMap(bam1_t *record);
+        // Run base modification analysis
+        void runBaseModificationAnalysis(const std::string &bam_filename, Output_BAM& final_output, double base_mod_threshold, int read_count, int sample_count, int thread_count);
+
+        std::map<int, int> getQueryToRefMap(bam1_t* record);
 
         // Add a modification to the base modification map
         void addModificationToQueryMap(std::map<int32_t, std::tuple<char, char, double, int>> &base_modifications, int32_t pos, char mod_type, char canonical_base, double likelihood, int strand);

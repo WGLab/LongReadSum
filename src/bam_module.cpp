@@ -80,7 +80,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cout << "Calculating TIN scores for file: " << filepath << std::endl;
 
             TINStats tin_stats;
-            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder);
+            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder, input_params.threads);
 
             // Print the TIN stats
             std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;
@@ -113,7 +113,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         // process base modifications and TINs if available.
         // Note: This section utilizes one thread.
         std::cout << "Getting number of records..." << std::endl;
-        int num_records = reader.getNumRecords(filepath, final_output, mod_analysis, base_mod_threshold);
+        int num_records = reader.getNumRecords(filepath, thread_count);
         std::cout << "Number of records = " << num_records << std::endl;
 
         // Exit if there are no records
@@ -121,6 +121,13 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cerr << "No records found in file: " << filepath << std::endl;
             exit_code = 1;
             return exit_code;
+        }
+
+        // Run base modification analysis if the flag is set
+        if (mod_analysis){
+            std::cout << "Running base modification analysis..." << std::endl;
+            int sample_count = 10000;
+            reader.runBaseModificationAnalysis(filepath, final_output, base_mod_threshold, num_records, sample_count, thread_count);
         }
 
         // Determine the batch sizes if the user-specified thread count is greater than 1
@@ -146,26 +153,24 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         }
 
          // Calculate statistics in batches
+         printMemoryUsage("Before batch processing");
+         
          while (reader.hasNextRecord()){
-            std::cout << "Generating " << thread_count << " thread(s)..." << std::endl;
+            // Read the next batch of records
+            // std::cout << "Generating " << thread_count << " thread(s)..." <<
+            // std::endl;
+            printMessage("Generating " + std::to_string(thread_count) + " thread(s)...");
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
-
-                // Copy the input read IDs to a new vector
                 std::unordered_set<std::string> rrms_read_ids_copy = input_params.rrms_read_ids;
-
-                // Create a thread
                 std::thread t((BAM_Module::batchStatistics), std::ref(reader), batch_size, rrms_read_ids_copy,std::ref(final_output), std::ref(bam_mutex), std::ref(output_mutex), std::ref(cout_mutex), base_mod_threshold);
-
-                // Add the thread to the vector
                 thread_vector.push_back(std::move(t));
             }
 
             // Join the threads in thread_vector
-            std::cout<<"Joining threads..."<<std::endl;
+            // std::cout<<"Joining threads..."<<std::endl;
             int thread_index = 0;
             for (auto& t : thread_vector){
-                // Join the thread if it is joinable
                 if (t.joinable()){
                     t.join();
                 }
@@ -217,15 +222,13 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::cout << "Calculating summary QC..." << std::endl;
     final_output.global_sum();
     std::cout << "QC complete" << std::endl;
-
-    // Save the summary statistics to a file
     std::cout << "Saving summary statistics to file..." << std::endl;
 
     // If in RRMS mode, append RRMS accepted/rejected to the output prefix
     std::string output_prefix = "bam";
     if (input_params.rrms_csv != ""){
         output_prefix += input_params.rrms_filter ? "_rrms_accepted" : "_rrms_rejected";
-    } 
+    }
     std::string summary_filepath = input_params.output_folder + "/" + output_prefix + "_summary.txt";
     final_output.save_summary(summary_filepath, input_params, final_output);
     std::cout << "Saved file: " << summary_filepath << std::endl;
@@ -240,12 +243,13 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unorder
 {
     // Read the next N records
     Output_BAM record_output;
+    printMessage("Reading next batch of records... " + std::to_string(batch_size));
     reader.readNextRecords(batch_size, record_output, bam_mutex, read_ids, base_mod_threshold);
 
     // Update the final output
-    output_mutex.lock();
+    std::lock_guard<std::mutex> lock(output_mutex);
     final_output.add(record_output);
-    output_mutex.unlock();
+    printMemoryUsage("After record processing");
 }
 
 std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_file, bool accepted_reads)
@@ -263,7 +267,10 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
     std::stringstream ss(header);
     std::string field;
     // std::cout << "RRMS CSV header:" << std::endl;
-    while (std::getline(ss, field, ',')){
+
+    // Split the header fields
+    char delimiter = ',';
+    while (std::getline(ss, field, delimiter)){
         header_fields.push_back(field);
         // std::cout << field << std::endl;
     }
@@ -298,7 +305,7 @@ std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_fi
         std::vector<std::string> fields;
         std::string field;
         std::stringstream ss(line);
-        while (std::getline(ss, field, ',')){
+        while (std::getline(ss, field, delimiter)){
             fields.push_back(field);
         }
 

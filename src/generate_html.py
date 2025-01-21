@@ -218,6 +218,48 @@ class ST_HTML_Generator:
   li {
   margin: 10px 0;
   }
+.help-icon {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
+    color: #555;
+    font-size: 18px; /* Adjust size of the icon */
+    margin-top: 10px; /* Adjust spacing if needed */
+}
+
+.help-icon:hover .tooltip {
+    visibility: visible;
+    opacity: 1;
+}
+
+.tooltip {
+    visibility: hidden;
+    width: 200px;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 4px;
+    padding: 8px;
+    font-size: 14px;
+    position: absolute;
+    top: 50%; /* Position the tooltip */
+    left: 120%; /* Position the tooltip */
+    transform: translateY(-50%);
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: 1;
+}
+
+.tooltip::after {
+    content: '';
+    position: absolute;
+    top: 50%; /* Position the arrow in the middle of the tooltip */
+    left: 0; /* Position the arrow on the left edge of the tooltip */
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: #333 transparent transparent transparent;
+}
       </style>''')
 
         self.html_writer.write("</head>")
@@ -237,18 +279,33 @@ class ST_HTML_Generator:
         self.html_writer.write('<h2>Summary</h2>')
         self.html_writer.write('<ul>')
 
+        # Define ASCII/Unicode icons for error flags
+        error_flag_icon = {
+            True: "&#9888;",
+            False: "&#10004;",
+        }
+
         # Add links to the right sections
         key_index = 0
         for plot_key in self.image_key_list:
-            self.html_writer.write('<li>')
 
+            # Determine the flag icon
+            try:
+                flag = self.plot_filepaths[plot_key]['error_flag']
+            except KeyError:
+                flag = False
+            
+            flag_icon = error_flag_icon[flag]
+            self.html_writer.write('<li>')
+            self.html_writer.write(f'{flag_icon} ')
             self.html_writer.write(
                 '<a href="#lrst' + str(key_index) + '">' + self.plot_filepaths[plot_key]['title'] + '</a>')
+            
             key_index += 1
             self.html_writer.write('</li>')
 
         # Add the input files section link
-        self.html_writer.write('<li>')
+        self.html_writer.write('<br><li>')
         self.html_writer.write('<a href="#lrst' + str(key_index) + '">Input File List</a>')
         key_index += 1
         self.html_writer.write('</li>')
@@ -277,17 +334,21 @@ class ST_HTML_Generator:
                     self.html_writer.write(dynamic_plot)
 
                 except KeyError:
-                    logging.error("Missing dynamic plot for %s", plot_key)
+                    # See if an image is available
+                    try:
+                        image_path = self.plot_filepaths[plot_key]['file']
+                        self.html_writer.write(f'<img src="{image_path}" alt="{plot_key}">')
+                    except KeyError:
+                        logging.error("Missing plot for %s", plot_key)
 
             self.html_writer.write('</div>')
 
             key_index += 1
 
         self.html_writer.write('<div class="module">')
-        self.html_writer.write('<h2 id="lrst' + str(key_index) + '">File count = ' + str(
+        self.html_writer.write('<h2 id="lrst' + str(key_index) + '">File Count = ' + str(
             len(self.input_para["input_files"])) + '</h2><p>')
-        for _af in self.input_para["input_files"]:
-            self.html_writer.write("<br/>" + _af)
+        self.html_writer.write("<br/>" + "<br/>".join([f"{i+1}.\t{af}" for i, af in enumerate(self.input_para["input_files"])]))
         self.html_writer.write('</p></div>')
         key_index += 1
 

@@ -20,8 +20,9 @@ MAX_BASE_QUALITY = 100
 MAX_READ_QUALITY = 100
 PLOT_FONT_SIZE = 16
 
-# Return a dictionary of default plot filenames
+
 def getDefaultPlotFilenames():
+    """Create a default HTML plot data structure."""
     plot_filenames = {  # for fq/fa
         "read_length_distr": {'title': "Read Length", 'description': "Read Length Distribution"},  # for bam
         "read_alignments_bar": {'title': "Read Alignments",
@@ -31,9 +32,11 @@ def getDefaultPlotFilenames():
         "read_length_bar": {'title': "Read Length Statistics", 'description': "Read Length Statistics"},
         "base_counts": {'title': "Base Counts",
                     'description': "Base Counts", 'summary': ""},
-        "basic_info": {'title': "Basic Statistics",
-                       'description': "Basic Statistics", 'summary': ""},
         "read_length_hist": {'title': "Read Length Histogram", 'description': "Read Length Histogram", 'summary': ""},
+        
+        "gc_content_hist": {'title': "GC Content Histogram", 'description': "GC Content Histogram", 'summary': ""},
+
+        "read_length_mod_rates": {'title': "Read Length vs. Modification Rates", 'description': "Read Length vs. Modification Rates", 'summary': ""},
 
         "base_quality": {'title': "Base Quality Histogram", 'description': "Base Quality Histogram"},
 
@@ -45,8 +48,9 @@ def getDefaultPlotFilenames():
 
     return plot_filenames
 
-# Wrap the text in the table 
+
 def wrap(label):
+    """Wrap the label text."""
     # First split the string into a list of words
     words = label.split(' ')
 
@@ -67,12 +71,14 @@ def wrap(label):
 
     return new_label
 
-# Plot the read alignment numbers
-def plot_read_length_stats(output_data, file_type):
+
+def plot_read_length_stats(output_data, file_type, plot_filepaths):
+    """Plot the read length statistics."""
 
     # Define the three categories
     category = ['N50', 'Mean', 'Median']
     all_traces = []
+    error_flag = False
 
     if file_type == 'BAM':
         # Create a bar trace for each type of read length statistic
@@ -85,6 +91,10 @@ def plot_read_length_stats(output_data, file_type):
             trace = go.Bar(x=category, y=values, name=plot_title)
             all_traces.append(trace)
 
+            # Set the error flag if any of the values are zero (except for unmapped reads)
+            if i != 2 and (values[0] == 0 or values[1] == 0 or values[2] == 0):
+                error_flag = True
+
     elif file_type == 'SeqTxt':
         # Create a bar trace for each type of read length statistic
         bar_titles = ['All Reads', 'Passed Reads', 'Failed Reads']
@@ -95,6 +105,10 @@ def plot_read_length_stats(output_data, file_type):
             values = [data.n50_read_length, data.mean_read_length, data.median_read_length]
             trace = go.Bar(x=category, y=values, name=plot_title)
             all_traces.append(trace)
+
+            # Set the error flag if any of the values are zero (except for failed reads)
+            if i != 2 and (values[0] == 0 or values[1] == 0 or values[2] == 0):
+                error_flag = True
 
     else:
         # Get the data for all reads
@@ -107,6 +121,11 @@ def plot_read_length_stats(output_data, file_type):
         trace = go.Bar(x=category, y=values, name=bar_title)
         all_traces.append(trace)
 
+        # Set the error flag if any of the values are zero
+        if values[0] == 0 or values[1] == 0 or values[2] == 0:
+            error_flag = True
+
+
     # Create the layout
     layout = go.Layout(title='', xaxis=dict(title='Statistics'), yaxis=dict(title='Length (bp)'), barmode='group', font=dict(size=PLOT_FONT_SIZE))
 
@@ -114,16 +133,19 @@ def plot_read_length_stats(output_data, file_type):
     fig = go.Figure(data=all_traces, layout=layout)
 
     # Generate the HTML
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+    # html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['read_length_bar']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
 
-    return html_obj
+    # Set the error flag
+    plot_filepaths['read_length_bar']['error_flag'] = error_flag
 
-# Plot the base counts
-def plot_base_counts(output_data, filetype):
-    # Define the five categories
+
+def plot_base_counts(output_data, filetype, plot_filepaths):
+    """Plot overall base counts for the reads."""
+
+    # Create a bar trace for each base
+    error_flag = False
     category = ['A', 'C', 'G', 'T/U', 'N']
-
-    # Create a bar trace for each type of data
     all_traces = []
     if filetype == 'BAM':
         bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
@@ -135,6 +157,16 @@ def plot_base_counts(output_data, filetype):
             trace = go.Bar(x=category, y=values, name=plot_title)
             all_traces.append(trace)
 
+            # Set the error flag if the N count is greater than 10% or the A, C,
+            # G, or T/U counts are zero (except for unmapped reads)
+            if i != 2:
+                if data.total_num_bases == 0:
+                    error_flag = True
+                elif data.total_n_cnt / data.total_num_bases > 0.1:
+                    error_flag = True
+                elif data.total_a_cnt == 0 or data.total_c_cnt == 0 or data.total_g_cnt == 0 or data.total_tu_cnt == 0:
+                    error_flag = True
+
     elif filetype == 'SeqTxt':
         bar_titles = ['All Reads', 'Passed Reads', 'Failed Reads']
         data_objects = [output_data.all_long_read_info.long_read_info, output_data.passed_long_read_info.long_read_info, output_data.failed_long_read_info.long_read_info]
@@ -145,6 +177,15 @@ def plot_base_counts(output_data, filetype):
             trace = go.Bar(x=category, y=values, name=plot_title)
             all_traces.append(trace)
 
+            # Set the error flag if the N count is greater than 10% or the A, C,
+            # G, or T/U counts are zero
+            if data.total_num_bases == 0:
+                error_flag = True
+            elif data.total_n_cnt / data.total_num_bases > 0.1:
+                error_flag = True
+            elif data.total_a_cnt == 0 or data.total_c_cnt == 0 or data.total_g_cnt == 0 or data.total_tu_cnt == 0:
+                error_flag = True
+
     else:
         plot_title = 'All Reads'
         data = output_data.long_read_info
@@ -152,86 +193,26 @@ def plot_base_counts(output_data, filetype):
         trace = go.Bar(x=category, y=values, name=plot_title)
         all_traces.append(trace)
 
-    # Create the layout
-    layout = go.Layout(title='', xaxis=dict(title='Base'), yaxis=dict(title='Counts'), barmode='group', font=dict(size=PLOT_FONT_SIZE))
+        # Set the error flag if the N count is greater than 10% or the A, C,
+        # G, or T/U counts are zero
+        if data.total_num_bases == 0:
+            error_flag = True
+        elif data.total_n_cnt / data.total_num_bases > 0.1:
+            error_flag = True
+        elif data.total_a_cnt == 0 or data.total_c_cnt == 0 or data.total_g_cnt == 0 or data.total_tu_cnt == 0:
+            error_flag = True
 
     # Create the figure and add the traces
+    layout = go.Layout(title='', xaxis=dict(title='Base'), yaxis=dict(title='Counts'), barmode='group', font=dict(size=PLOT_FONT_SIZE))
     fig = go.Figure(data=all_traces, layout=layout)
 
     # Generate the HTML
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
-
-    return html_obj
-
-# Plot basic information about the reads in bar chart format
-def plot_basic_info(output_data, file_type):
-    html_obj = ''
-    if file_type == 'BAM':
-
-        # Create a bar trace for each type of data
-        bar_titles = ['All Reads', 'Mapped Reads', 'Unmapped Reads']
-        data_objects = [output_data.long_read_info, output_data.mapped_long_read_info, output_data.unmapped_long_read_info]
-
-        # Create subplots for each category
-        fig = make_subplots(rows=2, cols=2, subplot_titles=("Number of Reads", "Number of Bases", "Longest Read", "GC Content"), horizontal_spacing=0.3, vertical_spacing=0.2)
-
-        # Add traces for each category
-        key_list = ['total_num_reads', 'total_num_bases', 'longest_read_length', 'gc_cnt']
-        for i in range(4):
-            # Get the data for this category
-            key_name = key_list[i]
-
-            # Add the traces for each type of data
-            data = [getattr(data_objects[0], key_name), getattr(data_objects[1], key_name), getattr(data_objects[2], key_name)]
-
-            # Create the trace
-            trace = go.Bar(x=data, y=bar_titles, orientation='h')
-
-            # Add the trace to the figure
-            fig.add_trace(trace, row=(i // 2) + 1, col=(i % 2) + 1)
-            fig.update_layout(showlegend=False)
-
-        # Update the layout
-        fig.update_layout(showlegend=False, font=dict(size=PLOT_FONT_SIZE))
-
-        # Generate the HTML
-        html_obj = fig.to_html(full_html=False, default_height=800, default_width=1200)
-
-    elif file_type == 'SeqTxt':
-
-        # Create a bar trace for each type of data
-        bar_titles = ['All Reads', 'Passed Reads', 'Failed Reads']
-        data_objects = [output_data.all_long_read_info.long_read_info, output_data.passed_long_read_info.long_read_info, output_data.failed_long_read_info.long_read_info]
-
-        # Create subplots for each category
-        fig = make_subplots(rows=1, cols=3, subplot_titles=("Number of Reads", "Number of Bases", "Longest Read"), horizontal_spacing=0.1)
-
-        # Add traces for each category
-        key_list = ['total_num_reads', 'total_num_bases', 'longest_read_length']
-        for i in range(3):
-            # Get the data for this category
-            key_name = key_list[i]
-
-            # Add the traces for each type of data
-            data = [getattr(data_objects[0], key_name), getattr(data_objects[1], key_name), getattr(data_objects[2], key_name)]
-
-            # Create the trace
-            trace = go.Bar(x=data, y=bar_titles, orientation='h')
-
-            # Add the trace to the figure
-            fig.add_trace(trace, row=1, col=i + 1)
-
-        # Update the layout
-        fig.update_layout(showlegend=False, font=dict(size=PLOT_FONT_SIZE))
-
-        # Generate the HTML
-        html_obj = fig.to_html(full_html=False, default_height=500, default_width=1600)
-
-    return html_obj
+    plot_filepaths['base_counts']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['base_counts']['error_flag'] = error_flag
 
 
-# Plot the read length histograms
-def read_lengths_histogram(data, font_size):
+def read_lengths_histogram(data, font_size, plot_filepaths):
+    """Plot the read length histogram."""
     linear_bin_count = 10
     log_bin_count = 10
 
@@ -251,9 +232,6 @@ def read_lengths_histogram(data, font_size):
     hist, _ = np.histogram(read_lengths, bins=edges)
 
     # Create a figure with two subplots
-    # fig = make_subplots(
-    #     rows=2, cols=1,
-    #     subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.5)
     fig = make_subplots(
         rows=1, cols=2,
         subplot_titles=("Read Length Histogram", "Log Read Length Histogram"), vertical_spacing=0.0)
@@ -261,7 +239,6 @@ def read_lengths_histogram(data, font_size):
     log_col=2
 
     linear_bindata = np.dstack((edges[:-1], edges[1:], hist))[0, :, :]
-    # linear_bin_centers = np.round((linear_bindata[:, 0] + linear_bindata[:, 1]) / 2, 0)
     fig.add_trace(go.Bar(x=edges, y=hist, customdata=linear_bindata,
                          hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
                          marker_color='#36a5c7'), row=1, col=linear_col)
@@ -273,16 +250,13 @@ def read_lengths_histogram(data, font_size):
     fig.add_vline(n50, line_width=1, line_dash="dash", annotation_text='N50', annotation_bgcolor="green",
                   annotation_textangle=90, row=1, col=linear_col)
 
-    # Log histogram
-    # Get the log10 histogram of read lengths
+    # Log scale histogram
     read_lengths_log = np.log10(read_lengths, out=np.zeros_like(read_lengths), where=(read_lengths != 0))
-    # log_hist, log_edges = np.histogram(read_lengths_log, bins=bin_count)
     log_edges = np.linspace(0, np.max(read_lengths_log), num=log_bin_count + 1)
     log_hist, _ = np.histogram(read_lengths_log, bins=log_edges)
 
     xd = log_edges
     log_bindata = np.dstack((np.power(10, log_edges)[:-1], np.power(10, log_edges)[1:], log_hist))[0, :, :]
-    # log_bin_centers = np.round((log_bindata[:, 0] + log_bindata[:, 1]) / 2, 0)
     yd = log_hist
     fig.add_trace(go.Bar(x=xd, y=yd, customdata=log_bindata,
                          hovertemplate='Length: %{customdata[0]:.0f}-%{customdata[1]:.0f}bp<br>Counts:%{customdata[2]:.0f}<extra></extra>',
@@ -297,17 +271,7 @@ def read_lengths_histogram(data, font_size):
     fig.update_annotations(font=dict(color="white"))
 
     # Set tick value range for the log scale
-    # Use the bin edge centers as the tick values
-    # tick_vals = (log_edges[:-1] + log_edges[1:]) / 2
-    # tick_labels = ['{:,}'.format(int(10 ** x)) for x in tick_vals]
     tick_vals = log_edges
-    # tick_labels = ['{:,}'.format(int(10 ** x)) for x in tick_vals]
-
-    # Format the tick labels to be in kilobases (kb) if the value is greater than
-    # 1000, and in bases (b) otherwise
-    # tick_labels = ['{:,}kb'.format(int(x / 1000)) for x in tick_vals]
-    # tick_labels = ['{:,}kb'.format(int(x) for x in log_bin_centers) if x >
-    # 1000 else '{:,}b'.format(int(x)) for x in log_bin_centers]
     tick_labels = []
     for i in range(len(log_bindata)):
         # Format the tick labels to be in kilobases (kb) if the value is greater
@@ -322,21 +286,7 @@ def read_lengths_histogram(data, font_size):
         tick_labels.append('{}-{}'.format(left_val_str, right_val_str))
 
     fig.update_xaxes(ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=1, col=log_col, tickvals=tick_vals, ticktext=tick_labels, tickangle=45)
-    # fig.update_xaxes(range=[0, np.max(log_edges)], ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
-    # fig.update_xaxes(range=[0, np.max(log_edges)], ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1, tickvals=tick_vals)
-    # tick_vals = list(range(0, 5))
-    # fig.update_xaxes(
-    #     range=[0, np.max(log_edges)],
-    #     tickmode='array',
-    #     tickvals=tick_vals,
-    #     ticktext=['{:,}'.format(10 ** x) for x in tick_vals],
-    #     ticks="outside", title_text='Read Length (Log Scale)', title_standoff=0, row=2, col=1)
-
-    # Set the tick value range for the linear scale
-    # tick_vals = (edges[:-1] + edges[1:]) / 2
-    # tick_labels = ['{:,}'.format(int(x)) for x in tick_vals]
     tick_vals = edges
-    # tick_labels = ['{:,}'.format(int(x)) for x in tick_vals]
     
     # Format the tick labels to be the range of the bin centers
     tick_labels = []
@@ -352,30 +302,87 @@ def read_lengths_histogram(data, font_size):
 
         tick_labels.append('{}-{}'.format(left_val_str, right_val_str))
         
-    # tick_labels = ['{:,}kb'.format(int(x / 1000)) for x in tick_vals]
-    # tick_labels = ['{:,}kb'.format(int(x)) if x > 1000 else
-    # '{:,}b'.format(int(x)) for x in linear_bin_centers]
     linear_col=1
     fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=linear_col, tickvals=tick_vals, ticktext=tick_labels, tickangle=45)
-    # fig.update_xaxes(ticks="outside", title_text='Read Length', title_standoff=0, row=1, col=1, range=[0, np.max(edges)], tickvals=tick_vals)
     fig.update_yaxes(ticks="outside", title_text='Counts', title_standoff=0)
 
     # Update the layout
     fig.update_layout(showlegend=False, autosize=True, font=dict(size=PLOT_FONT_SIZE))
-    # Set font sizes
-    # fig.update_layout(showlegend=False, autosize=False)
-    # fig.update_layout(font=dict(size=font_size), autosize=True)
-
     fig.update_annotations(font_size=annotation_size)
-    # html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=1200)
-                           
-    return html_obj
 
-# Save the 'Base quality' plot image.
-def base_quality(data, font_size):
+    # Generate the HTML
+    plot_filepaths['read_length_hist']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=1200)
+                           
+
+def read_gc_content_histogram(data, font_size, plot_filepaths):
+    """Plot the per-read GC content histogram."""
+    bin_size = 1
+    gc_content = np.array(data.read_gc_content_count)
+
+    # Calculate the percentage of reads with a GC content of <30%
+    # gc_content_below_30 = np.sum(gc_content[:30])
+    # logging.info("[TEST] Percentage of reads with GC content <30%: {}".format(gc_content_below_30 / np.sum(gc_content)))
+
+    # # Calculate the percentage of reads with a GC content of >70%
+    # gc_content_above_70 = np.sum(gc_content[70:])
+    # logging.info("[TEST] Percentage of reads with GC content >70%: {}".format(gc_content_above_70 / np.sum(gc_content)))
+
+    # # Calculate the percentage of reads with a GC content of <20%
+    # gc_content_below_20 = np.sum(gc_content[:20])
+    # logging.info("[TEST] Percentage of reads with GC content <20%: {}".format(gc_content_below_20 / np.sum(gc_content)))
+
+    # # Calculate the percentage of reads with a GC content of >60%
+    # gc_content_above_60 = np.sum(gc_content[60:])
+    # logging.info("[TEST] Percentage of reads with GC content >60%: {}".format(gc_content_above_60 / np.sum(gc_content)))
+
+    # Set the error flag if the GC content is below 20% for more than 10% of the
+    # reads
+    error_flag = False
+    if np.sum(gc_content) == 0:
+        error_flag = True
+    elif np.sum(gc_content[:20]) / np.sum(gc_content) > 0.1:
+        error_flag = True
+
+    # Bin the GC content if the bin size is greater than 1
+    if bin_size > 1:
+        gc_content = np.array([np.sum(gc_content[i:i + bin_size]) for i in range(0, 101, bin_size)])
+
+    gc_content_bins = [i for i in range(0, 101, bin_size)]
+
+    # Generate hover text for each bin
+    hover_text = []
+    if bin_size > 1:
+        for i in range(len(gc_content_bins)):
+            hover_text.append('GC content: {}-{}%<br>Counts: {}'.format(gc_content_bins[i], gc_content_bins[i] + bin_size, gc_content[i]))
+    else:
+        for i in range(len(gc_content_bins)):
+            hover_text.append('GC content: {}%<br>Counts: {}'.format(gc_content_bins[i], gc_content[i]))
+
+    # Set the X values to be the center of the bins
+    if bin_size > 1:
+        x_values = [gc_content_bins[i] + bin_size / 2 for i in range(len(gc_content_bins))]
+    else:
+        x_values = gc_content_bins
+
+    # Create the figure
+    fig = go.Figure()
+    fig.add_trace(go.Bar(x=x_values, y=gc_content, marker_color='#36a5c7', hovertext=hover_text, hoverinfo='text'))
+
+    # Update the layout
+    fig.update_xaxes(ticks="outside", dtick=10, title_text='GC Content (%)', title_standoff=0)
+    fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
+    fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
+
+    plot_filepaths['gc_content_hist']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['gc_content_hist']['error_flag'] = error_flag
+
+
+def base_quality(data, font_size, plot_filepaths):
+    """Plot the base quality distribution."""
     xd = np.arange(MAX_BASE_QUALITY)
     yd = np.array(data.base_quality_distribution)
+    xd = xd[:60]
+    yd = yd[:60]
     fig = go.Figure()
 
     customdata = np.dstack((xd, yd))[0, :, :]
@@ -388,72 +395,94 @@ def base_quality(data, font_size):
     fig.update_yaxes(ticks="outside", title_text='Number of bases', title_standoff=0)
     fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
-    return fig.to_html(full_html=False, default_height=500, default_width=700)
+    # return fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['base_quality']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
 
-def read_avg_base_quality(data, font_size):
+    # Set the error flag if the base quality is below 20 for more than 10% of
+    # the bases
+    error_flag = False
+    if np.sum(yd) == 0:
+        error_flag = True
+    elif np.sum(yd[:20]) / np.sum(yd) > 0.1:
+        error_flag = True
+
+    plot_filepaths['base_quality']['error_flag'] = error_flag
+
+
+def read_avg_base_quality(data, font_size, plot_filepaths):
     """Plot the read average base quality distribution."""
     xd = np.arange(MAX_READ_QUALITY)
     yd = np.array(data.read_average_base_quality_distribution)
+    xd = xd[:60]
+    yd = yd[:60]
     fig = go.Figure()
     fig.add_trace(go.Bar(x=xd, y=yd, marker_color='#36a5c7'))
-
     fig.update_xaxes(ticks="outside", dtick=10, title_text='Average Base Quality', title_standoff=0)
     fig.update_yaxes(ticks="outside", title_text='Number of Reads', title_standoff=0)
     fig.update_layout(font=dict(size=PLOT_FONT_SIZE))  # Set font size
 
-    return fig.to_html(full_html=False, default_height=500, default_width=700)
+    # return fig.to_html(full_html=False, default_height=500, default_width=700)
+    plot_filepaths['read_avg_base_quality']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
+
+    # Set the error flag if the average base quality is below 20 for more than
+    # 10% of the reads
+    error_flag = False
+    if np.sum(yd) == 0:
+        error_flag = True
+    elif np.sum(yd[:20]) / np.sum(yd) > 0.1:
+        error_flag = True
+
+    plot_filepaths['read_avg_base_quality']['error_flag'] = error_flag
 
 
 def plot_base_modifications(base_modifications):
     """Plot the base modifications per location."""
-    # Get the modification types
-    modification_types = list(base_modifications.keys())
 
-    # Create the figure
+    # Add a plot for each modification type
     fig = go.Figure()
-
-    # Add a trace for each modification type
+    modification_types = list(base_modifications.keys())
     for mod_type in modification_types:
-        # Get the modification data
         mod_data = base_modifications[mod_type]
-
-        # Create the trace
-        trace = go.Scatter(x=mod_data['positions'], y=mod_data['counts'], mode='markers', name=mod_type)
-
-        # Add the trace to the figure
+        trace = go.Scattergl(x=mod_data['positions'], y=mod_data['counts'], mode='markers', name=mod_type)
         fig.add_trace(trace)
 
-    # Update the layout
     fig.update_layout(title='Base Modifications', xaxis_title='Position', yaxis_title='Counts', showlegend=True, font=dict(size=PLOT_FONT_SIZE))
-
-    # Generate the HTML
     html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
 
     return html_obj
 
 
-# Main plot function
 def plot(output_data, para_dict, file_type):
+    """Generate the plots for the output data."""
+    logging.info("Generating plots for file type: {}".format(file_type))
     plot_filepaths = getDefaultPlotFilenames()
+    font_size = 14  # Font size for the plots
+    create_summary_table(output_data, plot_filepaths, file_type)  # Create the summary table
 
-    # Get the font size for plotly plots
-    font_size = 14
+    # Modified base table and plots
+    try:
+        para_dict["mod"]
+    except KeyError:
+        para_dict["mod"] = False
 
-    # Create the summary table
-    create_summary_table(output_data, plot_filepaths, file_type)
+    if file_type == 'BAM' and para_dict["mod"]:
+        # Output file for the read length vs. modification rates plot
+        output_folder = para_dict["output_folder"]
+        read_length_mod_rate_file = os.path.join(output_folder, 'read_length_hist.png')
+        plot_filepaths['read_length_mod_rates']['file'] = read_length_mod_rate_file
 
-    # Create the modified base table if available
-    if file_type == 'BAM' and para_dict["mod"] > 0:
+        # Generate the modified base table and read length vs. modification rates plot
         base_modification_threshold = para_dict["modprob"]
         create_modified_base_table(output_data, plot_filepaths, base_modification_threshold)
-
-        # Check if the modified base table is available
-        if 'base_mods' in plot_filepaths:
-            logging.info("SUCCESS: Modified base table created")
-        else:
+        if 'base_mods' not in plot_filepaths:
             logging.warning("WARNING: Modified base table not created")
 
     # Create the TIN table if available
+    try:
+        para_dict["genebed"]
+    except KeyError:
+        para_dict["genebed"] = ""
+        
     if file_type == 'BAM' and para_dict["genebed"] != "":
         input_files = para_dict["input_files"]
         create_tin_table(output_data, input_files, plot_filepaths)
@@ -464,9 +493,7 @@ def plot(output_data, para_dict, file_type):
         else:
             logging.warning("WARNING: TIN table not created")
 
-    # Generate plots
-    plot_filepaths['base_counts']['dynamic'] = plot_base_counts(output_data, file_type)
-    plot_filepaths['basic_info']['dynamic'] = plot_basic_info(output_data, file_type)
+    plot_base_counts(output_data, file_type, plot_filepaths)
 
     # Read length histogram
     if file_type == 'SeqTxt':
@@ -475,27 +502,30 @@ def plot(output_data, para_dict, file_type):
         long_read_data = output_data.long_read_info
 
     if file_type != 'FAST5s':
-        plot_filepaths['read_length_hist']['dynamic'] = read_lengths_histogram(long_read_data, font_size)
+        read_lengths_histogram(long_read_data, font_size, plot_filepaths)
+        plot_read_length_stats(output_data, file_type, plot_filepaths)
 
-        plot_filepaths['read_length_bar']['dynamic'] = plot_read_length_stats(output_data, file_type)
-
-    if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
-        # if file_type == 'SeqTxt':
-        #     seq_quality_info = output_data.all_long_read_info.seq_quality_info
-        # else:
-        seq_quality_info = output_data.seq_quality_info
-
-        # Base quality histogram
-        plot_filepaths['base_quality']['dynamic'] = base_quality(seq_quality_info, font_size)
-
-        # Read quality histogram
-        read_quality_dynamic = read_avg_base_quality(seq_quality_info, font_size)
-        plot_filepaths['read_avg_base_quality']['dynamic'] = read_quality_dynamic
-
+    # GC content histogram
     if file_type == 'BAM':
-        # Plot read alignment QC
-        plot_filepaths['read_alignments_bar']['dynamic'] = plot_alignment_numbers(output_data)
-        plot_filepaths['base_alignments_bar']['dynamic'] = plot_errors(output_data)
+        read_gc_content_histogram(output_data.mapped_long_read_info, font_size, plot_filepaths)
+    elif file_type == 'SeqTxt':
+        read_gc_content_histogram(output_data.passed_long_read_info.long_read_info, font_size, plot_filepaths)
+    elif file_type == 'FASTQ' or file_type == 'FASTA':
+        read_gc_content_histogram(output_data.long_read_info, font_size, plot_filepaths)
+
+    # Base quality histogram
+    if file_type != 'FASTA' and file_type != 'FAST5s' and file_type != 'SeqTxt':
+        seq_quality_info = output_data.seq_quality_info
+        base_quality(seq_quality_info, font_size, plot_filepaths)
+        
+    # Read average base quality histogram
+    if file_type == 'FASTQ' or file_type == 'FAST5' or file_type == 'BAM':
+        read_avg_base_quality(seq_quality_info, font_size, plot_filepaths)
+
+    # Plot the read alignments and base alignments if the file type is BAM
+    if file_type == 'BAM':
+        plot_alignment_numbers(output_data, plot_filepaths)
+        plot_errors(output_data, plot_filepaths)
         
     elif file_type == 'FAST5s':
         plot_filepaths['ont_signal']['dynamic'] = plot_signal(output_data, para_dict)
@@ -504,10 +534,9 @@ def plot(output_data, para_dict, file_type):
 
 def plot_pod5(pod5_output, para_dict, bam_output=None):
     """Plot the ONT POD5 signal data for a random sample of reads."""
+    
     out_path = para_dict["output_folder"]
     plot_filepaths = getDefaultPlotFilenames()
-
-    # Create the summary table
     create_pod5_table(pod5_output, plot_filepaths)
 
     # Generate the signal plots
@@ -600,7 +629,7 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
 
         # Plot the signal data
         x = np.arange(signal_length)
-        fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scattergl(
             x=x, y=nth_read_data,
             mode='markers',
             marker=dict(color='LightSkyBlue',
@@ -608,7 +637,7 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
                         line=dict(color='MediumPurple', width=2)),
             opacity=0.5))
 
-        # Update the plot style
+        # Update the plot style (using 0-100 to improve performance)
         fig.update_layout(
             title=nth_read_name,
             yaxis_title="Signal",
@@ -617,7 +646,6 @@ def plot_pod5(pod5_output, para_dict, bam_output=None):
             xaxis=dict(range=[0, 100])
         )
         fig.update_traces(marker={'size': marker_size})
-        # fig.update_xaxes(title="Index")
 
         # Append the dynamic HTML object to the output structure
         dynamic_html = fig.to_html(full_html=False)
@@ -640,6 +668,8 @@ def plot_signal(output_data, para_dict):
     
     # Get read and base counts
     read_count = output_data.getReadCount()
+    if read_count == 0:
+        raise ValueError("No reads found in the dataset")
 
     # Randomly sample a small set of reads if it is a large dataset
     read_sample_size = min(read_count_max, read_count)
@@ -692,7 +722,7 @@ def plot_signal(output_data, para_dict):
 
             # Plot
             x = np.arange(start_index, end_index, 1)
-            fig.add_trace(go.Scatter(
+            fig.add_trace(go.Scattergl(
                 x=x, y=base_signals,
                 mode='markers',
                 marker=dict(color='LightSkyBlue',
@@ -747,6 +777,29 @@ def plot_signal(output_data, para_dict):
 
     return output_html_plots
 
+def format_cell(value, type_str='int', error_flag=False):
+    """Format the cell value for the summary table."""
+    style = "background-color: #F88379;" if error_flag else ""
+    if type_str == 'int':
+        return "<td style=\"text-align:right;{}\">{:,d}</td>".format(style, value)
+    elif type_str == 'float':
+        return "<td style=\"text-align:right;{}\">{:.1f}</td>".format(style, value)
+    else:
+        logging.error("ERROR: Invalid type for formatting cell value")
+
+def format_row(row_name, values, type_str='int', col_ignore=None):
+    """Format the row for the summary table. Skip flagging null values in specific columns."""
+    cell_str = []
+    row_flag = False
+    for i, value in enumerate(values):
+        # Set the error flag if the value is 0 except for unmapped reads
+        error_flag = value == 0 and i != col_ignore
+        row_flag = row_flag or error_flag  # Flag for the entire row
+        cell_str.append(format_cell(value, type_str, error_flag))
+
+    return "<tr><td>{}</td>{}</tr>".format(row_name, "".join(cell_str)), row_flag
+
+
 def create_summary_table(output_data, plot_filepaths, file_type):
     """Create the summary table for the basic statistics."""
     plot_filepaths["basic_st"] = {}
@@ -761,73 +814,135 @@ def create_summary_table(output_data, plot_filepaths, file_type):
         file_type_label = 'Basecall Summary'
         
     plot_filepaths["basic_st"]['description'] = "{} Basic Statistics".format(file_type_label)
+    table_error_flag = False
 
     if file_type == 'BAM':
+
         # Add alignment statistics to the summary table
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Mapped</th><th>Unmapped</th><th>All</th></tr>\n" \
                     "</thead> "
         table_str += "\n<tbody>"
-        int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td><td style=\"text-align:right\">{:," \
-                             "d}</td><td style=\"text-align:right\">{:,d}</td></tr> "
-        double_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:.1f}</td><td " \
-                                "style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td></tr> "
-        table_str += int_str_for_format.format("#Total Reads", output_data.mapped_long_read_info.total_num_reads,
-                                               output_data.unmapped_long_read_info.total_num_reads,
-                                               output_data.long_read_info.total_num_reads)
-        table_str += int_str_for_format.format("#Total Bases",
-                                               output_data.mapped_long_read_info.total_num_bases,
-                                               output_data.unmapped_long_read_info.total_num_bases,
-                                               output_data.long_read_info.total_num_bases)
-        table_str += int_str_for_format.format("Longest Read Length",
-                                               output_data.mapped_long_read_info.longest_read_length,
-                                               output_data.unmapped_long_read_info.longest_read_length,
-                                               output_data.long_read_info.longest_read_length)
-        table_str += int_str_for_format.format("N50",
-                                               output_data.mapped_long_read_info.n50_read_length,
-                                               output_data.unmapped_long_read_info.n50_read_length,
-                                               output_data.long_read_info.n50_read_length)
-        table_str += double_str_for_format.format("GC Content(%)",
-                                                  output_data.mapped_long_read_info.gc_cnt * 100,
-                                                  output_data.unmapped_long_read_info.gc_cnt * 100,
-                                                  output_data.long_read_info.gc_cnt * 100)
-        table_str += double_str_for_format.format("Mean Read Length",
-                                                  output_data.mapped_long_read_info.mean_read_length,
-                                                  output_data.unmapped_long_read_info.mean_read_length,
-                                                  output_data.long_read_info.mean_read_length)
-        table_str += int_str_for_format.format("Median Read Length",
-                                               output_data.mapped_long_read_info.median_read_length,
-                                               output_data.unmapped_long_read_info.median_read_length,
-                                               output_data.long_read_info.median_read_length)
+
+        # Total reads
+        row_str, row_flag = format_row("Total Reads", \
+                                        [output_data.mapped_long_read_info.total_num_reads, \
+                                            output_data.unmapped_long_read_info.total_num_reads, \
+                                            output_data.long_read_info.total_num_reads], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+        
+        # Total bases
+        row_str, row_flag = format_row("Total Bases", \
+                                        [output_data.mapped_long_read_info.total_num_bases, \
+                                         output_data.unmapped_long_read_info.total_num_bases, \
+                                         output_data.long_read_info.total_num_bases], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Longest read length
+        row_str, row_flag = format_row("Longest Read Length", \
+                                        [output_data.mapped_long_read_info.longest_read_length, \
+                                         output_data.unmapped_long_read_info.longest_read_length, \
+                                         output_data.long_read_info.longest_read_length], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # N50
+        row_str, row_flag = format_row("N50", \
+                                        [output_data.mapped_long_read_info.n50_read_length, \
+                                            output_data.unmapped_long_read_info.n50_read_length, \
+                                            output_data.long_read_info.n50_read_length], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # GC content
+        row_str, row_flag = format_row("GC Content(%)", \
+                                        [output_data.mapped_long_read_info.gc_cnt * 100, \
+                                            output_data.unmapped_long_read_info.gc_cnt * 100, \
+                                            output_data.long_read_info.gc_cnt * 100], \
+                                        'float', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Mean read length
+        row_str, row_flag = format_row("Mean Read Length", \
+                                        [output_data.mapped_long_read_info.mean_read_length, \
+                                            output_data.unmapped_long_read_info.mean_read_length, \
+                                            output_data.long_read_info.mean_read_length], \
+                                        'float', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Median read length
+        row_str, row_flag = format_row("Median Read Length", \
+                                        [output_data.mapped_long_read_info.median_read_length, \
+                                            output_data.unmapped_long_read_info.median_read_length, \
+                                            output_data.long_read_info.median_read_length], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
         
     elif file_type == 'SeqTxt':
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Passed</th><th>Failed</th><th>All</th></tr>\n</thead>"
         table_str += "\n<tbody>"
-        int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td><td style=\"text-align:right\">{:,d}</td><td style=\"text-align:right\">{:,d}</td></tr>"
-        double_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td></tr>"
-        table_str += int_str_for_format.format("#Total Reads",
-                                               output_data.passed_long_read_info.long_read_info.total_num_reads,
-                                               output_data.failed_long_read_info.long_read_info.total_num_reads,
-                                               output_data.all_long_read_info.long_read_info.total_num_reads)
-        table_str += int_str_for_format.format("#Total Bases",
-                                               output_data.passed_long_read_info.long_read_info.total_num_bases,
-                                               output_data.failed_long_read_info.long_read_info.total_num_bases,
-                                               output_data.all_long_read_info.long_read_info.total_num_bases)
-        table_str += int_str_for_format.format("Longest Read Length",
-                                               output_data.passed_long_read_info.long_read_info.longest_read_length,
-                                               output_data.failed_long_read_info.long_read_info.longest_read_length,
-                                               output_data.all_long_read_info.long_read_info.longest_read_length)
-        table_str += int_str_for_format.format("N50",
-                                               output_data.passed_long_read_info.long_read_info.n50_read_length,
-                                               output_data.failed_long_read_info.long_read_info.n50_read_length,
-                                               output_data.all_long_read_info.long_read_info.n50_read_length)
-        table_str += double_str_for_format.format("Mean Read Length",
-                                                  output_data.passed_long_read_info.long_read_info.mean_read_length,
-                                                  output_data.failed_long_read_info.long_read_info.mean_read_length,
-                                                  output_data.all_long_read_info.long_read_info.mean_read_length)
-        table_str += int_str_for_format.format("Median Read Length",
-                                               output_data.passed_long_read_info.long_read_info.median_read_length,
-                                               output_data.failed_long_read_info.long_read_info.median_read_length,
-                                               output_data.all_long_read_info.long_read_info.median_read_length)
+        
+        # Total reads
+        row_str, row_flag = format_row("Total Reads", \
+                                        [output_data.passed_long_read_info.long_read_info.total_num_reads, \
+                                            output_data.failed_long_read_info.long_read_info.total_num_reads, \
+                                            output_data.all_long_read_info.long_read_info.total_num_reads], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Total bases
+        row_str, row_flag = format_row("Total Bases", \
+                                        [output_data.passed_long_read_info.long_read_info.total_num_bases, \
+                                            output_data.failed_long_read_info.long_read_info.total_num_bases, \
+                                            output_data.all_long_read_info.long_read_info.total_num_bases], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Longest read length
+        row_str, row_flag = format_row("Longest Read Length", \
+                                        [output_data.passed_long_read_info.long_read_info.longest_read_length, \
+                                            output_data.failed_long_read_info.long_read_info.longest_read_length, \
+                                            output_data.all_long_read_info.long_read_info.longest_read_length], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # N50
+        row_str, row_flag = format_row("N50", \
+                                        [output_data.passed_long_read_info.long_read_info.n50_read_length, \
+                                            output_data.failed_long_read_info.long_read_info.n50_read_length, \
+                                            output_data.all_long_read_info.long_read_info.n50_read_length], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Mean read length
+        row_str, row_flag = format_row("Mean Read Length", \
+                                        [output_data.passed_long_read_info.long_read_info.mean_read_length, \
+                                            output_data.failed_long_read_info.long_read_info.mean_read_length, \
+                                            output_data.all_long_read_info.long_read_info.mean_read_length], \
+                                        'float', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Median read length
+        row_str, row_flag = format_row("Median Read Length", \
+                                        [output_data.passed_long_read_info.long_read_info.median_read_length, \
+                                            output_data.failed_long_read_info.long_read_info.median_read_length, \
+                                            output_data.all_long_read_info.long_read_info.median_read_length], \
+                                        'int', 1)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
 
     elif file_type == 'FAST5s':
         # Get values
@@ -837,51 +952,233 @@ def create_summary_table(output_data, plot_filepaths, file_type):
         # Set up the HTML table
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
         table_str += "\n<tbody>"
-        int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
-        table_str += int_str_for_format.format("#Total Reads", read_count)
-        table_str += int_str_for_format.format("#Total Bases", total_base_count)
+
+        # Total reads
+        row_str, row_flag = format_row("Total Reads", [read_count], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Total bases
+        row_str, row_flag = format_row("Total Bases", [total_base_count], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
 
     else:
         table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
         table_str += "\n<tbody>"
-        int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
-        double_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:.1f}</td></tr>"
-        table_str += int_str_for_format.format("#Total Reads",
-                                               output_data.long_read_info.total_num_reads)
-        table_str += int_str_for_format.format("#Total Bases",
-                                               output_data.long_read_info.total_num_bases)
-        table_str += int_str_for_format.format("Longest Read Length",
-                                               output_data.long_read_info.longest_read_length)
-        table_str += int_str_for_format.format("N50",
-                                               output_data.long_read_info.n50_read_length)
-        table_str += double_str_for_format.format("GC Content(%)",
-                                                  output_data.long_read_info.gc_cnt * 100)
-        table_str += double_str_for_format.format("Mean Read Length",
-                                                  output_data.long_read_info.mean_read_length)
-        table_str += int_str_for_format.format("Median Read Length",
-                                               output_data.long_read_info.median_read_length)
+        # Total reads
+        row_str, row_flag = format_row("Total Reads", [output_data.long_read_info.total_num_reads], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Total bases
+        row_str, row_flag = format_row("Total Bases", [output_data.long_read_info.total_num_bases], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Longest read length
+        row_str, row_flag = format_row("Longest Read Length", [output_data.long_read_info.longest_read_length], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # N50
+        row_str, row_flag = format_row("N50", [output_data.long_read_info.n50_read_length], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # GC content
+        row_str, row_flag = format_row("GC Content(%)", [output_data.long_read_info.gc_cnt * 100], 'float', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Mean read length
+        row_str, row_flag = format_row("Mean Read Length", [output_data.long_read_info.mean_read_length], 'float', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        # Median read length
+        row_str, row_flag = format_row("Median Read Length", [output_data.long_read_info.median_read_length], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
         
     table_str += "\n</tbody>\n</table>"
+    # table_str += """
+    #     <div class="help-icon">
+    #         💡
+    #         <div class="tooltip">This is your help text explaining the feature!</div>
+    #     </div>
+    #     """
     plot_filepaths["basic_st"]['detail'] = table_str
+    plot_filepaths["basic_st"]['error_flag'] = table_error_flag
+
+
+def get_axis_name(row, axis_type='x'):
+    """Get the axis name for the plot."""
+    axis_number = row + 1
+    return f"{axis_type}axis{axis_number}" if axis_number > 1 else f"{axis_type}axis"
+
 
 def create_modified_base_table(output_data, plot_filepaths, base_modification_threshold):
     """Create a summary table for the base modifications."""
+    help_text = "Total unfiltered predictions are all predictions prior to applying the base modification probability threshold.\n" \
+                "This threshold is set by the user (default: 0.5) and is used to filter out low-confidence base modifications.\n" \
+                "Total modification counts are the number of base modifications that pass the threshold.\n" \
+                "These counts are also separated by forward and reverse strand predictions.\n" \
+                "CpG modification counts are the total CpG modifications that pass the threshold.\n" \
+                "These are total counts and not site-specific counts." \
+                
     plot_filepaths["base_mods"] = {}
     plot_filepaths["base_mods"]['file'] = ""
     plot_filepaths["base_mods"]['title'] = "Base Modifications"
     plot_filepaths["base_mods"]['description'] = "Base modification statistics"
+    table_error_flag = False
+
+    # Print the types of modifications
+    base_mod_types = output_data.getBaseModTypes()
+    if base_mod_types:
+        # logging.info("Modification types: ")
+        # for mod_type in base_mod_types:
+        #     logging.info(mod_type)
+
+        # logging.info("Getting base modification statistics")
+
+        # Get the read length (%) vs. base modification probability data for
+        # each sampled read
+        sample_count = 10000
+        read_len_pct = []
+        mod_prob = []
+        for mod_type in base_mod_types:
+            for i in range(sample_count):
+                try:
+                    prob = output_data.getNthReadModProb(i, mod_type)
+                    if prob == -1:  # Skip if no modifications for the read
+                        continue
+
+                    pct = output_data.getNthReadLenPct(i, mod_type)
+                    read_len_pct.append(pct)
+                    mod_prob.append(prob)
+                except Exception as e:
+                    logging.error(f"Error getting read length vs. base modification probability data: {e}")
+
+        # Convert the lists to numpy arrays
+        read_len_pct = np.array(read_len_pct) * 100  # Convert to percentage
+        mod_prob = np.array(mod_prob)
+        
+        # Dictionary of modification character to full name
+        mod_char_to_name = {'m': '5mC', 'h': '5hmC', 'f': '5fC', 'c': '5caC', \
+                            'g': '5hmU', 'e': '5fu', 'b': '5caU', \
+                            'a': '6mA', 'o': '8oxoG', 'n': 'Xao', \
+                            'C': 'Amb. C', 'A': 'Amb. A', 'T': 'Amb. T', 'G': 'Amb. G',\
+                            'N': 'Amb. N', \
+                            'v': 'pseU'}
+
+        fig = make_subplots(rows=len(base_mod_types), cols=2, shared_xaxes=False, shared_yaxes=False, vertical_spacing=0.1, subplot_titles=[f"{mod_char_to_name[mod_type]} Modification Probability" for mod_type in base_mod_types])
+
+        for i, mod_type in enumerate(base_mod_types):
+            # logging.info(f"Creating trace for modification type: {mod_type} at row: {i + 1}")
+
+            # Add the trace for the read length (%) vs. base modification
+            # probability scatter plot
+            fig.add_trace(go.Scatter
+                (x=read_len_pct, y=mod_prob, mode='markers', name=mod_char_to_name[mod_type], marker=dict(size=5), showlegend=False),
+                row=i + 1, col=1)
+            
+            # Create a histogram of the base modification probabilities
+            base_mod_prob_hist = go.Histogram(x=mod_prob, name=mod_char_to_name[mod_type], showlegend=False, nbinsx=20)
+            fig.add_trace(base_mod_prob_hist, row=i + 1, col=2)
+
+            # Update the plot style
+            fig.update_xaxes(title="Read Length (%)", row=i + 1, col=1)
+            fig.update_yaxes(title="Modification Probability", row=i + 1, col=1)
+            fig.update_xaxes(title="Modification Probability", row=i + 1, col=2)
+            fig.update_yaxes(title="Frequency", row=i + 1, col=2)
+            fig.update_yaxes(range=[0, 1], row=i + 1, col=1)
+
+        fig.update_layout(title="Read Length vs. Base Modification Probability", font=dict(size=PLOT_FONT_SIZE))
+            
+        # Generate the HTML
+        if len(base_mod_types) > 0:
+            plot_height = 500 * len(base_mod_types)
+            plot_width = 700 * 2
+            logging.info("Generating the read length vs. modification rates plot")
+            plot_filepaths["read_length_mod_rates"]['dynamic'] = fig.to_html(full_html=False, default_height=plot_height, default_width=plot_width)
+    else:
+        logging.warning("WARNING: No modification types found")
 
     # Create the base modification statistics table
+    logging.info("Creating the base modification statistics table")
     table_str = "<table>\n<tbody>"
-    table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
-    table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
-    table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
-    table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
-    table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
-    table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
-    table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
+    row_str, row_flag = format_row("Total Unfiltered Predictions", [output_data.modified_prediction_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Probability Threshold", [base_modification_threshold], 'float', 0)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total Modification Counts", [output_data.sample_modified_base_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total Modification Counts (Forward Strand Only)", [output_data.sample_modified_base_count_forward], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total Modification Counts (Reverse Strand Only)", [output_data.sample_modified_base_count_reverse], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total CpG Modification Counts (Forward Strand Only)", [output_data.sample_cpg_forward_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    row_str, row_flag = format_row("Total CpG Modification Counts (Reverse Strand Only)", [output_data.sample_cpg_reverse_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
+
+    # Add the modification type data
+    for mod_type in base_mod_types:
+        try:
+            mod_name = mod_char_to_name[mod_type]
+        except KeyError:
+            logging.warning("WARNING: Unknown modification type: {}".format(mod_type))
+            mod_name = mod_type
+
+        mod_count = output_data.getModTypeCount(mod_type)
+        mod_count_fwd = output_data.getModTypeCount(mod_type, 0)
+        mod_count_rev = output_data.getModTypeCount(mod_type, 1)
+
+        row_str, row_flag = format_row("Total {} Counts in the Sample".format(mod_name), [mod_count], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        row_str, row_flag = format_row("Total {} Counts in the Sample (Forward Strand)".format(mod_name), [mod_count_fwd], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+        row_str, row_flag = format_row("Total {} Counts in the Sample (Reverse Strand)".format(mod_name), [mod_count_rev], 'int', None)
+        table_str += row_str
+        table_error_flag = table_error_flag or row_flag
+
+    # Finish the table
     table_str += "\n</tbody>\n</table>"
+
+    # # Add the help text
+    # table_str += """
+    #     <div class="help-icon">
+    #         💡
+    #         <div class="tooltip">{}</div>
+    #     </div>
+    #     """.format(help_text)
+    
+    # Add text below the table suggesting the user to use Modkit for more
+    # detailed analysis on per-site modification rates
+    table_str += "<p><i>For per-site modification rates, please use \
+        <a href=\"https://github.com/nanoporetech/modkit\">Modkit</a> by Oxford Nanopore Technologies..</i></p>"
+
+
     plot_filepaths["base_mods"]['detail'] = table_str
+    plot_filepaths["base_mods"]['error_flag'] = table_error_flag
 
 def create_tin_table(output_data, input_files, plot_filepaths):
     """Create a summary table for the RNA-Seq TIN values."""
@@ -892,44 +1189,34 @@ def create_tin_table(output_data, input_files, plot_filepaths):
 
     # Create a table with the first column showing the BAM filepath, and the
     # following columns showing TIN count, mean, median, and standard deviation
-    table_str = "<table>\n<thead>\n<tr><th>BAM File</th><th>Count</th><th>Mean</th><th>Median</th><th>StdDev</th></tr>\n</thead>"
+    table_str = "<table>\n<thead>\n<tr><th>BAM File</th><th>Median TIN Score</th><th>Number of Transcripts</th></tr>\n</thead>"
     table_str += "\n<tbody>"
     
     # Loop through each BAM file
+    error_flag = False
     for bam_file in input_files:
         # Format the filepath as filename only
         bam_filename = os.path.basename(bam_file)
 
         # Get the file data
-        tin_count = output_data.getTINCount(bam_file)
-        tin_mean = output_data.getTINMean(bam_file)
+        # tin_count = output_data.getTINCount(bam_file)
+        # tin_mean = output_data.getTINMean(bam_file)
         tin_median = output_data.getTINMedian(bam_file)
-        tin_std = output_data.getTINStdDev(bam_file)
+        # tin_std = output_data.getTINStdDev(bam_file)
 
         # Add the data to the table
-        table_str += "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td><td style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td><td style=\"text-align:right\">{:.1f}</td></tr>".format(bam_filename, tin_count, tin_mean, tin_median, tin_std)
+        # row_str, row_flag = format_row(bam_filename, [tin_count, tin_mean,
+        # tin_median, tin_std], 'float', None)
+        row_str, row_flag = format_row(bam_filename, [tin_median, output_data.getTINCount(bam_file)], 'float', None)
+        table_str += row_str
+        error_flag = error_flag or row_flag
 
     table_str += "\n</tbody>\n</table>"
 
     # Add the table to the plot filepaths
     plot_filepaths["tin"]['detail'] = table_str
+    plot_filepaths["tin"]['error_flag'] = error_flag
 
-    # plot_filepaths["base_mods"] = {}
-    # plot_filepaths["base_mods"]['file'] = ""
-    # plot_filepaths["base_mods"]['title'] = "Base Modifications"
-    # plot_filepaths["base_mods"]['description'] = "Base modification statistics"
-
-    # # Create the base modification statistics table
-    # table_str = "<table>\n<tbody>"
-    # table_str += "<tr><td>Total Predictions</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.modified_prediction_count)
-    # table_str += "<tr><td>Probability Threshold</td><td style=\"text-align:right\">{:.2f}</td></tr>".format(base_modification_threshold)
-    # table_str += "<tr><td>Total Modified Bases in the Sample</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count)
-    # table_str += "<tr><td>Total in the Forward Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_forward)
-    # table_str += "<tr><td>Total in the Reverse Strand</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_modified_base_count_reverse)
-    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Forward Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_forward_count)
-    # table_str += "<tr><td>Total modified CpG Sites in the Sample (Reverse Strand)</td><td style=\"text-align:right\">{:,d}</td></tr>".format(output_data.sample_cpg_reverse_count)
-    # table_str += "\n</tbody>\n</table>"
-    # plot_filepaths["base_mods"]['detail'] = table_str
 
 def create_pod5_table(output_dict, plot_filepaths):
     """Create a summary table for the ONT POD5 signal data."""
@@ -938,25 +1225,31 @@ def create_pod5_table(output_dict, plot_filepaths):
     plot_filepaths["basic_st"]['title'] = "Summary Table"
     file_type_label = "POD5"
     plot_filepaths["basic_st"]['description'] = f"{file_type_label} Basic Statistics"
+    table_error_flag = False
     
-    # Get values
-    read_count = len(output_dict.keys())
-
     # Set up the HTML table
     table_str = "<table>\n<thead>\n<tr><th>Measurement</th><th>Statistics</th></tr>\n</thead>"
     table_str += "\n<tbody>"
-    int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
-    table_str += int_str_for_format.format("#Total Reads", read_count)
+    # int_str_for_format = "<tr><td>{}</td><td style=\"text-align:right\">{:,d}</td></tr>"
+    # table_str += int_str_for_format.format("Total Reads", read_count)
+    read_count = len(output_dict.keys())
+    row_str, row_flag = format_row("Total Reads", [read_count], 'int', None)
+    table_str += row_str
+    table_error_flag = table_error_flag or row_flag
 
     table_str += "\n</tbody>\n</table>"
     plot_filepaths["basic_st"]['detail'] = table_str
+    plot_filepaths["basic_st"]['error_flag'] = table_error_flag
 
 
-def plot_alignment_numbers(data):
+def plot_alignment_numbers(data, plot_filepaths):
     category = ['Primary Alignments', 'Supplementary Alignments', 'Secondary Alignments',
                 'Reads with Supplementary Alignments', 'Reads with Secondary Alignments',
                 'Reads with Secondary and Supplementary Alignments', 'Forward Alignments', 'Reverse Alignments']
     category = [wrap(x) for x in category]
+
+    # Set the error flag if primary alignments equal 0
+    error_flag = data.num_primary_alignment == 0
 
     # Create a horizontally aligned bar plot trace from the data using plotly
     trace = go.Bar(x=[data.num_primary_alignment, data.num_supplementary_alignment, data.num_secondary_alignment,
@@ -973,14 +1266,13 @@ def plot_alignment_numbers(data):
     # Create the figure object
     fig = go.Figure(data=[trace], layout=layout)
 
-    # Generate the HTML object for the plot
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=1000)
+    # Update the HTML data for the plot
+    plot_filepaths['read_alignments_bar']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=1000)
+    plot_filepaths['read_alignments_bar']['error_flag'] = error_flag
 
-    return html_obj
 
-
-# Plot base alignment statistics
-def plot_errors(output_data):
+def plot_errors(output_data, plot_filepaths):
+    """Plot the error statistics for the alignment data."""
     category = \
         ['Matched Bases', 'Mismatched Bases', 'Inserted Bases', 'Deleted Bases', 'Clipped Bases\n(Primary Alignments)']
     category = [wrap(x) for x in category]
@@ -999,7 +1291,14 @@ def plot_errors(output_data):
     fig = go.Figure(data=[trace], layout=layout)
 
     # Generate the HTML object for the plot
-    html_obj = fig.to_html(full_html=False, default_height=500, default_width=700)
+    # html_obj = fig.to_html(full_html=False, default_height=500,
+    # default_width=700)
+    plot_filepaths['base_alignments_bar']['dynamic'] = fig.to_html(full_html=False, default_height=500, default_width=700)
 
-    return html_obj
+    # Set the error flag if mismatch or clipped bases > matched bases
+    error_flag = output_data.num_mismatched_bases > output_data.num_matched_bases or \
+                 output_data.num_clip_bases > output_data.num_matched_bases
+    plot_filepaths['base_alignments_bar']['error_flag'] = error_flag
+
+    # return html_obj
 

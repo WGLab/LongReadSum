@@ -3,6 +3,7 @@
 #include <math.h>  // sqrt
 #include <iostream>
 #include <sstream>
+#include <cmath>  // std::round
 
 #include "output_data.h"
 #include "utils.h"
@@ -84,9 +85,9 @@ void Basic_Seq_Statistics::add(Basic_Seq_Statistics& basic_qc){
         this->read_lengths.insert(this->read_lengths.end(), basic_qc.read_lengths.begin(), basic_qc.read_lengths.end());
     }
 
-    // Add GC content if not empty
-    if (!basic_qc.read_gc_content_count.empty()) {
-        this->read_gc_content_count.insert(this->read_gc_content_count.end(), basic_qc.read_gc_content_count.begin(), basic_qc.read_gc_content_count.end());
+    // Update the per-read GC content distribution
+    for (int i = 0; i < 101; i++) {
+        this->read_gc_content_count[i] += basic_qc.read_gc_content_count[i];
     }
 }
 
@@ -190,7 +191,6 @@ Basic_Seq_Quality_Statistics::Basic_Seq_Quality_Statistics(){
     pos_quality_distribution.resize(MAX_READ_LENGTH, ZeroDefault);
     pos_quality_distribution_dev.resize(MAX_READ_LENGTH, ZeroDefault);
     pos_quality_distribution_count.resize(MAX_READ_LENGTH, ZeroDefault);
-
     read_average_base_quality_distribution.resize(MAX_READ_QUALITY, ZeroDefault);
     read_quality_distribution.resize(MAX_READ_QUALITY, ZeroDefault);
 }
@@ -257,9 +257,140 @@ void Basic_Seq_Quality_Statistics::global_sum(){
 
 // BAM output constructor
 Output_BAM::Output_BAM(){
+    this->num_primary_alignment = 0;
+    this->num_secondary_alignment = 0;
+    this->num_supplementary_alignment = 0;
+    this->num_clip_bases = 0;
+    this->sample_modified_base_count = 0;
+    this->sample_modified_base_count_forward = 0;
+    this->sample_modified_base_count_reverse = 0;
+    this->forward_alignment = 0;
+    this->reverse_alignment = 0;
+    this->base_mod_counts = std::unordered_map<char, uint64_t>();
+    this->base_mod_counts_forward = std::unordered_map<char, uint64_t>();
+    this->base_mod_counts_reverse = std::unordered_map<char, uint64_t>();
 }
 
 Output_BAM::~Output_BAM(){
+}
+
+void Output_BAM::updateBaseModCounts(char mod_type, int strand)
+{
+    // Update the sample modified base count for predictions exceeding the threshold
+    this->sample_modified_base_count++;
+    this->base_mod_counts[mod_type]++;  // Update the type-specific modified base count
+
+    // Update the modified base count for the strand from primary alignments
+    if (strand == 0) {
+        this->sample_modified_base_count_forward++;
+        this->base_mod_counts_forward[mod_type]++;  // Update the type-specific modified base count
+    } else if (strand == 1) {
+        this->sample_modified_base_count_reverse++;
+        this->base_mod_counts_reverse[mod_type]++;  // Update the type-specific modified base count
+    }
+}
+
+void Output_BAM::updateBaseModProbabilities(char mod_type, double pct_len, double probability)
+{
+    // Update the base modification probabilities
+    this->read_pct_len_vs_mod_prob[mod_type].push_back(std::make_pair(pct_len, probability));
+}
+
+void Output_BAM::updateReadModRate(int read_length, const std::unordered_map<char, double>& base_mod_rates) {
+    ReadModData read_mod_data;
+    read_mod_data.read_length = read_length;
+    read_mod_data.base_mod_rates = base_mod_rates;
+    this->read_mod_data.push_back(read_mod_data);
+}
+
+std::vector<char> Output_BAM::getBaseModTypes()
+{
+    std::vector<char> base_mod_types;
+    if (this->base_mod_counts.empty()) {
+        printError("No base modification counts found.");
+        return base_mod_types;
+    }
+
+    for (const auto& it : this->base_mod_counts) {
+        base_mod_types.push_back(it.first);
+    }
+    
+    return base_mod_types;
+}
+
+int Output_BAM::getReadModDataSize()
+{
+    return this->read_mod_data.size();
+}
+
+int Output_BAM::getNthReadModLength(int read_index)
+{
+    return this->read_mod_data[read_index].read_length;
+}
+
+double Output_BAM::getNthReadModRate(int read_index, char mod_type)
+{
+    double mod_rate = 0.0;
+    try {
+        this->read_mod_data.at(read_index);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read index " << read_index << " is out of range." << std::endl;
+    }
+    try {
+        mod_rate = this->read_mod_data[read_index].base_mod_rates.at(mod_type);
+    } catch (const std::out_of_range& oor) {
+        // No modification rate found for the specified type in the read
+        mod_rate = 0.0;
+    }
+    return mod_rate;
+}
+
+uint64_t Output_BAM::getModTypeCount(char mod_type)
+{
+    return this->base_mod_counts[mod_type];
+}
+
+uint64_t Output_BAM::getModTypeCount(char mod_type, int strand)
+{
+    if (strand == 0) {
+        return this->base_mod_counts_forward[mod_type];
+    } else {
+        return this->base_mod_counts_reverse[mod_type];
+    }
+}
+
+double Output_BAM::getNthReadLenPct(int read_index, char mod_type)
+{
+    double read_len_pct = 0.0;
+    try {
+        this->read_pct_len_vs_mod_prob.at(mod_type);
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read length percentage not found for type " << mod_type << std::endl;
+    }
+    try {
+        read_len_pct = this->read_pct_len_vs_mod_prob[mod_type].at(read_index).first;
+    } catch (const std::out_of_range& oor) {
+        std::cerr << "Error: Read length percentage not found for read index " << read_index << " and type " << mod_type << std::endl;
+        return 0.0;
+    }
+    return read_len_pct;
+}
+
+double Output_BAM::getNthReadModProb(int read_index, char mod_type)
+{
+    double mod_prob = -1.0;
+    try {
+        this->read_pct_len_vs_mod_prob.at(mod_type);
+    } catch (const std::out_of_range& oor) {
+        return mod_prob;
+    }
+    try {
+        mod_prob = this->read_pct_len_vs_mod_prob[mod_type].at(read_index).second;
+    } catch (const std::out_of_range& oor) {
+        // std::cerr << "Error: Modification probability not found for read index " << read_index << " and type " << mod_type << std::endl;
+        return -1.0;
+    }
+    return mod_prob;
 }
 
 int Output_BAM::getReadCount()
@@ -328,6 +459,11 @@ void Output_BAM::add(Output_BAM &output_data)
     // Update the base quality vector if it is not empty
     for (int i=0; i<MAX_READ_QUALITY; i++){
         this->seq_quality_info.base_quality_distribution[i] += output_data.seq_quality_info.base_quality_distribution[i];
+    }
+
+    // Update the read average base quality vector if it is not empty
+    for (int i=0; i<MAX_READ_QUALITY; i++){
+        this->seq_quality_info.read_average_base_quality_distribution[i] += output_data.seq_quality_info.read_average_base_quality_distribution[i];
     }
 
     this->num_matched_bases += output_data.num_matched_bases;
@@ -544,7 +680,6 @@ void Output_FAST5::addReadBaseSignals(Base_Signals values){
 void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_fp)
 {
     const char * read_name;
-    double gc_content_pct;
 
     // Access the read name
     std::string header_str = fq[0];
@@ -552,9 +687,7 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
     std::string read_name_str;
     std::getline( iss_header, read_name_str, ' ' );
     read_name = read_name_str.c_str();
-
-    // Access the sequence data
-    std::string sequence_data_str = fq[1];
+    std::string sequence_data_str = fq[1];  // Access the sequence data
 
     // Update the total number of bases
     int base_count = sequence_data_str.length();
@@ -573,11 +706,16 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
         base_quality_values.push_back(base_quality_value);
     }
 
+    // Ensure the base quality values match the sequence length
+    if (base_quality_values.size() != base_count) {
+        printError("Warning: Base quality values do not match the sequence length for read ID " + std::string(read_name));
+    }
+
     // Update the base quality and GC content information
     int gc_count = 0;
-    double read_mean_base_qual = 0;
+    double cumulative_base_prob = 0;  // Read cumulative base quality probability
     char current_base;
-    uint64_t base_quality_value;
+    int base_quality_value;
     for (int i = 0; i < base_count; i++)
     {
         current_base = sequence_data_str[i];
@@ -599,23 +737,48 @@ void Output_FAST5::addReadFastq(std::vector<std::string> fq, FILE *read_details_
         {
             long_read_info.total_tu_cnt += 1;
         }
-        // Get the base quality
-        base_quality_value = (uint64_t)base_quality_values[i];
-        seq_quality_info.base_quality_distribution[base_quality_value] += 1;
-        read_mean_base_qual += (double)base_quality_value;
+        // Get the base quality (Phred) value
+        base_quality_value = base_quality_values[i];
+
+        // Update the per-base quality distribution
+        try {
+            seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+        } catch (const std::out_of_range& oor) {
+            printError("Warning: Base quality value " + std::to_string(base_quality_value) + " exceeds maximum value");
+        }
+
+        // Convert the Phred quality value to a probability
+        double base_quality_prob = pow(10, -base_quality_value / 10.0);
+        cumulative_base_prob += base_quality_prob;
     }
 
-    // Calculate percent guanine & cytosine
-    gc_content_pct = 100.0 *( (double)gc_count / (double)base_count );
+    // Calculate the mean base quality probability
+    cumulative_base_prob /= (double)base_count;
 
-    // Look into this section
-    long_read_info.read_gc_content_count[(int)(gc_content_pct + 0.5)] += 1;
-    read_mean_base_qual /= (double) base_count;
-    seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-    fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);
+    // Convert the mean base quality probability to a Phred quality value
+    double read_mean_base_qual = -10.0 * log10(cumulative_base_prob);
 
-    // Update the total number of reads
-    long_read_info.total_num_reads += 1;
+    // Update the per-read GC content distribution
+    double gc_content_pct = (100.0 * gc_count) / static_cast<double>(base_count);
+    int gc_content_int = static_cast<int>(std::round(gc_content_pct));
+    try {
+        long_read_info.read_gc_content_count[gc_content_int] += 1;
+    } catch (const std::out_of_range& oor) {
+        printError("Warning: Invalid GC content value " + std::to_string(gc_content_int));
+    }
+
+    // Update the per-read base quality distribution
+    int read_mean_base_qual_int = static_cast<int>(std::round(read_mean_base_qual));
+
+    try {
+        seq_quality_info.read_quality_distribution[read_mean_base_qual_int] += 1;
+    } catch (const std::out_of_range& oor) {
+        printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
+    }
+
+    fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name, base_count, gc_content_pct, read_mean_base_qual);  // Write to file
+
+    long_read_info.total_num_reads += 1;  // Update read count
 }
 
 // Get the read count

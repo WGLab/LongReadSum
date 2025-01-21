@@ -1,28 +1,33 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <ctype.h>
-
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <iostream>
-#include <fstream>
-#include <algorithm>
-
 #include "fastq_module.h"
 
+#include <ctype.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include <algorithm>  // std::sort
+#include <cmath>  // std::round
+
+#include <fstream>
+#include <iostream>
+#include <sstream>
+
+#include <sys/stat.h>
+#include <sys/types.h>
+
+#include "utils.h"
 
 int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
     int read_len;
     double read_gc_cnt;
-    double read_mean_base_qual;
     Basic_Seq_Statistics &long_read_info = output_data.long_read_info;
     Basic_Seq_Quality_Statistics &seq_quality_info = output_data.seq_quality_info;
     long_read_info.total_num_reads = ZeroDefault; // total number of long reads
     long_read_info.longest_read_length = ZeroDefault; // the length of longest reads
 
     std::ifstream input_file_stream(input_file);
+    int count = 0;
     if (!input_file_stream.is_open())
     {
         fprintf(stderr, "Failed to open file for reading: %s\n", input_file);
@@ -33,6 +38,7 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
         {
             if (line[0] == '@')
             {
+            	count++;
                 read_name = line.substr(1);
                 read_name = read_name.substr(0, read_name.find_first_of(" \t"));
                 std::getline(input_file_stream, read_seq);
@@ -58,10 +64,29 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
                 // Store the read length
                 long_read_info.read_lengths.push_back(read_len);
 
+                // Access base quality data
+                char value;
+                std::vector<int> base_quality_values;
+                std::istringstream iss(raw_read_qual);
+                while (iss >> value)
+                {
+                    int base_quality_value = value - '!';
+                    base_quality_values.push_back(base_quality_value);
+                }
+
+                // Ensure that the base quality string has the same length as
+                // the read sequence
+                if (base_quality_values.size() != read_len)
+                {
+                    printError("Error: Base quality string length does not match read sequence length");
+                    exit_code = 1;
+                    break;
+                }
+
                 // Process base and quality information
                 read_gc_cnt = 0;
-                read_mean_base_qual = 0;
-                uint64_t base_quality_value;
+                int base_quality_value;
+                double cumulative_base_prob = 0;  // Read cumulative base quality probability
                 for (int i = 0; i < read_len; i++)
                 {
                     if (read_seq[i] == 'A' || read_seq[i] == 'a')
@@ -82,15 +107,46 @@ int qc1fastq(const char *input_file, char fastq_base_qual_offset, Output_FQ &out
                     {
                         long_read_info.total_tu_cnt += 1;
                     }
-                    base_quality_value = (uint64_t)raw_read_qual[i] - (uint64_t)fastq_base_qual_offset;
-                    seq_quality_info.base_quality_distribution[base_quality_value] += 1;
-                    read_mean_base_qual += (double) base_quality_value;
+
+                    // Get the base quality (Phred) value
+                    base_quality_value = base_quality_values[i];
+                    try {
+                        seq_quality_info.base_quality_distribution[base_quality_value] += 1;
+                    } catch (const std::out_of_range& oor) {
+                        printError("Warning: Base quality value " + std::to_string(base_quality_value) + " exceeds maximum value");
+                    }
+
+                    // Convert the Phred quality value to a probability
+                    double base_quality_prob = pow(10, -base_quality_value / 10.0);
+                    cumulative_base_prob += base_quality_prob;
                 }
-                read_gc_cnt = 100.0 * read_gc_cnt / (double)read_len;
-                long_read_info.read_gc_content_count[(int)(read_gc_cnt + 0.5)] += 1;
-                read_mean_base_qual /= (double) read_len;
-                seq_quality_info.read_average_base_quality_distribution[(uint)(read_mean_base_qual + 0.5)] += 1;
-                fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name.c_str(), read_len, read_gc_cnt, read_mean_base_qual);
+
+                // Calculate the mean base quality probability
+                cumulative_base_prob /= (double)read_len;
+
+                // Convert the mean base quality probability to a Phred quality
+                // value
+                double read_mean_base_qual = -10.0 * log10(cumulative_base_prob);
+              
+                // Update the per-read base quality distribution
+                int read_mean_base_qual_int = static_cast<int>(std::round(read_mean_base_qual));
+                try {
+                    seq_quality_info.read_average_base_quality_distribution[read_mean_base_qual_int] += 1;
+                } catch (const std::out_of_range& oor) {
+                    printError("Warning: Base quality value " + std::to_string(read_mean_base_qual_int) + " exceeds maximum value");
+                }
+
+                // Update the per-read GC content distribution
+                double gc_content_pct = (100.0 * read_gc_cnt) / static_cast<double>(read_len);
+                int gc_content_int = static_cast<int>(std::round(gc_content_pct));
+                try {
+                    long_read_info.read_gc_content_count[gc_content_int] += 1;
+                } catch (const std::out_of_range& oor) {
+                    printError("Warning: Invalid GC content value " + std::to_string(gc_content_int));
+                }
+
+                // Write read details to file
+                fprintf(read_details_fp, "%s\t%d\t%.2f\t%.2f\n", read_name.c_str(), read_len, gc_content_pct, read_mean_base_qual);
             }
         }
         input_file_stream.close();
@@ -140,10 +196,7 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     output_data.long_read_info.NXX_read_length.resize(101, 0);
     // NXX_read_length[50] means N50 read length; NXX_read_length[95] means N95 read length;
 
-    //output_data.seq_quality_info.base_quality_distribution.resize(256, 0);
-    // base_quality_distribution[x] means number of bases that quality = x.
-
-    output_data.seq_quality_info.read_average_base_quality_distribution.resize(256, 0);
+    output_data.seq_quality_info.read_average_base_quality_distribution.resize(MAX_BASE_QUALITY, 0);
 
     if (_input_data.user_defined_fastq_base_qual_offset > 0) {
         fastq_base_qual_offset = _input_data.user_defined_fastq_base_qual_offset;

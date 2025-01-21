@@ -148,7 +148,7 @@ MinION R9.4.1 from https://labs.epi2me.io/gm24385-5mc/)
 
 ## General usage
 ```
-longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --ref $REF_GENOME --modprob 0.8
+longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY --mod --modprob 0.8 --ref $REF_GENOME
 ```
 
 # RRMS BAM
@@ -258,7 +258,12 @@ longreadsum bam -i $INPUT_FILE -o $OUTPUT_DIRECTORY
 # ONT POD5
 
 This section describes how to generate QC reports for ONT POD5 (signal) files and their corresponding basecalled BAM files (data shown is HG002 using ONT
-R10.4.1 and LSK114 downloaded from the tutorial https://github.com/epi2me-labs/wf-basecalling).
+R10.4.1 and LSK114 downloaded from the tutorial
+https://github.com/epi2me-labs/wf-basecalling).
+
+> [!NOTE]
+> This requires generating basecalled BAM files with the move table output. For
+> example, for [dorado](https://github.com/nanoporetech/dorado), the parameter is `--emit-moves`
 
 ![image](https://github.com/user-attachments/assets/62c3c810-5c1a-4124-816b-74245af8b57c)
 
