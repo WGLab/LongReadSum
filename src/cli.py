@@ -258,7 +258,7 @@ def bam_module(margs):
             # If base modifications were found, add the base modification plots
             # after the first table
             if bam_output.sample_modified_base_count > 0:
-                logging.info("Base modifications found. Adding base modification plots to the HTML report.")
+                # logging.info("Base modifications found. Adding base modification plots to the HTML report.")
                 qc_info_list.insert(1, "read_length_mod_rates")  # Read length modification rates
                 qc_info_list.insert(1, "base_mods")
 

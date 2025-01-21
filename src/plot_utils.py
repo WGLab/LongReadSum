@@ -1048,11 +1048,11 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
     # Print the types of modifications
     base_mod_types = output_data.getBaseModTypes()
     if base_mod_types:
-        logging.info("Modification types: ")
-        for mod_type in base_mod_types:
-            logging.info(mod_type)
+        # logging.info("Modification types: ")
+        # for mod_type in base_mod_types:
+        #     logging.info(mod_type)
 
-        logging.info("Getting base modification statistics")
+        # logging.info("Getting base modification statistics")
 
         # Get the read length (%) vs. base modification probability data for
         # each sampled read
@@ -1087,7 +1087,7 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         fig = make_subplots(rows=len(base_mod_types), cols=2, shared_xaxes=False, shared_yaxes=False, vertical_spacing=0.1, subplot_titles=[f"{mod_char_to_name[mod_type]} Modification Probability" for mod_type in base_mod_types])
 
         for i, mod_type in enumerate(base_mod_types):
-            logging.info(f"Creating trace for modification type: {mod_type} at row: {i + 1}")
+            # logging.info(f"Creating trace for modification type: {mod_type} at row: {i + 1}")
 
             # Add the trace for the read length (%) vs. base modification
             # probability scatter plot
@@ -1112,7 +1112,7 @@ def create_modified_base_table(output_data, plot_filepaths, base_modification_th
         if len(base_mod_types) > 0:
             plot_height = 500 * len(base_mod_types)
             plot_width = 700 * 2
-            logging.info("Saving the read length vs. modification rates plot")
+            logging.info("Generating the read length vs. modification rates plot")
             plot_filepaths["read_length_mod_rates"]['dynamic'] = fig.to_html(full_html=False, default_height=plot_height, default_width=plot_width)
     else:
         logging.warning("WARNING: No modification types found")
