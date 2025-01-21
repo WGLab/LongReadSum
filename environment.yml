@@ -4,7 +4,6 @@ channels:
   - bioconda
   - defaults
   - jannessp  # for pod5
-  - plotly  # for kaleido
 dependencies:
   - python=3.9
   - numpy
@@ -16,4 +15,3 @@ dependencies:
   - pytest
   - pod5
   - pyarrow
-  - python-kaleido
