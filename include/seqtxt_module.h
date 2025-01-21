@@ -37,7 +37,7 @@ private:
       Output_SeqTxt t_output_SeqTxt_;
       std::string current_line;  // Current line being read from the file
 
-      size_t read_ss_record(std::ifstream* file_stream, std::map<std::string, int> header_columns);
+      size_t read_ss_record(std::ifstream& file_stream, std::map<std::string, int> header_columns);
       std::map<std::string, int> getHeaderColumns();
 
       SeqTxt_Thread_data(Input_Para& ref_input_op, std::map<std::string, int> header_columns, int p_thread_id, int p_batch_size);
@@ -60,20 +60,13 @@ public:
     static std::mutex myMutex_readSeqTxt;
     static std::mutex myMutex_output;
     static size_t batch_size_of_record;
-
     Input_Para _input_parameters;
-
-    std::ifstream *input_file_stream;  // Stream for the input text file
+    std::ifstream input_file_stream;  // Stream for the input text file
     std::vector<std::thread> m_threads;
-
-
     int has_error;
 
     // Methods
-    // Assign threads
-    static void SeqTxt_do_thread(std::ifstream* file_stream, Input_Para& ref_input_op, int thread_id, SeqTxt_Thread_data& ref_thread_data, Output_SeqTxt& ref_output);
-
-    // Generate statistics
+    static void SeqTxt_do_thread(std::ifstream& file_stream, Input_Para& ref_input_op, int thread_id, Output_SeqTxt& ref_output, std::map<std::string, int> header_columns, size_t batch_size_of_record);
     int generateStatistics( Output_SeqTxt& t_output_SeqTxt_info);
 
     SeqTxt_Module(Input_Para& _m_input);

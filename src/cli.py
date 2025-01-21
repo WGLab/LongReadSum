@@ -97,10 +97,11 @@ def get_common_param(margs):
         # Set up logging to stdout
         logging.basicConfig(stream=sys.stdout,
                             level=get_log_level(margs.log_level),
-                            format="%(asctime)s [%(levelname)s] %(message)s")
+                            format="%(asctime)s %(message)s")
+                            # format="%(asctime)s [%(levelname)s] %(message)s")
     else:
         logging.basicConfig(level=get_log_level(margs.log_level),
-                            format="%(asctime)s [%(levelname)s] %(message)s",
+                            format="%(asctime)s %(message)s",
                             handlers=[
                                 logging.FileHandler(margs.log),
                                 logging.StreamHandler(sys.stdout)
@@ -154,7 +155,7 @@ def fq_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fq_output, param_dict, 'FASTQ')
             fq_html_gen = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "base_quality",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality",
                   "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=False)
             fq_html_gen.generate_html()
 
@@ -164,7 +165,7 @@ def fq_module(margs):
 
 
 def fa_module(margs):
-    # Run the FASTA filetype module.
+    """FASTA file input module."""
 
     # Get the filetype-specific parameters
     param_dict = get_common_param(margs)
@@ -192,7 +193,7 @@ def fa_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fa_output, param_dict, 'FASTA')
             fa_html_gen = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts"], "FASTA QC",
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts"], "FASTA QC",
                  param_dict], plot_filepaths, static=True)
             fa_html_gen.generate_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
@@ -221,9 +222,16 @@ def bam_module(margs):
         param_dict["ref"] = input_para.ref_genome = ref_genome
 
         # Set the base modification flag, and filtering threshold
-        param_dict["mod"] = input_para.mod_analysis = margs.mod
+        # param_dict["mod"] = input_para.mod_analysis = margs.mod
+        if margs.mod:
+            param_dict["mod"] = input_para.mod_analysis = True
+        else:
+            param_dict["mod"] = input_para.mod_analysis = False
+            
         mod_prob = margs.modprob
-        param_dict["modprob"] = input_para.base_mod_threshold = mod_prob
+        param_dict["modprob"] = mod_prob
+        input_para.base_mod_threshold = mod_prob
+        logging.info("Base modification threshold is set to " + str(input_para.base_mod_threshold))
 
         # Set the gene BED file for RNA-seq transcript analysis
         input_para.gene_bed = margs.genebed if margs.genebed != "" or margs.genebed is not None else ""
@@ -245,11 +253,13 @@ def bam_module(margs):
             plot_filepaths = plot(bam_output, param_dict, 'BAM')
 
             # Set the list of QC information to display
-            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality"]
+            qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality", "read_avg_base_quality"]
 
             # If base modifications were found, add the base modification plots
             # after the first table
             if bam_output.sample_modified_base_count > 0:
+                # logging.info("Base modifications found. Adding base modification plots to the HTML report.")
+                qc_info_list.insert(1, "read_length_mod_rates")  # Read length modification rates
                 qc_info_list.insert(1, "base_mods")
 
             # If gene BED file was provided, add the TIN plots
@@ -298,6 +308,7 @@ def rrms_module(margs):
 
             # Set the output prefix
             param_dict["out_prefix"] = output_prefix + "rrms_" + ("accepted" if filter_type else "rejected")
+            param_dict["mod"] = input_para.mod_analysis = False  # Disable base modification analysis for RRMS (use BAM module for this)
 
             # Run the QC module
             logging.info("Running QC for " + ("accepted" if filter_type else "rejected") + " reads...")
@@ -308,10 +319,19 @@ def rrms_module(margs):
                 logging.info("Generating HTML report...")
                 plot_filepaths = plot(bam_output, param_dict, 'BAM')
 
+                # Set the list of QC information to display
+                qc_info_list = ["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality"]
+
+                # If base modifications were found, add the base modification
+                # plots
+                if bam_output.sample_modified_base_count > 0:
+                    logging.info("Base modifications found. Adding base modification plots to the HTML report.")
+                    qc_info_list.insert(1, "read_length_mod_rates")
+                    qc_info_list.insert(1, "base_mods")
+
                 # Generate the HTML report
                 bam_html_gen = generate_html.ST_HTML_Generator(
-                    [["basic_st", "read_alignments_bar", "base_alignments_bar", "read_length_bar", "read_length_hist", "base_counts", "basic_info",
-                    "base_quality"], "BAM QC", param_dict], plot_filepaths, static=False)
+                    [qc_info_list, "BAM QC", param_dict], plot_filepaths, static=False)
                 bam_html_gen.generate_html()
                 logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
@@ -347,7 +367,7 @@ def seqtxt_module(margs):
 
             report_title = "Basecall Summary QC"
             seqtxt_html_gen = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "basic_info"],
+                [["basic_st", "read_length_bar", "read_length_hist"],
                     report_title, param_dict], plot_filepaths, static=False)
                 
             seqtxt_html_gen.generate_html()
@@ -383,8 +403,8 @@ def fast5_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fast5_output, param_dict, 'FAST5')
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
-                  "read_avg_base_quality"], "FAST5 QC", param_dict], plot_filepaths, static=False)
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality"], 
+                 "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html()
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
@@ -429,33 +449,13 @@ def fast5_signal_module(margs):
             logging.info("Generating HTML report...")
             plot_filepaths = plot(fast5_output, param_dict, 'FAST5s')
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
-                  "read_avg_base_quality", "ont_signal"], "FAST5 QC", param_dict], plot_filepaths, static=False)
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "ont_signal"], "FAST5 QC", param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html(signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
             logging.error("QC did not generate.")
 
-
-def set_file_parser_defaults(file_parser):
-    """Create a parser with default arguments for a specific filetype."""
-    file_parser.add_argument("-i", "--input", type=argparse.FileType('r'), default=None,
-                        help="Single input filepath")
-    file_parser.add_argument("-I", "--inputs", type=str, default=None,
-                        help="Multiple comma-separated input filepaths")
-    file_parser.add_argument("-P", "--pattern", type=str, default=None,
-                        help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
-    file_parser.add_argument("-g", "--log", type=str, default="log_output.log",
-                        help="Log file")
-    file_parser.add_argument("-G", "--log-level", type=int, default=2,
-                        help="Logging level. 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL. Default: 2.")
-    file_parser.add_argument("-o", "--outputfolder", type=str, default="output_" + prg_name,
-                        help="The output folder.")
-    file_parser.add_argument("-t", "--threads", type=int, default=1,
-                        help="The number of threads used. Default: 1.")
-    file_parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
-                        help="The prefix for output filenames. Default: `QC_`.")
 
 def pod5_module(margs):
     """POD5 file input module."""
@@ -517,13 +517,32 @@ def pod5_module(margs):
             # plot_filepaths = plot(read_signal_dict, param_dict, 'POD5')
             webpage_title = "POD5 QC"
             fast5_html_obj = generate_html.ST_HTML_Generator(
-                [["basic_st", "read_length_bar", "read_length_hist", "base_counts", "basic_info", "base_quality",
-                  "read_avg_base_quality", "ont_signal"], webpage_title, param_dict], plot_filepaths, static=False)
+                [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "ont_signal"], webpage_title, param_dict], plot_filepaths, static=False)
             fast5_html_obj.generate_html(signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
             logging.error("QC did not generate.")
+            
+
+def set_file_parser_defaults(file_parser):
+    """Create a parser with default arguments for a specific filetype."""
+    file_parser.add_argument("-i", "--input", type=argparse.FileType('r'), default=None,
+                        help="Single input filepath")
+    file_parser.add_argument("-I", "--inputs", type=str, default=None,
+                        help="Multiple comma-separated input filepaths")
+    file_parser.add_argument("-P", "--pattern", type=str, default=None,
+                        help="Use pattern matching (*) to specify multiple input files. Enclose the pattern in double quotes.")
+    file_parser.add_argument("-g", "--log", type=str, default="log_output.log",
+                        help="Log file")
+    file_parser.add_argument("-G", "--log-level", type=int, default=2,
+                        help="Logging level. 1: DEBUG, 2: INFO, 3: WARNING, 4: ERROR, 5: CRITICAL. Default: 2.")
+    file_parser.add_argument("-o", "--outputfolder", type=str, default="output_" + prg_name,
+                        help="The output folder.")
+    file_parser.add_argument("-t", "--threads", type=int, default=1,
+                        help="The number of threads used. Default: 1.")
+    file_parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
+                        help="The prefix for output filenames. Default: `QC_`.")
 
 
 # Set up the argument parser
@@ -635,8 +654,8 @@ bam_parser.add_argument("--mod", action="store_true",
 bam_parser.add_argument("--genebed", type=str, default="",
                         help="Gene BED12 file required for calculating TIN scores from RNA-seq BAM files. Default: None.")
 
-bam_parser.add_argument("--modprob", type=float, default=0.8,
-                        help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.8.")
+bam_parser.add_argument("--modprob", type=float, default=0.5,
+                        help="Base modification filtering threshold. Above/below this value, the base is considered modified/unmodified. Default: 0.5.")
 
 bam_parser.add_argument("--ref", type=str, default="",
                         help="The reference genome FASTA file to use for identifying CpG sites.")

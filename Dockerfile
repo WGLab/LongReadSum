@@ -1,33 +1,19 @@
 # Use the miniconda container
-FROM continuumio/miniconda3
+FROM continuumio/miniconda3:main
 
-# Copy the project directory
-COPY . /app/longreadsum
-WORKDIR /app/longreadsum
+WORKDIR /app
 
-# Install build tools
-RUN apt-get update && apt-get install build-essential -y
+RUN apt-get update
+RUN conda update conda
 
-# Install VBZ compression
-RUN wget https://github.com/nanoporetech/vbz_compression/releases/download/v1.0.1/ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
-RUN tar -xf ont-vbz-hdf-plugin-1.0.1-Linux-x86_64.tar.gz
-
-# Create the environment
-RUN conda env create -f environment.yml
-
-# Activate the environment
+# Install LongReadSum
+RUN conda config --add channels wglab
+RUN conda config --add channels conda-forge
+RUN conda config --add channels bioconda
+RUN conda config --add channels jannessp
+RUN conda create -n longreadsum python=3.9
 RUN echo "conda activate longreadsum" >> ~/.bashrc
 SHELL ["/bin/bash", "--login", "-c"]
+RUN conda install -n longreadsum -c wglab -c conda-forge -c jannessp -c bioconda longreadsum=1.5.0 && conda clean -afy
 
-# Ensure the correct environment is being used
-RUN export PATH="/opt/conda/envs/longreadsum/bin/python"
-RUN which python
-
-# Build LongReadSum
-RUN make
-
-# Set up the HDF5 plugin path
-ENV HDF5_PLUGIN_PATH="/longreadsum/lib/"
-
-# The code to run when container is started:
-ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "longreadsum", "python", "/app/longreadsum"]
+ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "longreadsum", "longreadsum"]

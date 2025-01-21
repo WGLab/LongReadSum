@@ -1,17 +1,17 @@
 name: longreadsum
 channels:
   - conda-forge
+  - jannessp  # for pod5
   - bioconda
   - defaults
-  - jannessp  # for pod5
+
 dependencies:
   - python=3.9
   - numpy
-  - hdf5
   - ont_vbz_hdf_plugin
-  - htslib=1.20
+  - bioconda::htslib=1.20
   - swig
   - plotly
   - pytest
-  - pod5
+  - jannessp::pod5
   - pyarrow

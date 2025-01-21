@@ -12,4 +12,6 @@ void printMessage(std::string message);
 // Print an error message to stderr in a thread-safe manner
 void printError(std::string message);
 
+void printMemoryUsage(const std::string &functionName);
+
 #endif // UTILS_H

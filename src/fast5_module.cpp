@@ -360,7 +360,7 @@ Base_Signals getReadBaseSignalData(H5::H5File f5, std::string read_name, bool si
 }
 
 // Add base and read QC to the output data structure adn the output details file
-static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data, FILE *read_details_fp)
+static int writeBaseQCDetails(const std::string& input_file, Output_FAST5 &output_data, FILE *read_details_fp)
 {
     int exit_code = 0;
     std::string basecall_group = "Basecall_1D_000";
@@ -408,7 +408,6 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
             // std::cout << "Multi-read FAST5" << std::endl;
 
             // Loop through each read
-            // std::cout << "Reading all reads" << std::endl;
             H5::Group root_group = f5.openGroup("/");
             size_t num_objs = root_group.getNumObjs();
             for (size_t i=0; i < num_objs; i++) {
@@ -466,21 +465,15 @@ static int writeBaseQCDetails(const char *input_file, Output_FAST5 &output_data,
 
 
 // Add read signal QC to the output data structure and the output details file
-static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_data, std::vector<std::string> read_id_list)
+static int writeSignalQCDetails(const std::string& input_file, Output_FAST5 &output_data, std::vector<std::string> read_id_list)
 {
     int exit_code = 0;
-
-//    // Open the CSV files
-//    std::ofstream raw_csv;
-//    raw_csv.open(signal_raw_csv);
-//    std::ofstream qc_csv;
-//    qc_csv.open(signal_qc_csv);
 
     // Run QC on the HDF5 file
     //H5::Exception::dontPrint();  // Disable error printing
     try {
         // Open the file
-        H5::H5File f5 = H5::H5File(input_file, H5F_ACC_RDONLY);
+        H5::H5File f5 = H5::H5File(input_file.c_str(), H5F_ACC_RDONLY);
 
         // Check if it is a multi-read FAST5 file
         std::string signal_group_str;
@@ -554,11 +547,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
     catch (std::exception& e) {
         std::cerr << "Exception caught : " << e.what() << std::endl;
     }
-
-//    // Close the CSV files
-//    raw_csv.close();
-//    qc_csv.close();
-
+    
     return exit_code;
 }
 
@@ -567,7 +556,7 @@ static int writeSignalQCDetails(const char *input_file, Output_FAST5 &output_dat
 int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
 {
     int exit_code = 0;
-    const char *input_file = NULL;
+    // const char *input_file = NULL;
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
 
@@ -591,7 +580,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
         size_t file_count = _input_data.num_input_files;
         for (size_t i = 0; i < file_count; i++)
         {
-            input_file = _input_data.input_files[i].c_str();
+            const std::string input_file = _input_data.input_files[i];
             std::cout << "File name: " << input_file << std::endl;
 
             // Write QC details to the file
@@ -617,7 +606,7 @@ int generateQCForFAST5(Input_Para &_input_data, Output_FAST5 &output_data)
             // Write QC details to the file
             for (size_t i = 0; i < file_count; i++)
             {
-                input_file = _input_data.input_files[i].c_str();
+                const std::string input_file = _input_data.input_files[i];
                 exit_code = writeBaseQCDetails(input_file, output_data, read_details_fp);
             }
             fclose(read_details_fp);
