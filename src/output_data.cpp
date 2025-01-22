@@ -637,6 +637,38 @@ void Output_SeqTxt::global_sum(){
    failed_long_read_info.global_sum();
 }
 
+void Output_SeqTxt::save_summary(std::string & output_file, Input_Para & params)
+{
+    
+    FILE *fp = fopen(output_file.c_str(), "w");
+    if (fp == NULL){
+        fprintf(stderr, "Error: cannot open file %s\n", output_file.c_str());
+    } else {
+        // Define the types explicitly
+        using ReadInfo = std::tuple<const char*, Basic_Seq_Statistics&>;
+
+        // Save basic statistics for total, passed, and failed reads
+        for (const ReadInfo& read_type : {
+            ReadInfo("All", all_long_read_info.long_read_info),
+            ReadInfo("Passed", passed_long_read_info.long_read_info),
+            ReadInfo("Failed", failed_long_read_info.long_read_info)
+        }) {
+            std::string read_filter = std::get<0>(read_type);
+            Basic_Seq_Statistics& long_read_info = std::get<1>(read_type);
+
+            fprintf(fp, "%s reads:\n", read_filter.c_str());
+            fprintf(fp, "Total number of reads\t%d\n", long_read_info.total_num_reads);
+            fprintf(fp, "Total number of bases\t%ld\n", long_read_info.total_num_bases);
+            fprintf(fp, "Longest read length\t%d\n", long_read_info.longest_read_length);
+            fprintf(fp, "N50 read length\t%d\n", long_read_info.n50_read_length);
+            fprintf(fp, "Mean read length\t%.2f\n", long_read_info.mean_read_length);
+            fprintf(fp, "Median read length\t%d\n", long_read_info.median_read_length);
+            fprintf(fp, "\n");
+        }
+        fclose(fp);
+    }
+}
+
 // Base class for storing a read's base signal data
 Base_Signals::Base_Signals(std::string read_name, std::string sequence_data_str, std::vector<std::vector<int>> basecall_signals) {
     this->read_name = read_name;

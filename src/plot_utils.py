@@ -510,7 +510,7 @@ def plot(output_data, para_dict, file_type):
         read_gc_content_histogram(output_data.mapped_long_read_info, font_size, plot_filepaths)
     elif file_type == 'SeqTxt':
         read_gc_content_histogram(output_data.passed_long_read_info.long_read_info, font_size, plot_filepaths)
-    elif file_type == 'FASTQ' or file_type == 'FASTA':
+    elif file_type == 'FASTQ' or file_type == 'FASTA' or file_type == 'FAST5':
         read_gc_content_histogram(output_data.long_read_info, font_size, plot_filepaths)
 
     # Base quality histogram

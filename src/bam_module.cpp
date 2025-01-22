@@ -151,9 +151,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             // Set the batch size to the number of records
             batch_size = num_records;
         }
-
-         // Calculate statistics in batches
-         printMemoryUsage("Before batch processing");
          
          while (reader.hasNextRecord()){
             // Read the next batch of records
@@ -243,13 +240,12 @@ void BAM_Module::batchStatistics(HTSReader& reader, int batch_size, std::unorder
 {
     // Read the next N records
     Output_BAM record_output;
-    printMessage("Reading next batch of records... " + std::to_string(batch_size));
+    printMessage("Reading next " + std::to_string(batch_size) + " records...");
     reader.readNextRecords(batch_size, record_output, bam_mutex, read_ids, base_mod_threshold);
 
     // Update the final output
     std::lock_guard<std::mutex> lock(output_mutex);
     final_output.add(record_output);
-    printMemoryUsage("After record processing");
 }
 
 std::unordered_set<std::string> BAM_Module::readRRMSFile(std::string rrms_csv_file, bool accepted_reads)

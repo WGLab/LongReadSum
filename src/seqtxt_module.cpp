@@ -189,8 +189,6 @@ int SeqTxt_Module::generateStatistics( Output_SeqTxt& t_output_SeqTxt_info){
     t_output_SeqTxt_info.all_long_read_info.long_read_info.resize();
     t_output_SeqTxt_info.passed_long_read_info.long_read_info.resize();
     t_output_SeqTxt_info.failed_long_read_info.long_read_info.resize();
-    printMemoryUsage("Before generating statistics");
-
     if (has_error==0) {
         m_threads.reserve(_input_parameters.threads+3);
 
@@ -214,9 +212,14 @@ int SeqTxt_Module::generateStatistics( Output_SeqTxt& t_output_SeqTxt_info){
             printError("Unknown error occurred in thread " + std::to_string(_i_t));
         }
     }
-    t_output_SeqTxt_info.global_sum();
-    printMemoryUsage("After generating statistics");
- 
+    t_output_SeqTxt_info.global_sum(); 
+
+
+    // Save summary statistics to the output file
+    std::cout << "Saving summary statistics to file..." << std::endl;
+    std::string summary_filepath = _input_parameters.output_folder + "/seqtxt_summary.txt";
+    t_output_SeqTxt_info.save_summary(summary_filepath, _input_parameters);
+
     auto relapse_end_time = std::chrono::high_resolution_clock::now();
     std::cout<<"Elapsed time (seconds): "<< std::chrono::duration_cast<std::chrono::seconds>(relapse_end_time - relapse_start_time).count() << std::endl;
 

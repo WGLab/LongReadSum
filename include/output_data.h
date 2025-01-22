@@ -303,6 +303,7 @@ public:
 
    void add(Output_SeqTxt &output_data);
    void global_sum();
+   void save_summary(std::string &output_file, Input_Para &params);
 };
 
 // FAST5 output
