@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 preferred-citation:
-  type: proceedings
+  type: article
   authors:
   - family-names: "Perdomo"
     given-names: "Jonathan Elliot"
@@ -13,13 +13,14 @@ preferred-citation:
   - family-names: "Fang"
     given-names: "Li"
   - family-names: "Wang"
-    given-names: "Kai"  
+    given-names: "Kai"
   title: "LongReadSum: A fast and flexible quality control tool for long-read sequencing data"
-  conference:
-    name: "Poster presented at the American Society of Human Genetics (ASHG) Annual Meeting"
-    location: "Los Angeles Convention Center"
-    city: "Los Angeles"
-    state: "CA"
-    date-start: "2022-10-25"
-    date-end: "2022-10-29"
+  doi: https://doi.org/10.1016/j.csbj.2025.01.019
+  date-released: 2025-01-24 
   url: "https://github.com/WGLab/LongReadSum"
+  journal: "Computational and Structural Biotechnology Journal"
+  month: 1
+  start: 556
+  end: 563
+  volume: 27
+  year: 2025
