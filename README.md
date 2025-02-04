@@ -402,6 +402,7 @@ For release history, please visit [here](https://github.com/WGLab/LongReadSum/re
 Please refer to the [LongReadSum issue pages](https://github.com/WGLab/LongReadSum/issues) for posting your issues. We will also respond your questions quickly. Your comments are criticl to improve our tool and will benefit other users.
 
 # Citing LongReadSum
-### Please cite the preprint below if you use our tool:
+### Please cite the article below if you use our tool:
 
-Perdomo, J. E., Ahsan, M. U., Liu, Q., Fang, L. & Wang, K. LongReadSum: A fast and flexible quality control and signal summarization tool for long-read sequencing data. bioRxiv, 2024.2008.2005.606643, [doi:10.1101/2024.08.05.606643](https://doi.org/doi:10.1101/2024.08.05.606643) (2024).
+1	Perdomo, J. E., Ahsan, M. U., Liu, Q., Fang, L. & Wang, K. LongReadSum: A fast and flexible quality control and signal summarization tool for long-read sequencing data. Computational and Structural Biotechnology Journal 27, 556-563, doi:10.1016/j.csbj.2025.01.019 (2025).
+
