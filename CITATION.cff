@@ -14,7 +14,7 @@ preferred-citation:
     given-names: "Li"
   - family-names: "Wang"
     given-names: "Kai"
-  title: "LongReadSum: A fast and flexible quality control tool for long-read sequencing data"
+  title: "LongReadSum: A fast and flexible quality control and signal summarization tool for long-read sequencing data"
   doi: https://doi.org/10.1016/j.csbj.2025.01.019
   date-released: 2025-01-24 
   url: "https://github.com/WGLab/LongReadSum"
