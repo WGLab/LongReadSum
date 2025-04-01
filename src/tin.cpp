@@ -201,10 +201,13 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
 
     // Get the index for the BAM file
     hts_idx_t* index = sam_index_load(bam_file, bam_filepath.c_str());
+    if (index == NULL) {
+        std::cerr << "Error loading BAM index" << std::endl;
+        exit(1);
+    }
 
     // Read the gene BED file
     std::ifstream gene_bed_file(gene_bed);
-
     if (!gene_bed_file.is_open()) {
         std::cerr << "Error opening gene BED file" << std::endl;
         exit(1);
