@@ -81,10 +81,10 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& bas
                 break;
             case 'N':
                 basic_qc.total_n_cnt++;
-                std::cerr << "Warning: N base found in read " << bam_get_qname(record) << std::endl;
+                // std::cerr << "Warning: N base found in read " << bam_get_qname(record) << std::endl;
                 break;
             default:
-                printError("Invalid base: " + std::to_string(base));
+                // printError("Invalid base: " + std::to_string(base));
                 break;
         }
     }

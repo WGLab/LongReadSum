@@ -13,7 +13,7 @@
 
 #include "tin_stats.h"
 
-std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end)
+std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::string chr, int start, int end, bool transcript_strand)
 {
     // Set up the region to fetch reads (1-based)
     std::string region = chr + ":" + std::to_string(start) + "-" + std::to_string(end);
@@ -46,6 +46,13 @@ std::unordered_map<int, int> getReadDepths(htsFile* bam_file, hts_idx_t* idx, ba
             continue;
         }
 
+        // Skip if on a different strand
+        bool read_strand = (record->core.flag & BAM_FREVERSE) ? false : true;
+        if (read_strand != transcript_strand) {
+            skip_count++;
+            continue;
+        }
+        
         read_count++;
 
         // Clear positions for each read
@@ -194,10 +201,13 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
 
     // Get the index for the BAM file
     hts_idx_t* index = sam_index_load(bam_file, bam_filepath.c_str());
+    if (index == NULL) {
+        std::cerr << "Error loading BAM index" << std::endl;
+        exit(1);
+    }
 
     // Read the gene BED file
     std::ifstream gene_bed_file(gene_bed);
-
     if (!gene_bed_file.is_open()) {
         std::cerr << "Error opening gene BED file" << std::endl;
         exit(1);
@@ -242,6 +252,12 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
             continue;
         }
 
+        std::cout << "Calculating TIN for transcript " << name << " with strand " << strand << std::endl;
+        bool strand_bool = true;
+        if (strand == "-") {
+            strand_bool = false;
+        }
+
         // Remove the last comma from the exon sizes and starts strings
         if (exon_sizes_str.back() == ',') {
             exon_sizes_str.pop_back();
@@ -278,7 +294,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
             int exon_end = exon_start + exon_sizes[i] - 1;
 
             // Get the depths and cumulative depths for the region
-            std::unordered_map<int, int> exon_depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end);
+            std::unordered_map<int, int> exon_depths = getReadDepths(bam_file, index, header, chrom, exon_start, exon_end, strand_bool);
             for (const auto& depth : exon_depths) {
                 C[depth.first] = depth.second;
             }
@@ -287,7 +303,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         // Get the read depths for the transcript start+1 and end
         std::vector<int> transcript_positions = {start + 1, end};
         for (const auto& position : transcript_positions) {
-            std::unordered_map<int, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position);
+            std::unordered_map<int, int> transcript_depths = getReadDepths(bam_file, index, header, chrom, position, position, strand_bool);
             for (const auto& depth : transcript_depths) {
                 C[depth.first] = depth.second;
             }

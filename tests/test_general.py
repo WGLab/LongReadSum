@@ -755,19 +755,19 @@ class TestRNASeqBAM:
         output_statistics = rnaseq_bam_output[1]
         input_file = rnaseq_bam_output[2]
         tin_mean = output_statistics.getTINMean(input_file)
-        assert round(tin_mean, 1) == 63.6
+        assert round(tin_mean, 1) == 60.2
 
     @pytest.mark.dependency(depends=["TestRNASeqBAM::test_success"])
     def test_tin_median(self, rnaseq_bam_output):
         output_statistics = rnaseq_bam_output[1]
         input_file = rnaseq_bam_output[2]
         tin_median = output_statistics.getTINMedian(input_file)
-        assert round(tin_median, 1) == 83.7
+        assert round(tin_median, 1) == 70.0
 
     @pytest.mark.dependency(depends=["TestRNASeqBAM::test_success"])
     def test_tin_stddev(self, rnaseq_bam_output):
         output_statistics = rnaseq_bam_output[1]
         input_file = rnaseq_bam_output[2]
         tin_stddev = output_statistics.getTINStdDev(input_file)
-        assert round(tin_stddev, 1) == 32.6
+        assert round(tin_stddev, 1) == 31.0
         
