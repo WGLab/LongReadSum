@@ -1,6 +1,7 @@
 #include <string>
 
 #include "input_parameters.h"
+#include "version.h"
 
 Input_Para::Input_Para(){
     // Set default parameters
@@ -13,6 +14,8 @@ Input_Para::Input_Para(){
     this->base_mod_threshold = 0.5;
     this->gene_bed = "";
     this->mod_analysis = false;
+    this->sample_name = "Sample";
+    this->version_str = VERSION;
 }
 
 Input_Para::~Input_Para(){
@@ -27,4 +30,8 @@ std::string Input_Para::add_input_file(const std::string& input_filepath){
    }else{
        return "Only "+std::to_string(MAX_INPUT_FILES)+" input files are supported!!";
    }
+}
+
+const std::string& Input_Para::getVersion() const {
+    return this->version_str;
 }

@@ -2,6 +2,9 @@ INCL_DIR := $(CURDIR)/include
 SRC_DIR := $(CURDIR)/src
 LIB_DIR := $(CURDIR)/lib
 
+VERSION := $(shell git describe --tags --always)
+VERSION_HEADER := $(INCL_DIR)/version.h
+
 # Set the library paths for the compiler
 CONDA_PREFIX ?= $(shell echo $$CONDA_PREFIX)
 LIBRARY_PATHS := -L$(LIB_DIR) -L$(CONDA_PREFIX)/lib
@@ -9,6 +12,11 @@ INCLUDE_PATHS := -I$(INCL_DIR) -I$(CONDA_PREFIX)/include
 
 # All targets
 all: swig_build compile
+
+# Rule to generate version.h
+$(VERSION_HEADER):
+	@echo "#pragma once" > $@
+	@echo "#define VERSION \"$(VERSION)\"" >> $@
 
 # Generate the SWIG Python/C++ wrappers
 swig_build:

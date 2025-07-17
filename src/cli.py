@@ -65,9 +65,6 @@ def get_common_param(margs):
             pat_split = margs.pattern.split("*")
             param_dict["input_files"].extend(
                 glob(os.path.join("*".join(pat_split[:-1]), "*" + pat_split[-1])))
-
-        # read_count = int(margs.read_count)
-        # param_dict["read_count"] = read_count
         
         if len(param_dict["input_files"]) == 0:
             parsing_error_msg += "No input file(s) were provided.\n"
@@ -87,8 +84,6 @@ def get_common_param(margs):
 
         except OSError:
             parsing_error_msg += "Cannot create folder for " + param_dict["output_folder"] + " \n"
-
-    param_dict["out_prefix"] = margs.outprefix
 
     # Set up logging to file and stdout
     if margs.log is None or margs.log == "":
@@ -113,6 +108,7 @@ def get_common_param(margs):
         param_dict["log_level"] = margs.log_level
 
     param_dict["threads"] = margs.threads
+    param_dict["sample_name"] = margs.sample
 
     # Reset the param_dict if there are parsing errors
     if parsing_error_msg != "":
@@ -133,7 +129,6 @@ def fq_module(margs):
 
     else:
         logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "fastq"
 
         # Import the SWIG Python wrapper for our C++ module
         input_para = lrst.Input_Para()
@@ -141,9 +136,8 @@ def fq_module(margs):
 
         input_para.other_flags = 0
         input_para.user_defined_fastq_base_qual_offset = margs.udqual
-
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
 
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
@@ -157,7 +151,7 @@ def fq_module(margs):
             fq_html_gen = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality",
                   "read_avg_base_quality"], "FASTQ QC", param_dict], plot_filepaths, static=False)
-            fq_html_gen.generate_html()
+            fq_html_gen.generate_html(input_para.sample_name, "fastq")
 
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
         else:
@@ -176,12 +170,11 @@ def fa_module(margs):
     else:
         # If there are no parse errors, run the filetype-specific module
         logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "fasta"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.other_flags = 0
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
 
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
@@ -195,7 +188,7 @@ def fa_module(margs):
             fa_html_gen = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts"], "FASTA QC",
                  param_dict], plot_filepaths, static=True)
-            fa_html_gen.generate_html()
+            fa_html_gen.generate_html(input_para.sample_name, "fasta")
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
@@ -211,11 +204,10 @@ def bam_module(margs):
 
     else:
         logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "bam";
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
 
         # Set the reference genome file and base modification threshold
         ref_genome = margs.ref if margs.ref != "" or margs.ref is not None else ""
@@ -269,7 +261,7 @@ def bam_module(margs):
             # Generate the HTML report
             bam_html_gen = generate_html.ST_HTML_Generator(
                 [qc_info_list, "BAM QC", param_dict], plot_filepaths, static=False)
-            bam_html_gen.generate_html()
+            bam_html_gen.generate_html(input_para.sample_name, "bam")
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
@@ -288,7 +280,8 @@ def rrms_module(margs):
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
+
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
 
@@ -296,18 +289,10 @@ def rrms_module(margs):
         input_para.rrms_csv = margs.csv
         logging.info("RRMS CSV file is " + input_para.rrms_csv)
 
-        # Get the output prefix
-        output_prefix = param_dict["out_prefix"]
-
         # Run QC for both accepted and rejected reads
         rrms_filter = [True, False]
         for filter_type in rrms_filter:
-
-            # Set the RRMS filter type
-            input_para.rrms_filter = filter_type
-
-            # Set the output prefix
-            param_dict["out_prefix"] = output_prefix + "rrms_" + ("accepted" if filter_type else "rejected")
+            input_para.rrms_filter = filter_type  # True for accepted reads, False for rejected reads
             param_dict["mod"] = input_para.mod_analysis = False  # Disable base modification analysis for RRMS (use BAM module for this)
 
             # Run the QC module
@@ -332,7 +317,7 @@ def rrms_module(margs):
                 # Generate the HTML report
                 bam_html_gen = generate_html.ST_HTML_Generator(
                     [qc_info_list, "BAM QC", param_dict], plot_filepaths, static=False)
-                bam_html_gen.generate_html()
+                bam_html_gen.generate_html(input_para.sample_name, "rrms_bam_" + ("accepted" if filter_type else "rejected"))
                 logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
             else:
@@ -349,11 +334,10 @@ def seqtxt_module(margs):
         
     else:
         logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "seqtxt"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
 
         for _ipf in param_dict["input_files"]:
             input_para.add_input_file(str(_ipf))
@@ -370,7 +354,7 @@ def seqtxt_module(margs):
                 [["basic_st", "read_length_bar", "read_length_hist"],
                     report_title, param_dict], plot_filepaths, static=False)
                 
-            seqtxt_html_gen.generate_html()
+            seqtxt_html_gen.generate_html(input_para.sample_name, "basecall_summary")
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
         else:
             logging.error("QC did not generate.")
@@ -386,11 +370,10 @@ def fast5_module(margs):
 
     else:
         # logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "FAST5"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
         input_para.other_flags = 0  # 0 for normal QC, 1 for signal statistics output
 
         for _ipf in param_dict["input_files"]:
@@ -405,7 +388,7 @@ def fast5_module(margs):
             fast5_html_obj = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "base_quality"], 
                  "FAST5 QC", param_dict], plot_filepaths, static=False)
-            fast5_html_obj.generate_html()
+            fast5_html_obj.generate_html(input_para.sample_name, "fast5")
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
@@ -421,11 +404,11 @@ def fast5_signal_module(margs):
 
     else:
         # logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "fast5_signal"
         input_para = lrst.Input_Para()
         input_para.threads = param_dict["threads"]
         input_para.output_folder = str(param_dict["output_folder"])
-        input_para.out_prefix = str(param_dict["out_prefix"])
+        input_para.sample_name = param_dict["sample_name"]
+        
         input_para.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
 
         # Get the read count if specified
@@ -450,7 +433,7 @@ def fast5_signal_module(margs):
             plot_filepaths = plot(fast5_output, param_dict, 'FAST5s')
             fast5_html_obj = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "ont_signal"], "FAST5 QC", param_dict], plot_filepaths, static=False)
-            fast5_html_obj.generate_html(signal_plots=True)
+            fast5_html_obj.generate_html(input_para.sample_name, "fast5_signal", signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
@@ -467,11 +450,10 @@ def pod5_module(margs):
 
     else:
         # logging.info('Input file(s) are:\n%s', '\n'.join(param_dict["input_files"]))
-        param_dict["out_prefix"] += "POD5"
         input_para = {}
         input_para['threads'] = param_dict["threads"]
         input_para['output_folder'] = str(param_dict["output_folder"])
-        input_para['out_prefix'] = str(param_dict["out_prefix"])
+        input_para['sample_name'] = param_dict["sample_name"]
         input_para['other_flags'] = 0  # 0 for normal QC, 1 for signal statistics output
         input_para['input_files'] = []
         for input_file in param_dict["input_files"]:
@@ -496,7 +478,6 @@ def pod5_module(margs):
             basecalls_input = lrst.Input_Para()
             basecalls_input.threads = param_dict["threads"]
             basecalls_input.output_folder = str(param_dict["output_folder"])
-            basecalls_input.out_prefix = str(param_dict["out_prefix"])
             basecalls_input.add_input_file(basecalls)
             bam_output = lrst.Output_BAM()
             exit_code = lrst.callBAMModule(basecalls_input, bam_output)
@@ -518,7 +499,7 @@ def pod5_module(margs):
             webpage_title = "POD5 QC"
             fast5_html_obj = generate_html.ST_HTML_Generator(
                 [["basic_st", "read_length_bar", "read_length_hist", "gc_content_hist", "base_counts", "ont_signal"], webpage_title, param_dict], plot_filepaths, static=False)
-            fast5_html_obj.generate_html(signal_plots=True)
+            fast5_html_obj.generate_html(input_para.sample_name, "pod5_signal", signal_plots=True)
             logging.info("Done. Output files are in %s", param_dict["output_folder"])
 
         else:
@@ -543,6 +524,8 @@ def set_file_parser_defaults(file_parser):
                         help="The number of threads used. Default: 1.")
     file_parser.add_argument("-Q", "--outprefix", type=str, default="QC_",
                         help="The prefix for output filenames. Default: `QC_`.")
+    file_parser.add_argument("-s", "--sample", type=str, default="Sample",
+                        help="Sample name. Default: `Sample`")
 
 
 # Set up the argument parser

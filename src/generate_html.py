@@ -20,9 +20,10 @@ class ST_HTML_Generator:
         else:
             self.more_input_files = False
 
-    def generate_header(self):
+    def generate_header(self, sample_name, filetype):
         """Format the header of the HTML file with the title and CSS."""
-        html_filepath = self.input_para["output_folder"] + '/' + self.input_para["out_prefix"] + ".html"
+        html_filepath = self.input_para["output_folder"] + '/longreadsum_' + sample_name + '_' + filetype + '.html'
+        logging.info("Generating HTML file: %s", html_filepath)
         self.html_writer = open(html_filepath, 'w', encoding='utf-8')
         self.html_writer.write("<html>")
         self.html_writer.write("<head>")
@@ -429,9 +430,9 @@ class ST_HTML_Generator:
         self.html_writer.close()
 
     # Main function for generating the HTML.
-    def generate_html(self, signal_plots=False):
+    def generate_html(self, sample_name, filetype, signal_plots=False):
         if signal_plots:
-            self.generate_header()
+            self.generate_header(sample_name, filetype)
             # Get the signal plots
             signal_plots = self.plot_filepaths["ont_signal"]['dynamic']
             read_names = signal_plots.keys()
@@ -440,7 +441,7 @@ class ST_HTML_Generator:
             self.generate_end()
         else:
             # Format base QC
-            self.generate_header()
+            self.generate_header(sample_name, filetype)
             self.generate_left()
             self.generate_right()
             self.generate_end()

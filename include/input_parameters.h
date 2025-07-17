@@ -21,7 +21,6 @@ public:
     // Parameters
     int threads;
     size_t num_input_files;
-    std::string out_prefix;
     int64_t other_flags;
     int32_t user_defined_fastq_base_qual_offset;
     std::string output_folder;  // Output folder
@@ -36,9 +35,13 @@ public:
     bool mod_analysis;  // Perform base modification analysis on BAM file
     int tin_sample_size;  // Number of equally spaced samples for TIN calculation
     int tin_min_coverage;  // Minimum coverage for TIN calculation
+    std::string sample_name;  // Sample name
+    std::string version_str = "";  // Version string for the program
 
     // Functions
     std::string add_input_file(const std::string& input_filepath);
+
+    const std::string &getVersion() const;
 
     Input_Para();
 
