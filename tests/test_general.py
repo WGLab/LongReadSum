@@ -88,8 +88,7 @@ def multiple_fasta_output():
         os.makedirs(output_folder)
 
     default_parameters.output_folder = output_folder
-    default_parameters.sample_name = "HG002_multi"
-    # default_parameters.out_prefix = str("fa_multi_")
+    default_parameters.sample_name = "HG002"
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
@@ -152,9 +151,12 @@ def fastq_output():
     """
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/fastq/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("fq_")
+    default_parameters.sample_name = "HG002"
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
