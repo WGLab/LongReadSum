@@ -214,9 +214,12 @@ def fast5_output():
     """
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/fast5/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("f5_")
+    default_parameters.sample_name = "HG002"
 
     # Check if running remotely
     file_dir = ''
@@ -289,9 +292,12 @@ def fast5s_output():
     """
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/fast5s/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("f5s_")
+    default_parameters.sample_name = "HG002"
     default_parameters.other_flags = 1  # 0 for normal QC, 1 for signal statistics output
 
     # Check if running remotely
