@@ -225,8 +225,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
         output_prefix += input_params.rrms_filter ? "_accepted" : "_rejected";
     }
 
-    // std::string summary_filepath = input_params.output_folder + "/" +
-    // output_prefix + "_summary.txt";
     std::string summary_filepath = input_params.output_folder + "/" + output_prefix + "_summary.bam.json";
 
     final_output.save_summary(summary_filepath, input_params, final_output);

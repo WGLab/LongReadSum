@@ -438,9 +438,12 @@ def unmapped_bam_output():
     """Run the BAM module on unmapped inputs."""
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/ubam/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("ubam_")
+    default_parameters.sample_name = "HG002"
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
@@ -505,11 +508,15 @@ def forward_base_mod_output():
     """Run the BAM module on a read aligned to the forward strand with base modifications."""
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/fmod/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("fwdmod_")
+    default_parameters.sample_name = "HG002"
+
     default_parameters.mod_analysis = True
-    default_parameters.base_mod_threshold = -1.0
+    default_parameters.base_mod_threshold = 0
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
@@ -577,11 +584,15 @@ def reverse_base_mod_output():
     """Run the BAM module on a read aligned to the reverse strand with base modifications."""
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/rmod/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("revmod_")
+    default_parameters.sample_name = "HG002"
+    
     default_parameters.mod_analysis = True
-    default_parameters.base_mod_threshold = -1.0
+    default_parameters.base_mod_threshold = 0
 
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')

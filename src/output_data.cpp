@@ -592,7 +592,90 @@ void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Outp
         fprintf(fp, "    \"insertions\": %ld,\n", output_data.num_ins_bases);
         fprintf(fp, "    \"deletions\": %ld,\n", output_data.num_del_bases);
         fprintf(fp, "    \"clipped\": %ld\n", output_data.num_clip_bases);
-        fprintf(fp, "  }\n");
+
+        // Determine if there is base modification data
+        bool modification_data_exists = output_data.modified_prediction_count > 0;
+        if (modification_data_exists) {
+            fprintf(fp, "  },\n");
+        } else {
+            fprintf(fp, "  }\n");
+        }
+
+        // Base modification statistics (if any)
+        if (modification_data_exists) {
+
+            // Map of modification character to full name
+            std::unordered_map<char, std::string> mod_char_to_name = {
+                {'m', "5mC"}, {'h', "5hmC"}, {'f', "5fC"}, {'c', "5caC"},
+                {'g', "5hmU"}, {'e', "5fu"}, {'b', "5caU"},
+                {'a', "6mA"}, {'o', "8oxoG"}, {'n', "Xao"},
+                {'C', "Amb. C"}, {'A', "Amb. A"}, {'T', "Amb. T"}, {'G', "Amb. G"},
+                {'N', "Amb. N"},
+                {'v', "pseU"}
+            };
+
+            fprintf(fp, "  \"base_modifications\": {\n");
+            fprintf(fp, "    \"unfiltered_modifications\": %lu,\n", output_data.modified_prediction_count);
+            fprintf(fp, "    \"filter_threshold\": %.2f,\n", params.base_mod_threshold);
+            fprintf(fp, "    \"sample_modified_base_count\": %lu,\n", output_data.sample_modified_base_count);
+            fprintf(fp, "    \"sample_modified_base_count_forward\": %lu,\n", output_data.sample_modified_base_count_forward);
+            fprintf(fp, "    \"sample_modified_base_count_reverse\": %lu,\n", output_data.sample_modified_base_count_reverse);
+            fprintf(fp, "    \"cpg_forward\": %lu,\n", output_data.sample_cpg_forward_count);
+            fprintf(fp, "    \"cpg_reverse\": %lu,\n", output_data.sample_cpg_reverse_count);
+            fprintf(fp, "    \"base_mod_counts\": {\n");
+            for (auto it = output_data.base_mod_counts.begin(); it != output_data.base_mod_counts.end(); ++it) {
+                char mod_type = it->first;
+                std::string mod_name = std::string(1, mod_type);
+                auto it_char = mod_char_to_name.find(mod_type);
+                if (it_char != mod_char_to_name.end()) {
+                    mod_name = it_char->second;
+                }
+                uint64_t count = it->second;
+                // fprintf(fp, "      \"%c\": %lu", mod_type, count);
+                fprintf(fp, "      \"%s\": %lu", mod_name.c_str(), count);
+                if (std::next(it) != output_data.base_mod_counts.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            fprintf(fp, "    },\n");
+            fprintf(fp, "    \"base_mod_counts_forward\": {\n");
+            for (auto it = output_data.base_mod_counts_forward.begin(); it != output_data.base_mod_counts_forward.end(); ++it) {
+                char mod_type = it->first;
+                std::string mod_name = std::string(1, mod_type);
+                auto it_char = mod_char_to_name.find(mod_type);
+                if (it_char != mod_char_to_name.end()) {
+                    mod_name = it_char->second;
+                }
+                uint64_t count = it->second;
+                fprintf(fp, "      \"%s\": %lu", mod_name.c_str(), count);
+                if (std::next(it) != output_data.base_mod_counts_forward.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            fprintf(fp, "    },\n");
+            fprintf(fp, "    \"base_mod_counts_reverse\": {\n");
+            for (auto it = output_data.base_mod_counts_reverse.begin(); it != output_data.base_mod_counts_reverse.end(); ++it) {
+                char mod_type = it->first;
+                std::string mod_name = std::string(1, mod_type);
+                auto it_char = mod_char_to_name.find(mod_type);
+                if (it_char != mod_char_to_name.end()) {
+                    mod_name = it_char->second;
+                }
+                uint64_t count = it->second;
+                fprintf(fp, "      \"%s\": %lu", mod_name.c_str(), count);
+                if (std::next(it) != output_data.base_mod_counts_reverse.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            fprintf(fp, "    }\n");
+            fprintf(fp, "  }\n");
+        }
 
         fprintf(fp, "}\n");
         fclose(fp);
