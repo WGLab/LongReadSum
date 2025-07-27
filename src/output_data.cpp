@@ -733,6 +733,8 @@ void Output_SeqTxt::save_summary(std::string & output_file, Input_Para & params)
     } else {
         // Write JSON output for all, passed, and failed reads
         fprintf(fp, "{\n");
+        fprintf(fp, "  \"filetype\": \"sequencing_summary\",\n");
+        fprintf(fp, "  \"longreadsum_version\": \"%s\",\n", params.getVersion().c_str());
 
         // Helper lambda to write a block for each read type
         auto write_read_info = [fp](const char* label, const Basic_Seq_Statistics& info, bool last) {

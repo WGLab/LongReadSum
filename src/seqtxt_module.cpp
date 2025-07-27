@@ -217,7 +217,9 @@ int SeqTxt_Module::generateStatistics( Output_SeqTxt& t_output_SeqTxt_info){
 
     // Save summary statistics to the output file
     std::cout << "Saving summary statistics to file..." << std::endl;
-    std::string summary_filepath = _input_parameters.output_folder + "/" + _input_parameters.sample_name + "_summary.seqtxt.json";
+    // std::string summary_filepath = _input_parameters.output_folder + "/" +
+    // _input_parameters.sample_name + "_summary.json";
+    std::string summary_filepath = _input_parameters.output_folder + "/" + _input_parameters.sample_name + "_summary.json";
     t_output_SeqTxt_info.save_summary(summary_filepath, _input_parameters);
 
     auto relapse_end_time = std::chrono::high_resolution_clock::now();

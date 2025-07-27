@@ -662,10 +662,13 @@ def seqtxt_output():
     """
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
-    default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("seqtxt_")
+    output_folder = os.path.abspath(str("output/seqtxt/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
 
+    default_parameters.output_folder = output_folder
+    default_parameters.sample_name = "HG002"
+    
     # Check if running remotely
     local_dir = os.path.expanduser('~/github/LongReadSum')
     if os.getcwd() == local_dir:
