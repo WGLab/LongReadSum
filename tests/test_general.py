@@ -740,9 +740,13 @@ def rnaseq_bam_output():
     """Run the BAM module on RNASeq inputs."""
     # Set parameters
     default_parameters = lrst.Input_Para()
-    output_folder = os.path.abspath(str("output/"))
+    output_folder = os.path.abspath(str("output/rnaseq/"))
+    if not os.path.exists(output_folder):
+        os.makedirs(output_folder)
+
     default_parameters.output_folder = output_folder
-    default_parameters.out_prefix = str("rnaseq_")
+    default_parameters.sample_name = "GTEX"
+
     default_parameters.tin_sample_size = 100
     default_parameters.tin_min_coverage = 2
 

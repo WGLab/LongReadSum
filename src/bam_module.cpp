@@ -80,7 +80,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cout << "Calculating TIN scores for file: " << filepath << std::endl;
 
             TINStats tin_stats;
-            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder, input_params.threads);
+            calculateTIN(tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.sample_name, input_params.output_folder, input_params.threads);
 
             // Print the TIN stats
             std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;

@@ -178,7 +178,7 @@ bool checkMinReads(htsFile* bam_file, hts_idx_t* idx, bam_hdr_t* header, std::st
     return min_reads_met;
 }
 
-void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& output_folder, int thread_count)
+void calculateTIN(TINStats& tin_stats, const std::string& gene_bed, const std::string& bam_filepath, int min_cov, int sample_size, const std::string& sample_name, const std::string& output_folder, int thread_count)
 {
     std::cout << "Using TIN minimum coverage " << min_cov << " and sample size " << sample_size << std::endl;
 
@@ -474,7 +474,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         std::cout << "Writing TIN scores to file..." << std::endl;
 
         // Write the TIN scores to a file
-        std::string output_tin_tsv = output_folder + "/tin_scores.tsv";
+        std::string output_tin_tsv = output_folder + "/" + sample_name + "_tin_scores.tsv";
         std::ofstream output_tin_file(output_tin_tsv);
         output_tin_file << std::fixed << std::setprecision(14);
 
@@ -502,7 +502,7 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         std::cout << "TIN scores written to " << output_tin_tsv << std::endl;
 
         // Write the TIN summary to a file
-        std::string output_tin_summary_tsv = output_folder + "/tin_summary.tsv";
+        std::string output_tin_summary_tsv = output_folder + "/" + sample_name + "_tin_summary.tsv";
 
         std::ofstream output_tin_summary_file(output_tin_summary_tsv);
         output_tin_summary_file << std::fixed << std::setprecision(14);
@@ -524,9 +524,9 @@ void calculateTIN(TINStats* tin_stats, const std::string& gene_bed, const std::s
         std::cout << "TIN summary written to " << output_tin_summary_tsv << std::endl;
 
         // Update the TIN stats struct
-        tin_stats->mean = TIN_mean;
-        tin_stats->median = TIN_median;
-        tin_stats->stddev = TIN_stddev;
-        tin_stats->num_transcripts = TIN_scores.size();
+        tin_stats.mean = TIN_mean;
+        tin_stats.median = TIN_median;
+        tin_stats.stddev = TIN_stddev;
+        tin_stats.num_transcripts = TIN_scores.size();
     }
 }

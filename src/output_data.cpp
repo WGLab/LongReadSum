@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>  // std::round
+#include <iterator>
 
 #include "output_data.h"
 #include "utils.h"
@@ -595,10 +596,37 @@ void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Outp
 
         // Determine if there is base modification data
         bool modification_data_exists = output_data.modified_prediction_count > 0;
-        if (modification_data_exists) {
+        bool tin_data_exists = !output_data.tin_data.empty();
+        if (modification_data_exists || tin_data_exists) {
             fprintf(fp, "  },\n");
         } else {
             fprintf(fp, "  }\n");
+        }
+
+        // TIN data statistics (if any)
+        if (tin_data_exists) {
+            fprintf(fp, "  \"tin_data\": {\n");
+            for (auto it = output_data.tin_data.begin(); it != output_data.tin_data.end(); ++it) {
+                // Print each BAM file's TIN statistics
+                const std::string& bam_file = it->first;
+                const TINStats& tin_data = it->second;
+                fprintf(fp, "    \"%s\": {\n", bam_file.c_str());
+                fprintf(fp, "      \"total_transcripts\": %d,\n", tin_data.num_transcripts);
+                fprintf(fp, "      \"mean\": %.2f,\n", tin_data.mean);
+                fprintf(fp, "      \"median\": %.2f,\n", tin_data.median);
+                fprintf(fp, "      \"stddev\": %.2f\n", tin_data.stddev);
+                fprintf(fp, "    }");
+                if (std::next(it) != output_data.tin_data.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            if (modification_data_exists) {
+                fprintf(fp, "  },\n");
+            } else {
+                fprintf(fp, "  }\n");
+            }
         }
 
         // Base modification statistics (if any)
