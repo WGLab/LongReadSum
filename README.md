@@ -90,6 +90,9 @@ summary file, and specify the _longreadsum_ module:
 multiqc $INPUT_DIRECTORY --module longreadsum --outdir $OUTPUT_DIRECTORY/multiqc
 ```
 
+Example report:
+<img width="1707" height="761" alt="image" src="https://github.com/user-attachments/assets/adbcacf7-44f8-48bd-9135-9293379d65d2" />
+
 ## Running
 Activate the conda environment and then run with arguments:
 ```
