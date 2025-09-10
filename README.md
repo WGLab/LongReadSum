@@ -10,6 +10,7 @@ LongReadSum supports FASTA, FASTQ, BAM, FAST5, and sequencing_summary.txt file f
 - [Installation using Anaconda (recommended)](#installation-using-anaconda)
 - [Installation using Docker](#installation-using-anaconda)
 - [Building from source](#building-from-source)
+- [MultiQC support](#multiqc-support)
 - General usage for common filetypes:
   - [Common parameters](#common-parameters)
   - [WGS BAM](#wgs-bam)
@@ -78,6 +79,19 @@ conda activate longreadsum
 make
 ```
 
+# MultiQC support
+[MultiQC](https://seqera.io/multiqc/) is a widely used open-source tool for
+aggregating bioinformatics analyses results from many tools across samples.
+
+To run MultiQC, input the LongReadSum directory containing the output JSON
+summary file, and specify the _longreadsum_ module:
+
+```
+multiqc $INPUT_DIRECTORY --module longreadsum --outdir $OUTPUT_DIRECTORY/multiqc
+```
+
+Example report:
+<img width="1707" height="761" alt="image" src="https://github.com/user-attachments/assets/adbcacf7-44f8-48bd-9135-9293379d65d2" />
 
 ## Running
 Activate the conda environment and then run with arguments:

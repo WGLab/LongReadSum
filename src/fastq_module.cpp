@@ -162,9 +162,9 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
 
-    read_details_file = _input_data.output_folder + "/FASTQ_details.txt";
-    read_summary_file = _input_data.output_folder + "/FASTQ_summary.txt";
-    
+    read_details_file = _input_data.output_folder + "/" + _input_data.sample_name + "_readqc.fastq.txt";
+    read_summary_file = _input_data.output_folder + "/" + _input_data.sample_name + "_summary.fastq.json";
+
     output_data.long_read_info.total_num_reads = ZeroDefault; // total number of long reads
     output_data.long_read_info.total_num_bases = ZeroDefault; // total number of bases
 
@@ -281,40 +281,51 @@ int qc_fastq_files(Input_Para &_input_data, Output_FQ &output_data)
             output_data.long_read_info.n05_read_length = output_data.long_read_info.NXX_read_length[5];
 
             read_summary_fp = fopen(read_summary_file.c_str(), "w");
-            fprintf(read_summary_fp, "total number of reads\t%d\n", output_data.long_read_info.total_num_reads);
-            fprintf(read_summary_fp, "total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
-            fprintf(read_summary_fp, "longest read length\t%d\n", output_data.long_read_info.longest_read_length);
-            fprintf(read_summary_fp, "N50 read length\t%d\n", output_data.long_read_info.n50_read_length);
-            fprintf(read_summary_fp, "mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-            fprintf(read_summary_fp, "median read length\t%d\n", output_data.long_read_info.median_read_length);
-            fprintf(read_summary_fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
-            fprintf(read_summary_fp, "\n\n");
+            // Write summary in JSON format
+            fprintf(read_summary_fp, "{\n");
+            fprintf(read_summary_fp, "  \"filetype\": \"fastq\",\n");
+            fprintf(read_summary_fp, "  \"longreadsum_version\": \"%s\",\n", _input_data.getVersion().c_str());
+            fprintf(read_summary_fp, "  \"total_num_reads\": %d,\n", output_data.long_read_info.total_num_reads);
+            fprintf(read_summary_fp, "  \"total_num_bases\": %ld,\n", output_data.long_read_info.total_num_bases);
+            fprintf(read_summary_fp, "  \"longest_read_length\": %d,\n", output_data.long_read_info.longest_read_length);
+            fprintf(read_summary_fp, "  \"n50_read_length\": %d,\n", output_data.long_read_info.n50_read_length);
+            fprintf(read_summary_fp, "  \"mean_read_length\": %.2f,\n", output_data.long_read_info.mean_read_length);
+            fprintf(read_summary_fp, "  \"median_read_length\": %d,\n", output_data.long_read_info.median_read_length);
+            fprintf(read_summary_fp, "  \"gc_percent\": %.2f,\n", output_data.long_read_info.gc_cnt * 100);
+
+            // NXX read lengths
+            fprintf(read_summary_fp, "  \"NXX_read_length\": {\n");
             for (int percent = 5; percent < 100; percent += 5)
             {
-                fprintf(read_summary_fp, "N%02d read length\t%.d\n", percent, output_data.long_read_info.NXX_read_length[percent]);
+                fprintf(read_summary_fp, "    \"N%02d\": %d%s\n", percent, output_data.long_read_info.NXX_read_length[percent], (percent + 5 < 100) ? "," : "");
             }
+            fprintf(read_summary_fp, "  },\n");
 
-            fprintf(read_summary_fp, "\n\n");
-
-            fprintf(read_summary_fp, "GC content\tnumber of reads\n");
+            // GC content distribution
+            fprintf(read_summary_fp, "  \"gc_content_distribution\": {\n");
             for (int gc_ratio = 0; gc_ratio < 100; gc_ratio++)
             {
-                fprintf(read_summary_fp, "GC=%d%%\t%d\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio]);
+                fprintf(read_summary_fp, "    \"%d\": %d%s\n", gc_ratio, output_data.long_read_info.read_gc_content_count[gc_ratio], (gc_ratio < 99) ? "," : "");
             }
+            fprintf(read_summary_fp, "  },\n");
 
-            fprintf(read_summary_fp, "\n\n");
-            fprintf(read_summary_fp, "base quality\tnumber of bases\n");
+            // Base quality distribution
+            fprintf(read_summary_fp, "  \"base_quality_distribution\": {\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%ld\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "    \"%d\": %ld%s\n", baseq, output_data.seq_quality_info.base_quality_distribution[baseq], (baseq < 60) ? "," : "");
             }
+            fprintf(read_summary_fp, "  },\n");
 
-            fprintf(read_summary_fp, "\n\n");
-            fprintf(read_summary_fp, "read average base quality\tnumber of reads\n");
+            // Read average base quality distribution
+            fprintf(read_summary_fp, "  \"read_average_base_quality_distribution\": {\n");
             for (int baseq = 0; baseq <= 60; baseq++)
             {
-                fprintf(read_summary_fp, "%d\t%d\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq]);
+                fprintf(read_summary_fp, "    \"%d\": %d%s\n", baseq, output_data.seq_quality_info.read_average_base_quality_distribution[baseq], (baseq < 60) ? "," : "");
             }
+            fprintf(read_summary_fp, "  }\n");
+
+            fprintf(read_summary_fp, "}\n");
             fclose(read_summary_fp);
         }
     }

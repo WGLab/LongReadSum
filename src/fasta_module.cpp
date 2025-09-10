@@ -205,9 +205,11 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
     const char *input_file = NULL;
     std::string read_details_file, read_summary_file;
     FILE *read_details_fp, *read_summary_fp;
+    const std::string &sample_name = _input_data.sample_name;
 
-    read_details_file = _input_data.output_folder + "/FASTA_details.txt";
-    read_summary_file = _input_data.output_folder + "/FASTA_summary.txt";
+    read_details_file = _input_data.output_folder + "/" + sample_name + "_readqc.fasta.txt";
+    // read_summary_file = _input_data.output_folder + "/FASTA_summary.txt";
+    read_summary_file = _input_data.output_folder + "/" + sample_name + "_summary.fasta.json";
 
     // =============
 
@@ -308,27 +310,36 @@ int qc_fasta_files(Input_Para &_input_data, Output_FA &py_output_fa)
                 py_output_fa.long_read_info.mean_read_length = (double)py_output_fa.long_read_info.total_num_bases / (double)py_output_fa.long_read_info.total_num_reads;
 
                 read_summary_fp = fopen(read_summary_file.c_str(), "w");
-                fprintf(read_summary_fp, "total number of reads\t%d\n", py_output_fa.long_read_info.total_num_reads);
-                fprintf(read_summary_fp, "total number of bases\t%ld\n", py_output_fa.long_read_info.total_num_bases);
-                fprintf(read_summary_fp, "longest read length\t%d\n", py_output_fa.long_read_info.longest_read_length);
-                fprintf(read_summary_fp, "N50 read length\t%d\n", py_output_fa.long_read_info.n50_read_length);
-                fprintf(read_summary_fp, "mean read length\t%.2f\n", py_output_fa.long_read_info.mean_read_length);
-                fprintf(read_summary_fp, "median read length\t%d\n", py_output_fa.long_read_info.median_read_length);
-                fprintf(read_summary_fp, "GC%%\t%.2f\n", py_output_fa.long_read_info.gc_cnt * 100);
-                fprintf(read_summary_fp, "\n\n");
-                for (int percent = 5; percent < 100; percent += 5)
-                {
-                    fprintf(read_summary_fp, "N%02d read length\t%.d\n", percent, py_output_fa.long_read_info.NXX_read_length[percent]);
-                }
+                if (read_summary_fp) {
+                    // Write JSON summary
+                    fprintf(read_summary_fp, "{\n");
+                    fprintf(read_summary_fp, "  \"filetype\": \"fasta\",\n");
+                    fprintf(read_summary_fp, "  \"longreadsum_version\": \"%s\",\n", _input_data.getVersion().c_str());
+                    fprintf(read_summary_fp, "  \"total_num_reads\": %d,\n", py_output_fa.long_read_info.total_num_reads);
+                    fprintf(read_summary_fp, "  \"total_num_bases\": %ld,\n", py_output_fa.long_read_info.total_num_bases);
+                    fprintf(read_summary_fp, "  \"longest_read_length\": %d,\n", py_output_fa.long_read_info.longest_read_length);
+                    fprintf(read_summary_fp, "  \"n50_read_length\": %d,\n", py_output_fa.long_read_info.n50_read_length);
+                    fprintf(read_summary_fp, "  \"mean_read_length\": %.2f,\n", py_output_fa.long_read_info.mean_read_length);
+                    fprintf(read_summary_fp, "  \"median_read_length\": %d,\n", py_output_fa.long_read_info.median_read_length);
+                    fprintf(read_summary_fp, "  \"gc_percent\": %.2f,\n", py_output_fa.long_read_info.gc_cnt * 100);
 
-                fprintf(read_summary_fp, "\n\n");
+                    // NXX read lengths
+                    fprintf(read_summary_fp, "  \"NXX_read_length\": {\n");
+                    for (int percent = 5; percent < 100; percent += 5) {
+                        fprintf(read_summary_fp, "    \"N%02d\": %d%s\n", percent, py_output_fa.long_read_info.NXX_read_length[percent], (percent + 5 < 100) ? "," : "");
+                    }
+                    fprintf(read_summary_fp, "  },\n");
 
-                fprintf(read_summary_fp, "GC content\tnumber of reads\n");
-                for (int gc_ratio = 0; gc_ratio <= 100; gc_ratio++)
-                {
-                    fprintf(read_summary_fp, "GC=%d%%\t%d\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio]);
+                    // GC content distribution
+                    fprintf(read_summary_fp, "  \"gc_content_distribution\": {\n");
+                    for (int gc_ratio = 0; gc_ratio <= 100; gc_ratio++) {
+                        fprintf(read_summary_fp, "    \"%d\": %d%s\n", gc_ratio, py_output_fa.long_read_info.read_gc_content_count[gc_ratio], (gc_ratio < 100) ? "," : "");
+                    }
+                    fprintf(read_summary_fp, "  }\n");
+
+                    fprintf(read_summary_fp, "}\n");
+                    fclose(read_summary_fp);
                 }
-                fclose(read_summary_fp);
             }
         }
     }

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>  // std::round
+#include <iterator>
 
 #include "output_data.h"
 #include "utils.h"
@@ -550,46 +551,161 @@ void Output_BAM::save_summary(std::string &output_file, Input_Para &params, Outp
     if (fp == NULL){
         fprintf(stderr, "Error: cannot open file %s\n", output_file.c_str());
     } else {
-        // Save basic statistics
-        fprintf(fp, "Total number of reads\t%d\n", output_data.long_read_info.total_num_reads);
-        fprintf(fp, "Total number of bases\t%ld\n", output_data.long_read_info.total_num_bases);
-        fprintf(fp, "Longest read length\t%d\n", output_data.long_read_info.longest_read_length);
-        fprintf(fp, "N50 read length\t%d\n", output_data.long_read_info.n50_read_length);
-        fprintf(fp, "Mean read length\t%.2f\n", output_data.long_read_info.mean_read_length);
-        fprintf(fp, "Median read length\t%d\n", output_data.long_read_info.median_read_length);
-        fprintf(fp, "GC%%\t%.2f\n", output_data.long_read_info.gc_cnt * 100);
-        fprintf(fp, "\n");
+        // Write JSON output
+        fprintf(fp, "{\n");
+        fprintf(fp, "  \"filetype\": \"bam\",\n");
+        fprintf(fp, "  \"longreadsum_version\": \"%s\",\n", params.getVersion().c_str());
+        fprintf(fp, "  \"total_num_reads\": %d,\n", output_data.long_read_info.total_num_reads);
+        fprintf(fp, "  \"total_num_bases\": %ld,\n", output_data.long_read_info.total_num_bases);
+        fprintf(fp, "  \"longest_read_length\": %d,\n", output_data.long_read_info.longest_read_length);
+        fprintf(fp, "  \"n50_read_length\": %d,\n", output_data.long_read_info.n50_read_length);
+        fprintf(fp, "  \"mean_read_length\": %.2f,\n", output_data.long_read_info.mean_read_length);
+        fprintf(fp, "  \"median_read_length\": %d,\n", output_data.long_read_info.median_read_length);
+        fprintf(fp, "  \"gc_percent\": %.2f,\n", output_data.long_read_info.gc_cnt * 100);
 
-        // Save the mapping statistics
-        fprintf(fp, "Total number of mapped reads\t%d\n", output_data.mapped_long_read_info.total_num_reads);
-        fprintf(fp, "Total number of mapped bases\t%ld\n", output_data.mapped_long_read_info.total_num_bases);
-        fprintf(fp, "Longest mapped read length\t%d\n", output_data.mapped_long_read_info.longest_read_length);
-        fprintf(fp, "N50 mapped read length\t%d\n", output_data.mapped_long_read_info.n50_read_length);
-        fprintf(fp, "Mean mapped read length\t%.2f\n", output_data.mapped_long_read_info.mean_read_length);
-        fprintf(fp, "Median mapped read length\t%d\n", output_data.mapped_long_read_info.median_read_length);
-        fprintf(fp, "GC%%\t%.2f\n", output_data.mapped_long_read_info.gc_cnt * 100);
-        fprintf(fp, "\n");
+        // Mapping statistics
+        fprintf(fp, "  \"mapped\": {\n");
+        fprintf(fp, "    \"total_num_reads\": %d,\n", output_data.mapped_long_read_info.total_num_reads);
+        fprintf(fp, "    \"total_num_bases\": %ld,\n", output_data.mapped_long_read_info.total_num_bases);
+        fprintf(fp, "    \"longest_read_length\": %d,\n", output_data.mapped_long_read_info.longest_read_length);
+        fprintf(fp, "    \"n50_read_length\": %d,\n", output_data.mapped_long_read_info.n50_read_length);
+        fprintf(fp, "    \"mean_read_length\": %.2f,\n", output_data.mapped_long_read_info.mean_read_length);
+        fprintf(fp, "    \"median_read_length\": %d,\n", output_data.mapped_long_read_info.median_read_length);
+        fprintf(fp, "    \"gc_percent\": %.2f\n", output_data.mapped_long_read_info.gc_cnt * 100);
+        fprintf(fp, "  },\n");
 
-        // Save the read alignment statistics
-        fprintf(fp, "Total number of primary alignments\t%ld\n", output_data.num_primary_alignment);
-        fprintf(fp, "Total number of secondary alignments\t%ld\n", output_data.num_secondary_alignment);
-        fprintf(fp, "Total number of supplementary alignments\t%ld\n", output_data.num_supplementary_alignment);
-        fprintf(fp, "Total number of reads with secondary alignments\t%ld\n", output_data.num_reads_with_secondary_alignment);
-        fprintf(fp, "Total number of reads with supplementary alignments\t%ld\n", output_data.num_reads_with_supplementary_alignment);
-        fprintf(fp, "Total number of reads with both secondary and supplementary alignments\t%ld\n", output_data.num_reads_with_both_secondary_supplementary_alignment);
-        fprintf(fp, "Total number of reads with forward alignments\t%ld\n", output_data.forward_alignment);
-        fprintf(fp, "Total number of reads with reverse alignments\t%ld\n", output_data.reverse_alignment);
-        fprintf(fp, "Total number of reverse alignment\t%ld\n", output_data.reverse_alignment);
-        fprintf(fp, "\n");
+        // Read alignment statistics
+        fprintf(fp, "  \"alignments\": {\n");
+        fprintf(fp, "    \"primary\": %ld,\n", output_data.num_primary_alignment);
+        fprintf(fp, "    \"secondary\": %ld,\n", output_data.num_secondary_alignment);
+        fprintf(fp, "    \"supplementary\": %ld,\n", output_data.num_supplementary_alignment);
+        fprintf(fp, "    \"reads_with_secondary\": %ld,\n", output_data.num_reads_with_secondary_alignment);
+        fprintf(fp, "    \"reads_with_supplementary\": %ld,\n", output_data.num_reads_with_supplementary_alignment);
+        fprintf(fp, "    \"reads_with_both\": %ld,\n", output_data.num_reads_with_both_secondary_supplementary_alignment);
+        fprintf(fp, "    \"forward\": %ld,\n", output_data.forward_alignment);
+        fprintf(fp, "    \"reverse\": %ld\n", output_data.reverse_alignment);
+        fprintf(fp, "  },\n");
 
-        // Save the base alignment statistics
-        fprintf(fp, "Total number of matched bases\t%ld\n", output_data.num_matched_bases);
-        fprintf(fp, "Total number of mismatched bases\t%ld\n", output_data.num_mismatched_bases);
-        fprintf(fp, "Total number of insertions\t%ld\n", output_data.num_ins_bases);
-        fprintf(fp, "Total number of deletions\t%ld\n", output_data.num_del_bases);
-        fprintf(fp, "Total number of primary alignment clipped bases (soft + hard)\t%ld\n", output_data.num_clip_bases);
+        // Base alignment statistics
+        fprintf(fp, "  \"base_alignment\": {\n");
+        fprintf(fp, "    \"matched\": %ld,\n", output_data.num_matched_bases);
+        fprintf(fp, "    \"mismatched\": %ld,\n", output_data.num_mismatched_bases);
+        fprintf(fp, "    \"insertions\": %ld,\n", output_data.num_ins_bases);
+        fprintf(fp, "    \"deletions\": %ld,\n", output_data.num_del_bases);
+        fprintf(fp, "    \"clipped\": %ld\n", output_data.num_clip_bases);
 
-        // Close the file
+        // Determine if there is base modification data
+        bool modification_data_exists = output_data.modified_prediction_count > 0;
+        bool tin_data_exists = !output_data.tin_data.empty();
+        if (modification_data_exists || tin_data_exists) {
+            fprintf(fp, "  },\n");
+        } else {
+            fprintf(fp, "  }\n");
+        }
+
+        // TIN data statistics (if any)
+        if (tin_data_exists) {
+            fprintf(fp, "  \"tin_data\": {\n");
+            for (auto it = output_data.tin_data.begin(); it != output_data.tin_data.end(); ++it) {
+                // Print each BAM file's TIN statistics
+                const std::string& bam_file = it->first;
+                const TINStats& tin_data = it->second;
+                fprintf(fp, "    \"%s\": {\n", bam_file.c_str());
+                fprintf(fp, "      \"total_transcripts\": %d,\n", tin_data.num_transcripts);
+                fprintf(fp, "      \"mean\": %.2f,\n", tin_data.mean);
+                fprintf(fp, "      \"median\": %.2f,\n", tin_data.median);
+                fprintf(fp, "      \"stddev\": %.2f\n", tin_data.stddev);
+                fprintf(fp, "    }");
+                if (std::next(it) != output_data.tin_data.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            if (modification_data_exists) {
+                fprintf(fp, "  },\n");
+            } else {
+                fprintf(fp, "  }\n");
+            }
+        }
+
+        // Base modification statistics (if any)
+        if (modification_data_exists) {
+
+            // Map of modification character to full name
+            std::unordered_map<char, std::string> mod_char_to_name = {
+                {'m', "5mC"}, {'h', "5hmC"}, {'f', "5fC"}, {'c', "5caC"},
+                {'g', "5hmU"}, {'e', "5fu"}, {'b', "5caU"},
+                {'a', "6mA"}, {'o', "8oxoG"}, {'n', "Xao"},
+                {'C', "Amb. C"}, {'A', "Amb. A"}, {'T', "Amb. T"}, {'G', "Amb. G"},
+                {'N', "Amb. N"},
+                {'v', "pseU"}
+            };
+
+            fprintf(fp, "  \"base_modifications\": {\n");
+            fprintf(fp, "    \"unfiltered_modifications\": %lu,\n", output_data.modified_prediction_count);
+            fprintf(fp, "    \"filter_threshold\": %.2f,\n", params.base_mod_threshold);
+            fprintf(fp, "    \"sample_modified_base_count\": %lu,\n", output_data.sample_modified_base_count);
+            fprintf(fp, "    \"sample_modified_base_count_forward\": %lu,\n", output_data.sample_modified_base_count_forward);
+            fprintf(fp, "    \"sample_modified_base_count_reverse\": %lu,\n", output_data.sample_modified_base_count_reverse);
+            fprintf(fp, "    \"cpg_forward\": %lu,\n", output_data.sample_cpg_forward_count);
+            fprintf(fp, "    \"cpg_reverse\": %lu,\n", output_data.sample_cpg_reverse_count);
+            fprintf(fp, "    \"base_mod_counts\": {\n");
+            for (auto it = output_data.base_mod_counts.begin(); it != output_data.base_mod_counts.end(); ++it) {
+                char mod_type = it->first;
+                std::string mod_name = std::string(1, mod_type);
+                auto it_char = mod_char_to_name.find(mod_type);
+                if (it_char != mod_char_to_name.end()) {
+                    mod_name = it_char->second;
+                }
+                uint64_t count = it->second;
+                // fprintf(fp, "      \"%c\": %lu", mod_type, count);
+                fprintf(fp, "      \"%s\": %lu", mod_name.c_str(), count);
+                if (std::next(it) != output_data.base_mod_counts.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            fprintf(fp, "    },\n");
+            fprintf(fp, "    \"base_mod_counts_forward\": {\n");
+            for (auto it = output_data.base_mod_counts_forward.begin(); it != output_data.base_mod_counts_forward.end(); ++it) {
+                char mod_type = it->first;
+                std::string mod_name = std::string(1, mod_type);
+                auto it_char = mod_char_to_name.find(mod_type);
+                if (it_char != mod_char_to_name.end()) {
+                    mod_name = it_char->second;
+                }
+                uint64_t count = it->second;
+                fprintf(fp, "      \"%s\": %lu", mod_name.c_str(), count);
+                if (std::next(it) != output_data.base_mod_counts_forward.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            fprintf(fp, "    },\n");
+            fprintf(fp, "    \"base_mod_counts_reverse\": {\n");
+            for (auto it = output_data.base_mod_counts_reverse.begin(); it != output_data.base_mod_counts_reverse.end(); ++it) {
+                char mod_type = it->first;
+                std::string mod_name = std::string(1, mod_type);
+                auto it_char = mod_char_to_name.find(mod_type);
+                if (it_char != mod_char_to_name.end()) {
+                    mod_name = it_char->second;
+                }
+                uint64_t count = it->second;
+                fprintf(fp, "      \"%s\": %lu", mod_name.c_str(), count);
+                if (std::next(it) != output_data.base_mod_counts_reverse.end()) {
+                    fprintf(fp, ",\n");
+                } else {
+                    fprintf(fp, "\n");
+                }
+            }
+            fprintf(fp, "    }\n");
+            fprintf(fp, "  }\n");
+        }
+
+        fprintf(fp, "}\n");
         fclose(fp);
     }
 }
@@ -639,32 +755,32 @@ void Output_SeqTxt::global_sum(){
 
 void Output_SeqTxt::save_summary(std::string & output_file, Input_Para & params)
 {
-    
     FILE *fp = fopen(output_file.c_str(), "w");
     if (fp == NULL){
         fprintf(stderr, "Error: cannot open file %s\n", output_file.c_str());
     } else {
-        // Define the types explicitly
-        using ReadInfo = std::tuple<const char*, Basic_Seq_Statistics&>;
+        // Write JSON output for all, passed, and failed reads
+        fprintf(fp, "{\n");
+        fprintf(fp, "  \"filetype\": \"sequencing_summary\",\n");
+        fprintf(fp, "  \"longreadsum_version\": \"%s\",\n", params.getVersion().c_str());
 
-        // Save basic statistics for total, passed, and failed reads
-        for (const ReadInfo& read_type : {
-            ReadInfo("All", all_long_read_info.long_read_info),
-            ReadInfo("Passed", passed_long_read_info.long_read_info),
-            ReadInfo("Failed", failed_long_read_info.long_read_info)
-        }) {
-            std::string read_filter = std::get<0>(read_type);
-            Basic_Seq_Statistics& long_read_info = std::get<1>(read_type);
+        // Helper lambda to write a block for each read type
+        auto write_read_info = [fp](const char* label, const Basic_Seq_Statistics& info, bool last) {
+            fprintf(fp, "  \"%s\": {\n", label);
+            fprintf(fp, "    \"total_num_reads\": %d,\n", info.total_num_reads);
+            fprintf(fp, "    \"total_num_bases\": %ld,\n", info.total_num_bases);
+            fprintf(fp, "    \"longest_read_length\": %d,\n", info.longest_read_length);
+            fprintf(fp, "    \"n50_read_length\": %d,\n", info.n50_read_length);
+            fprintf(fp, "    \"mean_read_length\": %.2f,\n", info.mean_read_length);
+            fprintf(fp, "    \"median_read_length\": %d\n", info.median_read_length);
+            fprintf(fp, "  }%s\n", last ? "" : ",");
+        };
 
-            fprintf(fp, "%s reads:\n", read_filter.c_str());
-            fprintf(fp, "Total number of reads\t%d\n", long_read_info.total_num_reads);
-            fprintf(fp, "Total number of bases\t%ld\n", long_read_info.total_num_bases);
-            fprintf(fp, "Longest read length\t%d\n", long_read_info.longest_read_length);
-            fprintf(fp, "N50 read length\t%d\n", long_read_info.n50_read_length);
-            fprintf(fp, "Mean read length\t%.2f\n", long_read_info.mean_read_length);
-            fprintf(fp, "Median read length\t%d\n", long_read_info.median_read_length);
-            fprintf(fp, "\n");
-        }
+        write_read_info("all", all_long_read_info.long_read_info, false);
+        write_read_info("passed", passed_long_read_info.long_read_info, false);
+        write_read_info("failed", failed_long_read_info.long_read_info, true);
+
+        fprintf(fp, "}\n");
         fclose(fp);
     }
 }

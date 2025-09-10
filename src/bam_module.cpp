@@ -80,7 +80,7 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             std::cout << "Calculating TIN scores for file: " << filepath << std::endl;
 
             TINStats tin_stats;
-            calculateTIN(&tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.output_folder, input_params.threads);
+            calculateTIN(tin_stats, gene_bed, input_params.input_files[i], min_cov, sample_size, input_params.sample_name, input_params.output_folder, input_params.threads);
 
             // Print the TIN stats
             std::cout << "Number of transcripts: " << tin_stats.num_transcripts << std::endl;
@@ -154,8 +154,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
          
          while (reader.hasNextRecord()){
             // Read the next batch of records
-            // std::cout << "Generating " << thread_count << " thread(s)..." <<
-            // std::endl;
             printMessage("Generating " + std::to_string(thread_count) + " thread(s)...");
             std::vector<std::thread> thread_vector;
             for (int thread_index=0; thread_index<thread_count; thread_index++){
@@ -165,7 +163,6 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
             }
 
             // Join the threads in thread_vector
-            // std::cout<<"Joining threads..."<<std::endl;
             int thread_index = 0;
             for (auto& t : thread_vector){
                 if (t.joinable()){
@@ -222,11 +219,14 @@ int BAM_Module::calculateStatistics(Input_Para &input_params, Output_BAM &final_
     std::cout << "Saving summary statistics to file..." << std::endl;
 
     // If in RRMS mode, append RRMS accepted/rejected to the output prefix
-    std::string output_prefix = "bam";
+    // std::string output_prefix = "bam";
+    std::string output_prefix = input_params.sample_name;
     if (input_params.rrms_csv != ""){
-        output_prefix += input_params.rrms_filter ? "_rrms_accepted" : "_rrms_rejected";
+        output_prefix += input_params.rrms_filter ? "_accepted" : "_rejected";
     }
-    std::string summary_filepath = input_params.output_folder + "/" + output_prefix + "_summary.txt";
+
+    std::string summary_filepath = input_params.output_folder + "/" + output_prefix + "_summary.bam.json";
+
     final_output.save_summary(summary_filepath, input_params, final_output);
     std::cout << "Saved file: " << summary_filepath << std::endl;
 
