@@ -1,14 +1,15 @@
-{% set version = "1.5.0" %}
-{% set revision = "11961b2cc93534057df2bd668c2277267222916b" %}
+{% set version = environ.get('GIT_DESCRIBE_TAG', '1.5.0').lstrip('v') %}
+{% set revision = environ.get('GIT_FULL_HASH', '11961b2cc93534057df2bd668c2277267222916b') %}
 
 package:
   name: longreadsum
   version: {{ version }}
 
 source:
-  git_url: https://github.com/WGLab/LongReadSum.git
-  git_rev: {{ revision }}
-  # path: ../
+  path: ../
+  git_lfs: false
+  # git_url: https://github.com/WGLab/LongReadSum.git
+  # git_rev: {{ revision }}
 
 channels:
   - conda-forge

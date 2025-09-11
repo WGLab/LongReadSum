@@ -5,10 +5,31 @@ Compile the module and its dependencies.
 
 import os
 import glob
+import subprocess
 import setuptools
 from setuptools import setup, Extension
 
 print("Running setup.py...")
+
+def get_git_version():
+    """Get version from git tag, fallback to default if not available."""
+    try:
+        # Get the latest git tag
+        result = subprocess.run(['git', 'describe', '--tags', '--abbrev=0'], 
+                              capture_output=True, text=True, check=True)
+        version = result.stdout.strip()
+        # Remove 'v' prefix if present
+        if version.startswith('v'):
+            version = version[1:]
+        return version
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback to default version if git is not available or no tags exist
+        print("Warning: Could not get version from git tag, using default version")
+        return '1.5.0'
+    
+# Set the version
+version = get_git_version()
+print(f"Setting version to: {version}")
 
 # Get the project dependencies
 src_files = []
@@ -29,7 +50,7 @@ lrst_mod = Extension("_lrst",
 
 # Set up the module
 setup(name="longreadsum",
-      version='1.5.0',
+      version=version,
       author="WGLab",
       description="""A fast and flexible QC tool for long read sequencing data""",
       ext_modules=[lrst_mod],
