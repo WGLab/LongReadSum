@@ -1,6 +1,9 @@
 # Use the miniconda container
 FROM continuumio/miniconda3:main
 
+# Version argument (set during build)
+ARG LONGREADSUM_VERSION
+
 WORKDIR /app
 
 RUN apt-get update
@@ -14,6 +17,6 @@ RUN conda config --add channels jannessp
 RUN conda create -n longreadsum python=3.9
 RUN echo "conda activate longreadsum" >> ~/.bashrc
 SHELL ["/bin/bash", "--login", "-c"]
-RUN conda install -n longreadsum -c wglab -c conda-forge -c jannessp -c bioconda longreadsum=1.5.0 && conda clean -afy
+RUN conda install -n longreadsum -c wglab -c conda-forge -c jannessp -c bioconda longreadsum=${LONGREADSUM_VERSION} && conda clean -afy
 
 ENTRYPOINT ["conda", "run", "--no-capture-output", "-n", "longreadsum", "longreadsum"]
