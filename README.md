@@ -42,7 +42,7 @@ conda activate longreadsum
 LongReadSum and its dependencies can then be installed using the following command:
 
 ```
-conda install -c wglab -c conda-forge -c jannessp -c bioconda longreadsum=1.5.0
+conda install -c wglab -c conda-forge -c jannessp -c bioconda longreadsum
 ```
 
 # Installation using Docker
