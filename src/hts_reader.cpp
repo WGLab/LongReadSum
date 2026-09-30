@@ -11,6 +11,7 @@ Class for reading a set number of records from a BAM file. Used for multi-thread
 #include <sstream>
 #include <fstream>
 #include <math.h>
+#include <array>
 #include <algorithm>  // std::find
 #include <random>
 #include <htslib/sam.h>
@@ -38,6 +39,15 @@ HTSReader::~HTSReader(){
 // Update read and base counts
 int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& basic_qc, Basic_Seq_Quality_Statistics& seq_quality_info, bool is_primary) {
 
+    // BAM qualities are bytes, so calculate each error probability once.
+    static const std::array<double, 256> base_quality_probabilities = [] {
+        std::array<double, 256> probabilities;
+        for (int quality = 0; quality < 256; quality++) {
+            probabilities[quality] = pow(10, -quality / 10.0);
+        }
+        return probabilities;
+    }();
+
     // Update read QC
     basic_qc.total_num_reads++;  // Update the total number of reads
     int read_length = (int) record->core.l_qseq;
@@ -55,7 +65,7 @@ int HTSReader::updateReadAndBaseCounts(bam1_t* record, Basic_Seq_Statistics& bas
         seq_quality_info.base_quality_distribution[(uint64_t)base_quality]++;
 
         // Convert the Phred quality value to a probability
-        double base_quality_prob = pow(10, -base_quality / 10.0);
+        double base_quality_prob = base_quality_probabilities[base_quality];
         cumulative_base_prob += base_quality_prob;
 
         // Get the base and update the base count
